@@ -1,0 +1,101 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    padding: 20px 16px;
+    color: #94a3b8;
+}
+
+.contenedor-sidebar {
+    width: 20vw;
+    background-color: #0b192c; /* Azul oscuro de la imagen */
+    flex-shrink: 0;
+}
+
+.sidebar-empresa {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 8px 24px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.empresa-icono {
+    font-size: 24px;
+}
+
+.empresa-texto h2 {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 18px;
+    color: #ffffff;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.empresa-texto span {
+    font-size: 12px;
+    color: #38bdf8;
+}
+
+/* SECCIONES Y ITEMS DEL MENÚ */
+.sidebar-menu {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-top: 20px;
+    height: 80vh;
+}
+
+.submenu {
+    margin-bottom: 24px;
+}
+
+.sidebar-submenu {
+    margin-bottom: 24px;
+}
+
+.submenu-titulo {
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-bottom: 12px;
+    padding-left: 12px;
+}
+
+.submenu-item {
+    width: 100%;
+    margin: 2px 0;
+}
+
+.submenu-item a {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px 8px 36px; /* Sangría a la izquierda para jerarquía */
+    color: #94a3b8; /* Gris sutil acorde al tema oscuro */
+    font-family: var(--fuenteCuerpo, inherit);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.submenu-item a:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ESTADO ACTIVO (Cuando el usuario está en esa página) */
+.submenu-item.active a,
+.submenu-item a.active {
+    color: #38bdf8; /* Azul destacado */
+    background-color: rgba(56, 189, 248, 0.1);
+    font-weight: 600;
+}
+
+
+
+

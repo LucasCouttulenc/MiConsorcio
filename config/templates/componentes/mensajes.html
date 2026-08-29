@@ -1,0 +1,25 @@
+<div id="messages">
+    {% if messages %}
+        {% for mensaje in messages %}
+            <div class="alerta {% if mensaje.tags == 'success' %}exito auto{% elif mensaje.tags == 'warning' %}advertencia persistente{% else %}error persistente{% endif %} flex center">
+                <span class="alerta__texto">{{ mensaje }}</span>
+                {% if mensaje.tags != 'success' %}
+                    <div class="flex right">
+                        <button class="alerta__cerrar flex center" aria-label="Cerrar alerta">✕</button>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Cierre manual para errores
+        document.querySelectorAll('.alerta__cerrar').forEach(btn => {
+            btn.addEventListener('click', function () {
+                this.parentElement.parentElement.style.display = 'none';
+            });
+        });
+    });
+</script>

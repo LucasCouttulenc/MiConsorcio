@@ -1,0 +1,33 @@
+/* Pura IA hay que revisar */
+
+:root {
+    /* Colores Principales (Paleta Azul Oscuro / ConsorcioPro) */
+    --colorFondoPagina: #0b192c;
+    --colorFondoSecundario: #1e293b;
+    --colorFondo: #fcfdfd;
+    --colorTarjeta: #ffffff;
+
+    /* Azul Principal y Variantes (Acciones y Resaltados) */
+    --colorPrincipal: #1d4ed8;
+    --colorPrincipalHover: #1e40af;
+    --colorPrincipalTransparente: rgba(29, 78, 216, 0.12);
+    
+    /* Azul Secundario / Acentos de Marca */
+    --colorSecundario: #38bdf8;
+    --colorSecundarioTransparente: rgba(56, 189, 248, 0.15);
+
+    /* Textos */
+    --colorTextoPrincipal: #0f172a;
+    --colorTextoSecundario: #64748b;
+    --colorTextoEtiqueta: #334155;
+    --colorTextoBlanco: #ffffff;
+
+    /* Bordes y Campos */
+    --colorBorde: #cbd5e1;
+    --colorFondoCampo: #f8fafc;
+    --colorBordeCampoEnfoque: #1d4ed8;
+
+    /* Tipografías */
+    --fuenteTitulos: 'Exo 2', sans-serif;
+    --fuenteCuerpo: 'Nunito', sans-serif;
+}

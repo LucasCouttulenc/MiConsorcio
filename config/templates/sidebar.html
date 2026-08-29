@@ -1,0 +1,53 @@
+{% load static %}
+
+<nav class="sidebar">
+    <div class="sidebar-empresa">
+        <div class="empresa-icono">🏢</div>
+        <div class="empresa-texto">
+            <h2>Consorcios</h2>
+            <span>Administración</span>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+        <!-- Menú -->
+        <div class="sidebar-menu flex column between">
+            <div class="sidebar-submenu">
+                <!-- TODO: esta verificación se puede hacer mas amigable haciendo un usuario custom -->
+                {% if user.is_superuser or 'Administrador' in user.groups.all|stringformat:"s" %}
+                    <div class="submenu">
+                        <span class="submenu-titulo">PANEL ADMIN</span>
+                        <div class="submenu-item">
+                            <a href="{% url 'listar_consorcios' %}">Consorcios</a>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- TODO: esta verificación se puede hacer mas amigable haciendo un usuario custom -->
+                {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
+                    <div class="submenu">
+                        <span class="submenu-titulo">PANEL PROPIETARIO</span>
+                        <div class="submenu-item">
+                            <a href="{% url 'listar_consorcios' %}">Liquidaciones</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+                <!-- Perfil del Usuario al Pie -->
+            <div class="sidebar-footer">
+                <!-- <div class="user-avatar">
+                    {{ request.user.username|slice:":2"|upper }}
+                </div>
+                <div class="user-info">
+                    <span class="user-name">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+                    <span class="user-role">Administrador</span>
+                </div> -->
+                <form action="{% url 'cerrar_sesion' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button class="boton-secundario" type="submit">Cerrar sesión</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</nav>
