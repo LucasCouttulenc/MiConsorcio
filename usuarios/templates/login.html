@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inicio de Sesión{% endblock %}
+
+{% block content %}
+
+<div class="pagina-login flex center column">
+
+    <div class="contenedor-login flex center column">
+        
+        <!-- Header del Formulario -->
+        <div class="encabezado-login flex center column">
+            <h2 class="formulario-inicio-sesion__titulo">Inicio de sesión</h2>            
+            <p class="formulario-inicio-sesion__subtitulo">Gestión de Consorcios</p>
+        </div>  
+
+        <!-- Formulario -->
+        {% include "formulario.html" with formulario=formulario %}
+
+    </div>
+</div>
+{% endblock %}

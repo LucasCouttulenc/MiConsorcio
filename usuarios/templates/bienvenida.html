@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bienvenida{% endblock %}
+
+{% block content %}
+<div class="pagina-bienvenida flex center column">
+
+    <div class="tarjeta-bienvenida flex column center">
+        <h1 class="tarjeta-bienvenida__titulo">
+            ¡Hola, {{ user.first_name|default:user.username }}! 👋
+        </h1>
+
+        <p class="tarjeta-bienvenida__texto">
+            Te damos la bienvenida al sistema. Utilizá el menú de la izquierda para navegar por las distintas secciones.
+        </p>
+
+        <div class="indicador-menu flex center">
+            <span class="indicador-menu__icono">👈</span>
+            <span>Accedé a tus opciones desde la barra lateral</span>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

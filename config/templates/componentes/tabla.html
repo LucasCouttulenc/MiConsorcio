@@ -1,0 +1,77 @@
+{% load render_table from django_tables2 %}
+{% load export_url from django_tables2 %}
+{% load tags_custom %}
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'css/_componentes.css' %}">
+
+<div>
+    {% if filter %}
+        <div class="tabla__filtro flex left">
+            <form action="" method="get" class="form form-inline flex left">
+                {{ filter.form }}
+            </form>
+            <button name="filtrar" class="boton-primario" onclick="document.querySelector('.form').submit()">Filtrar</button>
+        </div>
+    {% endif %}
+    <div class="tabla__acciones">
+        {% for accion in acciones %}
+            {% if not accion.perm or accion.perm in perms %}
+                {% if accion.tipo == 'dropdown' %}
+                    <div class="dropdown">
+                        <button type="button" id="{{ accion.id }}" class="boton-primario dropdown__button" onclick="toggleDropdown('{{ accion.label|slugify }}')">
+                            {{ accion.label }}
+                        </button>
+                        <div class="dropdown__menu" id="{{ accion.label|slugify }}">
+                            {% for opcion in accion.opciones %}
+                                <a class="dropdown__item" href="{% url accion.url modelo.id opcion.param %}">
+                                    {{ opcion.label }}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% elif accion.tipo == 'link' %}
+                    <a class="boton-primario"
+                        {% if accion.url and elemento %} href="{% url accion.url elemento.id %}" {% endif %} 
+                        {% if accion.url and not elemento %} href="{% url accion.url %}" {% endif %}
+                        {% if accion.tipo_de_archivo_a_exportar %} href="{% export_url accion.tipo_de_archivo_a_exportar %}" {% endif %}
+                        {% if accion.id %} id="{{accion.id}}" {% endif %}
+                        {% if accion.nombre %} name="{{accion.nombre}}" {% endif %}>
+                        {% if accion.label %} {{accion.label}} {% else %} {{ accion.nombre|capfirst }} {{table.Meta.model|obtener_nombre|capfirst}} {% endif %}
+                    </a>
+                {% elif accion.tipo == 'button' %}
+                    <button class="boton-primario" 
+                        {% if accion.on_click %} onclick="{{accion.on_click}}" {% endif %}
+                        {% if accion.id %} id="{{accion.id}}" {% endif %}
+                        {% if accion.nombre %} name="{{accion.nombre}}" {% endif %}>
+                        {% if accion.label %} {{accion.label}} {% else %} {{ accion.nombre|capfirst }} {{table.Meta.model|obtener_nombre|capfirst}} {% endif %}
+                    </button>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+<div class="contenedor-tabla">
+    {% if table.page.object_list %}
+        {% render_table table %}  
+    {% else %}
+        <p class="tabla__texto-sin-resultados flex center">No hay {{table.Meta.model|obtener_nombre_en_plural|lower}}.</p>
+    {% endif %}
+</div>
+<script src="{% static 'js/tabla.js' %}"></script>
+
+<script>
+    function toggleDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        dropdown.classList.toggle('dropdown__menu--show');
+    }
+
+    document.addEventListener('click', function(event) {
+        const dropdowns = document.querySelectorAll('.dropdown__menu');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.parentElement.contains(event.target)) {
+                dropdown.classList.remove('dropdown__menu--show');
+            }
+        });
+    });
+</script>

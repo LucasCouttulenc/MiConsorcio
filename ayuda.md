@@ -1,0 +1,53 @@
+
+### Comando para iniciar contenedores
+
+```
+docker compose up --build
+```
+
+En local se ve en: http://localhost:8000/.
+
+Queda pendiente usar digital ocean o algo del estilo para levantarlo público.
+
+Dejo ejemplo de .env, sacar .example. Al iniciar la base se crean los usuarios definidos ahi. Los permisos de los grupos se cargar a partir de lo definido en config/comun.py. El superusuario tiene todos.
+
+### Comando custom para iniciar la base
+
+Ver detalle en config/management/commands/iniciar.py
+
+```
+sudo docker compose exec web python manage.py iniciardb
+```
+
+Primero hace un flush de la base, así que si se quiere resetear también funciona.
+
+Comando poblar opcional para cargar los modelos en config/fixtures/modelos
+
+### Comando para crear migraciones al crear/modificar modelos
+
+```
+docker compose exec web python manage.py makemigrations
+```
+
+### Comando para aplicar migraciones
+
+```
+docker compose exec web python manage.py migrate
+```
+
+### Comando para crear app nueva
+
+```
+docker compose exec web python manage.py startapp <nombre_app>
+```
+
+Si se ejecuta con sudo ejecutar el siguiente comando para no tener un tema de permisos:
+
+```
+sudo chown -R $USER:$USER .
+```
+
+### Pgadmin
+
+Se accede en http://localhost:5050/ con datos definidos en .env.
+

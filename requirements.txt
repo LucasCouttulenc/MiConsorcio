@@ -1,0 +1,14 @@
+Django==6.1
+python-decouple==3.8
+psycopg2-binary==2.9.12
+# Fomularios
+django-crispy-forms
+crispy-bootstrap4
+# Poblar
+colorama==0.4.4 
+Faker==17.3.0
+networkx==3.4.2 
+# Tablas
+django-tables2==2.7.0
+tablib[xlsx]==3.7.0
+django_filter==24.3
