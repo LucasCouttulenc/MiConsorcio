@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-luk59zz=h@ku4@t2&g8jqxtxx7l&b(o(g!=%!g-r@r)zf7alq^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap4"
 CRISPY_TEMPLATE_PACK = "bootstrap4"

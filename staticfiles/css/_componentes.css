@@ -1,0 +1,113 @@
+/* BOTON PRIMARIO */
+
+.contenedor-boton {
+    width: 100%;
+    margin-top: 1px;
+}
+
+.boton-primario {
+    width: fit-content;
+    background-color: var(--colorPrincipal);
+    color: var(--colorTextoBlanco);
+    border: none;
+    padding: 3px 5px;
+    border-radius: 8px;
+    font-family: var(--fuenteCuerpo);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.boton-primario:hover {
+    background-color: var(--colorPrincipalHover);
+}
+
+.boton-primario:active {
+    transform: scale(0.98);
+}
+
+/* BOTON SECUNDARIO */
+.boton-secundario {
+    width: 100%;
+    background-color: var(--colorSecundarioTransparente, rgba(56, 189, 248, 0.15));
+    color: var(--colorSecundario, #38bdf8);
+    border: 1px solid var(--colorSecundario, #38bdf8);
+    padding: 13px 20px;
+    border-radius: 8px;
+    font-family: var(--fuenteCuerpo);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+}
+
+.boton-secundario:hover {
+    background-color: var(--colorSecundario, #38bdf8);
+    color: var(--colorFondoPagina, #0b192c);
+}
+
+.boton-secundario:active {
+    transform: scale(0.98);
+}
+
+/* MENSAJES DE ALERTA */
+
+.alerta {
+    font-family: var(--fuenteSecundaria);
+    font-size: var(--textoMedio);
+    font-weight: bold;
+    position: fixed;
+    width: fit-content;
+    min-width: 40vw;
+    height: 5vh;
+    text-align: center;
+    top: calc(8vh + 1em);
+    right: 1em;
+    padding: .5em;
+    border-radius: var(--radioEstandar);
+    box-shadow: 0 .5em 1em rgba(0, 0, 0, 0.1); 
+    font: bold;
+    opacity: 0;
+    animation: fadeIn 1s ease-in forwards;
+    z-index: 1000;
+}
+
+.alerta.exito {
+    animation: fadeIn 1s ease-in forwards, stayVisible 15s ease-out 1s forwards, fadeOut 1s ease-out 6s forwards;
+    background-color: var(--fondoColorExitoBackground);
+    color: var(--colorExito);
+}
+
+.alerta.error {
+    background-color: var(--fondoColorError);
+    color: var(--colorError);
+}
+
+.alerta.advertencia {
+    background-color: var(--fondoColorAviso);
+    color: var(--colorAviso);
+}
+
+.error .alerta__texto, .advertencia .alerta__texto {
+    margin-right: 1.5em;
+}
+
+.alerta__cerrar {
+    background-color: var(--colorError);
+    border: .1px solid var(--fondoColorError);
+    color: var(--fondoColorError);
+    font-weight: bolder;
+    transition: all 0.3s;
+    cursor: pointer;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 100%;
+    position: fixed;
+    top: calc(8vh + 1em + 0.9em);
+    right: 2em;
+}
+
+.alerta__cerrar:hover {
+    transform: scale(1.1);
+}

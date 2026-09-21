@@ -1,0 +1,88 @@
+.pagina-login {
+    min-height: 100vh;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.contenedor-login {
+    background-color: var(--colorTarjeta);
+    width: 100%;
+    max-width: 400px;
+    padding: 40px 32px;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* ==========================================
+   ENCABEZADO
+   ========================================== */
+.encabezado-login {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.icono-marca {
+    width: 56px;
+    height: 56px;
+    background-color: var(--colorPrincipalTransparente);
+    border-radius: 12px;
+    font-size: 28px;
+    margin-bottom: 12px;
+}
+
+.formulario-inicio-sesion__titulo {
+    font-family: var(--fuenteTitulos);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--colorTextoPrincipal);
+    margin-bottom: 4px;
+}
+
+.formulario-inicio-sesion__subtitulo {
+    font-family: var(--fuenteCuerpo);
+    font-size: 13px;
+    color: var(--colorTextoSecundario);
+}
+
+/* ==========================================
+   FORMULARIO Y CAMPOS
+   ========================================== */
+.formulario-inicio-sesion {
+    width: 100%;
+}
+
+.formulario-inicio-sesion__campo {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.formulario-inicio-sesion__campo label {
+    font-family: var(--fuenteCuerpo);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--colorTextoEtiqueta);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+}
+
+.formulario-inicio-sesion__campo input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--colorBorde);
+    border-radius: 8px;
+    font-family: var(--fuenteCuerpo);
+    font-size: 15px;
+    color: var(--colorTextoPrincipal);
+    background-color: var(--colorFondoCampo);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.formulario-inicio-sesion__campo input:focus {
+    outline: none;
+    border-color: var(--colorBordeCampoEnfoque);
+    background-color: var(--colorTarjeta);
+    box-shadow: 0 0 0 4px var(--colorPrincipalTransparente);
+}
