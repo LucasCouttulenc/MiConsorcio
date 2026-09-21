@@ -43,11 +43,6 @@ class AdministradorDeFixtures:
         nombre_modelo = modelo._meta.label_lower
         fixture = self._diccionario_fixtures.get(modelo)
 
-        print(f"Obteniendo IDs para el modelo {nombre_modelo}: {fixture}")
-        for k, v in self._diccionario_fixtures.items():
-            print(f"Modelo: {k}, Fixture: {v}")
-            print()
-
         if not fixture:
             raise Exception(f"No se encontro fixture para el modelo {nombre_modelo}")
 
