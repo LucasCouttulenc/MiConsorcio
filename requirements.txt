@@ -12,3 +12,4 @@ networkx==3.4.2
 django-tables2==2.7.0
 tablib[xlsx]==3.7.0
 django_filter==24.3
+gunicorn==21.2.0
