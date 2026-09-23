@@ -32,14 +32,17 @@ def gestionar_consorcio(request, id):
     :return: Renderiza la plantilla de gestión de consorcios.
     """
 
-    consorcio = Consorcio.objects.get(id=id)
-    if request.method == 'POST':
-        # Aquí se procesaría el formulario de edición del consorcio
-        pass
+    return gestionar_modelo(
+        request=request,
+        id_modelo=id,
+        formulario_modelo=FormularioConsorcio,
+        template="gestionar_consorcio.html",
+    )
 
-    return render(request, 'gestionar_consorcio.html', {'consorcio': consorcio})
 
 
+@login_required
+@permission_required('consorcios.add_consorcio', raise_exception=True)
 def crear_consorcio(request):
     """
     Vista para crear un nuevo consorcio.

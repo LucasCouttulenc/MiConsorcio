@@ -7,8 +7,6 @@ docker compose up --build
 
 En local se ve en: http://localhost:8000/.
 
-Queda pendiente usar digital ocean o algo del estilo para levantarlo público.
-
 Dejo ejemplo de .env, sacar .example. Al iniciar la base se crean los usuarios definidos ahi. Los permisos de los grupos se cargar a partir de lo definido en config/comun.py. El superusuario tiene todos.
 
 ### Comando custom para iniciar la base

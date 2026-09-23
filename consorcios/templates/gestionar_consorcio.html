@@ -7,9 +7,13 @@
 
 {% include "componentes/mensajes.html" %}
 
-<h1 class="titulo">Gestionar consorcio</h1>
-<div class="flex center column">
-    <p>Gestionando consorcio: {{ consorcio.direccion }}</p>
+<link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+
+<h1 class="seccion__titulo">Gestionar consorcio</h1>
+<div class="flex around">
+    <div>
+        {% include "formulario.html" with formulario=formulario %}
+    </div>
 </div>
-    
+
 {% endblock %}
