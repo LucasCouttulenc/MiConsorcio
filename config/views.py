@@ -3,14 +3,16 @@ from django_tables2.views import SingleTableMixin
 from django.db import transaction
 from django.contrib import messages
 from django.urls import reverse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from .models import *
 from .comun import *
 
 EXITO = "Se ha creado correctamente el {}."
 EXITO_CREAR = "Se ha creado correctamente el {}."
+EXITO_ACTUALIZAR = "Se ha actualizado correctamente el {}."
 ERROR_CREAR = "No se pudo crear el {}. Error: {}"
 ERROR_FORMULARIO_INVALIDO = "El formulario no es válido. Errores: {}"
+ERROR_ACTUALIZAR = "No se pudo actualizar el {}. Error: {}"
 
 class Lista(ExportMixinCustom, SingleTableMixin, FilterView):
     """
@@ -156,6 +158,86 @@ def crear_modelo(
     # Renderizo la plantilla con el contexto
     return render(request, template, contexto(form, modelo_secundario=modelo_secundario, contexto_adicional=contexto_adicional))
 
+
+def gestionar_modelo(
+    request,
+    id_modelo,
+    formulario_modelo,
+    template,
+    func_pre_save=None,
+    modelo_secundario=None,
+    contexto_adicional=None,
+    vista_exito=None,
+):
+    """ 
+    Vista general para gestionar un modelo.
+    Si el método de la solicitud es POST, se actualiza el modelo y se muestra un mensaje de éxito.
+    Si el método de la solicitud es GET, se renderiza el formulario con los datos del modelo.
+    En caso de error, se muestra un mensaje correspondiente.
+
+    :param request: Objeto HttpRequest.
+    :param id_modelo: ID del modelo a gestionar.
+    :param formulario_modelo: Clase del formulario a utilizar.
+    :param template: Plantilla a renderizar.
+    :param func_pre_save: Función a ejecutar antes de guardar el modelo.
+    :param modelo_secundario: Modelo secundario relacionado. Este se pasará como parámetro a la vista y al formulario.
+    :param contexto_adicional: Diccionario de contexto adicional a pasar a la plantilla.
+
+    :return: Renderizado de la plantilla con el formulario.
+    """
+
+    modelo = get_object_or_404(formulario_modelo._meta.model, id=id_modelo)
+    nombre_modelo = nombre_verbose(modelo)
+    nombre_modelo_secundario = nombre(modelo_secundario) if modelo_secundario else None
+
+    if request.method == "POST":
+        with transaction.atomic():
+            form = formulario(formulario_modelo, modelo_secundario, request, modelo)
+
+            # Si hay función para luego de guardar, la llamo
+            if func_pre_save: 
+                try:
+                    form = func_pre_save(modelo) or form
+                except Exception as e:
+                    # Si hay un error en la función, muestro mensaje de error
+                    messages.error(request, ERROR_ACTUALIZAR.format(nombre_modelo, str(e)))
+                    return render(request, template, contexto(form, modelo, modelo_secundario, contexto_adicional))
+
+            # Si hay un modelo secundario, lo agrego a los datos del formulario
+            if modelo_secundario:
+                request.POST._mutable = True
+                request.POST[nombre_modelo_secundario] = modelo_secundario.id
+
+            try: 
+                es_valido = form.is_valid()
+            except Exception as e:
+                # Si hay un error al validar el formulario, muestro mensaje de error
+                messages.error(request, ERROR_CREAR.format(nombre_modelo, str(e)))
+                return render(request, template, contexto(form, modelo_secundario=modelo_secundario, contexto_adicional=contexto_adicional))
+
+            if es_valido:
+                # Si el formulario es válido, guardo el modelo
+                try:
+                    modelo = form.save()
+                except Exception as e:
+                    # Si hay un error al guardar, muestro mensaje de error
+                    messages.error(request, ERROR_ACTUALIZAR.format(nombre_modelo, str(e)))
+                    return render(request, template, contexto(form, modelo, modelo_secundario, contexto_adicional))
+
+                # Muestro mensaje de éxito y redirijo a la vista de éxito
+                messages.success(request, EXITO_ACTUALIZAR.format(nombre_modelo))
+            else:
+                # Si el formulario no es válido, muestro mensaje de error
+                messages.error(request, ERROR_ACTUALIZAR.format(nombre_modelo, form.errors.as_text()))
+    else:
+        # Si el método no es POST, creo el formulario
+        form = formulario(formulario_modelo, modelo_secundario, modelo=modelo)
+
+    if vista_exito and request.method == "POST" and form.is_valid():
+        return redirect(vista_exito)
+
+    # Renderizo la plantilla con el contexto
+    return render(request, template, contexto(form, modelo, modelo_secundario, contexto_adicional))
 
 #####################################################################
 #                            AUXILIARES                             #
