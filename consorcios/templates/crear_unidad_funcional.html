@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear unidad funcional{% endblock %}
+
+{% block content %}
+
+{% include "componentes/mensajes.html" %}
+
+<link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+
+<h1 class="titulo">Crear unidad funcional para {{ consorcio.nombre }}</h1>
+<div class="flex around">
+    <div>
+        {% include "formulario.html" with formulario=formulario %}
+    </div>
+</div>
+
+{% endblock %}

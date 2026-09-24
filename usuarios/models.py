@@ -19,7 +19,14 @@ class Administrador(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     consorcios = models.ManyToManyField(Consorcio, related_name='administradores')
 
-    # TODO agregar campos específicos para el administrador.
+    def administra(self, consorcio_id):
+        """
+        Verifica si el administrador administra un consorcio específico.
+
+        :param consorcio_id: ID del consorcio a verificar.
+        :return: True si el administrador administra el consorcio, False en caso contrario.
+        """
+        return self.consorcios.filter(id=consorcio_id).exists()
 
 #####################################################################
 #                        PROPIETARIO                               #
@@ -36,4 +43,5 @@ class Propietario(models.Model):
 
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
 
-    # TODO agregar campos específicos para el propietario.
+    def __str__(self):
+        return self.usuario.get_full_name()

@@ -31,8 +31,10 @@ class Consorcio(models.Model):
 
     codigo_postal = models.IntegerField(verbose_name="Código Postal")
 
-    # TODO: datos sobre banco/liquidaciones, etc.?    
+    # TODO: datos sobre banco/liquidaciones, etc.?
 
+    def __str__(self):
+        return f"{self.nombre} - {self.calle} {self.altura}, CP {self.codigo_postal}"
 
 #####################################################################
 #                          UNIDAD FUNCIONAL                         #
@@ -49,7 +51,17 @@ class UnidadFuncional(models.Model):
 
     propietario = models.ForeignKey('usuarios.Propietario', on_delete=models.CASCADE)
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE)
+    piso = models.PositiveIntegerField(verbose_name="Piso")
+    departamento = models.CharField(max_length=10, verbose_name="Departamento", blank=True, null=True)
 
     # TODO agregar campos específicos para la unidad funcional.
 
-    
+    def __str__(self):
+        return f"{self.piso} - {self.departamento} (Propietario: {self.propietario})"
+
+    def save(self, *args, **kwargs):
+        # Si existe una unidad funcional con el mismo piso y departamento en el mismo consorcio, no se permite guardar.
+        if UnidadFuncional.objects.filter(consorcio=self.consorcio, piso=self.piso, departamento=self.departamento).exclude(id=self.id).exists():
+            raise ValueError("Ya existe una unidad funcional con el mismo piso y departamento en este consorcio.")
+
+        super().save(*args, **kwargs)

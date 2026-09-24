@@ -104,7 +104,7 @@
     height: 1.5em;
     border-radius: 100%;
     position: fixed;
-    top: calc(8vh + 1em + 0.9em);
+    top: calc(2vh + 1.5em);
     right: 2em;
 }
 

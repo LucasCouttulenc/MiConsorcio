@@ -26,8 +26,8 @@ class FixtureDeUser(Fixture):
                 'is_staff': True,
             },
             {
-                'first_name': 'Administrador',
-                'last_name': 'de Consorcios',
+                'first_name': 'Paula',
+                'last_name': 'Gonzalez (Administrador)',
                 'username': config('ADMINISTRADOR'),
                 'password': make_password(config('CLAVE_ADMINISTRADOR')),
                 'email': config('ADMINISTRADOR'),
@@ -36,8 +36,8 @@ class FixtureDeUser(Fixture):
                 'groups': [grupo_administradores]
             },
             {
-                'first_name': 'Propietario',
-                'last_name': 'de Unidad',
+                'first_name': 'Pedro',
+                'last_name': 'Sanchez (Propietario)',
                 'username': config('PROPIETARIO'),
                 'password': make_password(config('CLAVE_PROPIETARIO')),
                 'email': config('PROPIETARIO'),
@@ -46,8 +46,8 @@ class FixtureDeUser(Fixture):
                 'groups': [grupo_propietarios]
             },
             {
-                'first_name': 'Ambos',
-                'last_name': 'Roles',
+                'first_name': 'Laura',
+                'last_name': 'Lopez (Ambos)',
                 'username': config('AMBOS'),
                 'password': make_password(config('CLAVE_AMBOS')),
                 'email': config('AMBOS'),
