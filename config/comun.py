@@ -15,6 +15,9 @@ PERMISOS_ADMINISTRADORES = [
     "add_consorcio",
     "view_consorcio",
     "change_consorcio",
+    "add_unidadfuncional",
+    "view_unidadfuncional",
+    "change_unidadfuncional",
 ]
 
 PERMISOS_PROPIETARIOS = [

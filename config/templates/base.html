@@ -7,8 +7,10 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet">
         <link rel="stylesheet" href="{% static 'css/base.css' %}">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
         <title>{% block title %}Administración de Consorcio{% endblock %}</title>
     </head>
     
@@ -26,5 +28,16 @@
                 {% include "footer.html" %}
             </footer> -->
         </div>
+
+        <!-- Script de inicialización para transformar los <select> etiquetados (AGREGADO) -->
+        <script>
+            $(document).ready(function() {
+                // Inicializa Select2 en los campos del formulario
+                $('select').select2({
+                    width: '100%' // Asegura que tome el ancho completo del contenedor
+                });
+            });
+        </script>
+
     </body>
 </html>

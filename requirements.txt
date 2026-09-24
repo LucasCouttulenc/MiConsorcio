@@ -5,6 +5,7 @@ psycopg2-binary==2.9.12
 django-crispy-forms==2.7
 crispy-bootstrap4==2026.2
 django-flatpickr==2.1.0
+django-select2==8.2.3
 # Poblar
 colorama==0.4.4 
 Faker==17.3.0

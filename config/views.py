@@ -145,8 +145,7 @@ def crear_modelo(
             # Muestro mensaje de éxito y redirijo a la vista de éxito
             messages.success(request, EXITO_CREAR.format(nombre_modelo))
             if params_vista_exito:
-                params= "&".join(f"{k}={v}" for k, v in params_vista_exito.items())
-                return redirect(f"{reverse(vista_exito)}?{params}")
+                return redirect(reverse(vista_exito, kwargs=params_vista_exito))
             return redirect(vista_exito)
         else:
             # Si el formulario no es válido, muestro mensaje de error
@@ -249,7 +248,7 @@ def contexto(form, modelo=None, modelo_secundario=None, contexto_adicional=None)
     contexto = {"formulario": form}
     if modelo: contexto[nombre(modelo)] = modelo
     if modelo_secundario: contexto[nombre(modelo_secundario)] = modelo_secundario
-    if contexto_adicional: contexto.update(contexto_adicional) 
+    if contexto_adicional: contexto.update(contexto_adicional)
     return contexto
 
 def formulario(formulario_modelo, modelo_secundario, request=None, modelo=None):
@@ -267,7 +266,7 @@ def formulario(formulario_modelo, modelo_secundario, request=None, modelo=None):
 
     # Si hay un modelo secundario, lo agregamos a los kwargs
     if modelo_secundario:
-        return formulario_modelo(params={nombre(modelo_secundario): modelo_secundario}, **kwargs)
+        kwargs[nombre(modelo_secundario)] = modelo_secundario
 
     return formulario_modelo(**kwargs)
 

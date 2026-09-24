@@ -25,11 +25,12 @@ class ListarConsorcios(Lista):
         """
         Obtiene el queryset de consorcios según el usuario autenticado.
         """
+        usuario = self.request.user
         queryset = super().get_queryset()
-        if self.request.user.is_superuser:
+        if usuario.is_superuser:
             return queryset
         else:
-            administrador = Administrador.objects.filter(usuario=self.request.user).first()
+            administrador = Administrador.objects.filter(usuario=usuario).first()
             consorcios = administrador.consorcios.all() if administrador else Consorcio.objects.none()
             return queryset.filter(id__in=consorcios)
 
@@ -62,10 +63,91 @@ def crear_consorcio(request):
     :param request: Objeto HttpRequest.
     :return: Renderiza la plantilla de creación de consorcios.
     """
-    
+
+    """Agrega el consocio al administrador que lo crea, si es que no es superusuario."""
+    def func_post_save(modelo, _form):
+        if request.user.is_superuser: return
+
+        administrador = Administrador.objects.filter(usuario=request.user).first()
+        if administrador:
+            administrador.consorcios.add(modelo)
+            administrador.save()
+
     return crear_modelo(
         request=request,
         formulario_modelo=FormularioConsorcio,
         template="crear_consorcio.html",
         vista_exito="listar_consorcios",
+        func_post_save=func_post_save
     ) 
+
+@method_decorator(login_required, name='dispatch')
+@method_decorator(permission_required('consorcios.view_unidadfuncional', raise_exception=True), name='dispatch')
+class ListarUnidadesFuncionales(Lista):
+    model = UnidadFuncional
+    table_class = TablaUnidadesFuncionales
+    export_name = 'unidades_funcionales'
+    filterset_class = FiltroUnidadesFuncionales
+    template_name = 'listar_unidades_funcionales.html'
+    acciones = [
+        { "nombre": "Crear", "tipo": "link", "perm": "consorcios.add_unidadfuncional", "url": "crear_unidad_funcional"},
+    ]
+    columnas_con_permiso = {} # dict
+    columnas_a_ocultar = {} # set
+
+    def get_queryset(self):
+        """
+        Obtiene el queryset de unidades funcionales según el consorcio deseado y el usuario autenticado.
+        """
+        usuario = self.request.user
+        consorcio_id = self.kwargs.get('consorcio_id')
+        queryset = super().get_queryset()    
+
+        if usuario.is_superuser:
+            return queryset
+
+        # Si es administrador de este consorcio
+        administrador = Administrador.objects.filter(usuario=usuario).first()
+        if administrador and administrador.administra(consorcio_id):
+            return queryset.filter(consorcio_id=consorcio_id)
+
+        messages.error(self.request, "No tenes permisos para ver las unidades funcionales de este consorcio.")
+        return queryset.none()
+
+    def get_context_data(self, **kwargs):
+        """
+        Agrega el consorcio al contexto para poder mostrar su nombre en la plantilla.
+        """
+        context = super().get_context_data(**kwargs)
+        consorcio_id = self.kwargs.get('consorcio_id')
+        consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+        context['consorcio'] = consorcio
+        context['elemento'] = consorcio
+        return context
+
+@login_required
+@permission_required('consorcios.add_unidadfuncional', raise_exception=True)
+def crear_unidad_funcional(request, consorcio_id):
+    """
+    Vista para crear una nueva unidad funcional dentro de un consorcio específico.
+
+    :param request: Objeto HttpRequest.
+    :param consorcio_id: ID del consorcio al que pertenece la unidad funcional.
+    """
+
+    usuario = request.user
+    administrador = Administrador.objects.filter(usuario=usuario).first()
+    if not usuario.is_superuser and not administrador.administra(consorcio_id):
+        messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
+        return redirect('listar_unidades_funcionales', consorcio_id=consorcio_id)
+
+    consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+
+    return crear_modelo(
+        request=request,
+        formulario_modelo=FormularioUnidadFuncional,
+        template="crear_unidad_funcional.html",
+        vista_exito="listar_unidades_funcionales",
+        params_vista_exito={"consorcio_id": consorcio_id},
+        modelo_secundario=consorcio
+    )
