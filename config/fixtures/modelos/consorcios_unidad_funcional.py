@@ -12,10 +12,25 @@ class FixtureDeUnidadFuncional(Fixture):
         propietarios = self.administrador.obtener_ids(Propietario)
         consorcios = self.administrador.obtener_ids(Consorcio)
 
-        return [
-            {
-                'propietario': propietario,
-                'consorcio': random.choice(consorcios)
-            } for propietario in propietarios
-        ]
+        resultado = []
+
+        # 5 unidadades funcionales por cada consorcio. 
+        # Cada propitario tiene una sola unidad funcional en total.
+        # No se repiten departamentos dentro de un mismo consorcio.
+        for consorcio_id in consorcios:
+            for piso in range(1, 6):
+                departamento = "A"
+                propietario = propietarios.pop(0)
+                resultado.append({
+                    'propietario_id': propietario,
+                    'consorcio_id': consorcio_id,
+                    'piso': piso,
+                    'departamento': departamento
+                })
+
+        return resultado
+        
+        
+            
+
         
