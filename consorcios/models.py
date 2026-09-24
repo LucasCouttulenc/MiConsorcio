@@ -13,7 +13,7 @@ class Consorcio(models.Model):
         verbose_name = "Consorcio"
         verbose_name_plural = "Consorcios"
         
-    direccion = models.CharField(max_length=255, verbose_name="Dirección")
+    direccion = models.CharField(max_length=255, unique=True, verbose_name="Dirección")
 
     # TODO agregar campos específicos para el administrador.
 

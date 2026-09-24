@@ -13,6 +13,8 @@ GRUPO_PROPIETARIOS = "Propietarios"
 
 PERMISOS_ADMINISTRADORES = [
     "add_consorcio",
+    "view_consorcio",
+    "change_consorcio",
 ]
 
 PERMISOS_PROPIETARIOS = [
