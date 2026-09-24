@@ -1,10 +1,10 @@
 /* Pura IA hay que revisar */
 
 :root {
+
     /* Colores Principales (Paleta Azul Oscuro / ConsorcioPro) */
     --colorFondoPagina: #0b192c;
-    --colorFondoSecundario: #1e293b;
-    --colorFondo: #fcfdfd;
+    --colorFondoSecundario: #fcfdfd;
     --colorTarjeta: #ffffff;
 
     /* Azul Principal y Variantes (Acciones y Resaltados) */
@@ -26,6 +26,25 @@
     --colorBorde: #cbd5e1;
     --colorFondoCampo: #f8fafc;
     --colorBordeCampoEnfoque: #1d4ed8;
+
+    /* colores para estados */
+
+    --colorExito: #0f6514;
+    --fondoColorExitoBackground: #b7d2ba;
+    --colorError: #660c0c;
+    --fondoColorError: #DCCACB;
+    --colorAviso: #ce8d00;
+    --fondoColorAviso: #fff1d4;
+
+    /* texto */
+    --textoChico: 0.9rem;
+    --textoEstandar: 1rem;
+    --textoMedio: 1.2rem;
+    --textoGrande: 2rem; 
+
+    /* radios */
+    --radioSutil: 1em;
+    --radioEstandar: 3em;
 
     /* Tipografías */
     --fuenteTitulos: 'Exo 2', sans-serif;

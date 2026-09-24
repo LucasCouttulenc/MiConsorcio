@@ -1,6 +1,5 @@
 @import "_constantes.css";
 @import "_footer.css";
-@import "_navbar.css";
 @import "_sidebar.css";
 @import "_tabla.css";
 @import "_componentes.css";
@@ -17,7 +16,7 @@
 
 body {
     font-family: var(--fuenteCuerpo);
-    color: var(--colorFondoSecundario);
+    color: var(--colorTextoPrincipal);
 }
 
 .contenedor-principal {
@@ -31,4 +30,9 @@ body {
     font-family: var(--fuenteTitulos);
     color: var(--colorTextoPrincipal);
     margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+
+a {
+    text-decoration: none;
 }

@@ -39,8 +39,6 @@ def gestionar_consorcio(request, id):
         template="gestionar_consorcio.html",
     )
 
-
-
 @login_required
 @permission_required('consorcios.add_consorcio', raise_exception=True)
 def crear_consorcio(request):

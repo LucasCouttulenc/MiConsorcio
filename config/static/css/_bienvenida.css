@@ -9,7 +9,7 @@
 }
 
 .tarjeta-bienvenida {
-    background-color: var(--colorFondoSecundario);
+    background-color: var(--colorTarjeta);
     border: 1px solid var(--colorBorde);
     border-radius: 12px;
     padding: 2.5rem 2rem;
@@ -24,7 +24,6 @@
     font-family: var(--fuenteTitulos);
     font-size: 1.875rem;
     font-weight: 700;
-    color: var(--colorTextoBlanco);
     margin: 0 0 0.75rem 0;
 }
 
