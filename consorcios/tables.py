@@ -10,7 +10,7 @@ class TablaConsorcios(tables.Table):
     class Meta:
         model = Consorcio
         template_name = "tabla.html"
-        # exclude = ('id',)
+        exclude = ('id',)
         # sequence = ('direccion',...
     
     # Acciones

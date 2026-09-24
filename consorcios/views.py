@@ -2,6 +2,7 @@ from config.views import *
 from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required, permission_required
 from django.utils.decorators import method_decorator
+from usuarios.models import Administrador
 from .tables import *
 from .models import *
 from .forms import *
@@ -19,6 +20,18 @@ class ListarConsorcios(Lista):
     ]
     columnas_con_permiso = {} # dict
     columnas_a_ocultar = {} # set
+
+    def get_queryset(self):
+        """
+        Obtiene el queryset de consorcios según el usuario autenticado.
+        """
+        queryset = super().get_queryset()
+        if self.request.user.is_superuser:
+            return queryset
+        else:
+            administrador = Administrador.objects.filter(usuario=self.request.user).first()
+            consorcios = administrador.consorcios.all() if administrador else Consorcio.objects.none()
+            return queryset.filter(id__in=consorcios)
 
 @login_required
 @permission_required('consorcios.change_consorcio', raise_exception=True)

@@ -1,3 +1,4 @@
+from consorcios.models import Consorcio
 from django.db import models
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -16,6 +17,7 @@ class Administrador(models.Model):
         verbose_name_plural = "Administradores"
 
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
+    consorcios = models.ManyToManyField(Consorcio, related_name='administradores')
 
     # TODO agregar campos específicos para el administrador.
 
