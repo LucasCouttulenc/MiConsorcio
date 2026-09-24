@@ -21,6 +21,12 @@ Primero hace un flush de la base, así que si se quiere resetear también funcio
 
 Comando poblar opcional para cargar los modelos en config/fixtures/modelos
 
+### Comando custom para hacer migraciones y migrar
+
+```
+docker compose exec web python manage.py migrar
+```
+
 ### Comando para crear migraciones al crear/modificar modelos
 
 ```
@@ -49,3 +55,10 @@ sudo chown -R $USER:$USER .
 
 Se accede en http://localhost:5050/ con datos definidos en .env.
 
+### Listar versiones instaladas
+
+A veces es mejor dejar la versión vacía en requirements.txt y elige la versión compatible con lo demás. Pero después especifiquenla por las dudas. Las pueden listar con:
+
+```
+docker compose exec web pip list
+```

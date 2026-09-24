@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap4',
     'django_tables2',
     "django_filters",
+    "django_flatpickr",
 
     # Nuestras apps
 
