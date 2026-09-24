@@ -101,14 +101,11 @@ class ListarUnidadesFuncionales(Lista):
         """
         usuario = self.request.user
         consorcio_id = self.kwargs.get('consorcio_id')
-        queryset = super().get_queryset()    
-
-        if usuario.is_superuser:
-            return queryset
+        queryset = super().get_queryset()
 
         # Si es administrador de este consorcio
         administrador = Administrador.objects.filter(usuario=usuario).first()
-        if administrador and administrador.administra(consorcio_id):
+        if (administrador and administrador.administra(consorcio_id)) or usuario.is_superuser:
             return queryset.filter(consorcio_id=consorcio_id)
 
         messages.error(self.request, "No tenes permisos para ver las unidades funcionales de este consorcio.")
