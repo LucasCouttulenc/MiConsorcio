@@ -19,6 +19,7 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from usuarios import views as views_usuarios
 from consorcios import views as views_consorcios
+from .views import pagina_en_construccion
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -35,4 +36,7 @@ urlpatterns = [
     path('consorcios/crear/', views_consorcios.crear_consorcio, name='crear_consorcio'),
     path('consorcios/<int:consorcio_id>/unidades/', views_consorcios.ListarUnidadesFuncionales.as_view(), name='listar_unidades_funcionales'),
     path('consorcios/<int:consorcio_id>/unidades/crear/', views_consorcios.crear_unidad_funcional, name='crear_unidad_funcional'),
+
+    # Liquidaciones
+    path('liquidaciones/listar/', pagina_en_construccion, name='pagina_en_construccion'),
 ]

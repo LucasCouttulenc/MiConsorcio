@@ -238,6 +238,16 @@ def gestionar_modelo(
     # Renderizo la plantilla con el contexto
     return render(request, template, contexto(form, modelo, modelo_secundario, contexto_adicional))
 
+def pagina_en_construccion(request):
+    """
+    Vista que muestra una página de "En construcción".
+    Se utiliza para indicar que la funcionalidad aún no está disponible.
+
+    :param request: Objeto HttpRequest.
+    :return: Renderiza la plantilla de "En construcción".
+    """
+    return render(request, "pagina_en_construccion.html")
+
 #####################################################################
 #                            AUXILIARES                             #
 #####################################################################

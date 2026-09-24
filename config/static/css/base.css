@@ -7,6 +7,7 @@
 
 @import "_login.css";
 @import "_bienvenida.css";
+@import "_pagina_en_construccio.css";
 
 * {
     box-sizing: border-box;
