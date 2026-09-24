@@ -1,0 +1,38 @@
+/* Contenedor principal centrado en pantalla */
+.contenedor-construccion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 120px); /* Ocupa el alto disponible descontando márgenes/sidebar */
+    padding: 2rem 1rem;
+}
+
+/* Tarjeta contenedora principal */
+.tarjeta-construccion {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    padding: 3rem 2.5rem;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    border: 1px solid #eef2f6;
+}
+
+/* Ícono decorativo */
+.icono-construccion {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem auto;
+    background-color: #f0f7ff;
+    color: #2563eb; /* Color azul primario de la app */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icono-construccion svg {
+    width: 42px;
+    height: 42px;
+}
