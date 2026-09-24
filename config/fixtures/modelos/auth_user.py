@@ -4,7 +4,9 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from config.comun import GRUPO_ADMINISTRADORES, GRUPO_PROPIETARIOS
 from django.contrib.auth import get_user_model
+from faker import Faker
 User = get_user_model()
+faker = Faker()
 
 class FixtureDeUser(Fixture):  
     def __init__(self):
@@ -15,7 +17,8 @@ class FixtureDeUser(Fixture):
         grupo_administradores = self.administrador.obtener_id_segun_campo(Group, 'name', GRUPO_ADMINISTRADORES)
         grupo_propietarios = self.administrador.obtener_id_segun_campo(Group, 'name', GRUPO_PROPIETARIOS)
 
-        return [
+
+        usuarios = [
             {
                 'first_name': 'Super',
                 'last_name': 'Usuario',
@@ -56,5 +59,20 @@ class FixtureDeUser(Fixture):
                 'groups': [grupo_administradores, grupo_propietarios]
             }
         ]
+
+        propietarios = [
+            {   
+                'first_name': faker.first_name(),
+                'last_name': faker.last_name(),
+                'username': faker.email(),
+                'password': make_password(f'clavepropietario{i}'),
+                'email': faker.email(),
+                'is_superuser': False,
+                'is_staff': False,
+                'groups': [grupo_propietarios]
+            } for i in range(50)
+        ]
+
+        return usuarios + propietarios
     
         

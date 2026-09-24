@@ -21,5 +21,5 @@ class FixtureDeConsorcio(Fixture):
                 'calle': faker.street_name(),
                 'altura': faker.building_number(),
                 'codigo_postal': faker.numerify(text='#####'),
-            } for _ in range(15)
+            } for _ in range(10)
         ]
