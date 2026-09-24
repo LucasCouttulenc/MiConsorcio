@@ -7,9 +7,6 @@ class Command(ComandoBase):
     help = 'Ejecuta las migraciones de la base de datos.'
 
     def handle(self, *args, **options):
-        if options[COMANDO_FLUSH]:
-            self._flush_base()
-
         self._hacer_migraciones()
 
         self._correr_migraciones()

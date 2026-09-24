@@ -1,5 +1,6 @@
 from ..fixture import Fixture
 from consorcios.models import Consorcio
+from usuarios.models import Administrador
 from faker import Faker
 faker = Faker("es_AR")
 
@@ -8,8 +9,9 @@ class FixtureDeConsorcio(Fixture):
         super().__init__(Consorcio)
         
     def campos(self):
+
         return [
             {
-                'direccion': faker.address()
-            } for _ in range(10)
+                'direccion': faker.address(), 
+            } for _ in range(15)
         ]
