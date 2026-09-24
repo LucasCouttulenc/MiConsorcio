@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from ..fixture import Fixture
 from consorcios.models import Consorcio
 from usuarios.models import Administrador
@@ -12,6 +14,12 @@ class FixtureDeConsorcio(Fixture):
 
         return [
             {
-                'direccion': faker.address(), 
+                'nombre': faker.company(),
+                'cuit': faker.numerify(text='30#########'),
+                'clave_suterh': faker.password(length=10, special_chars=False),
+                'fecha_creacion': str(datetime.now().date() - timedelta(days=faker.random_int(min=0, max=3650))),
+                'calle': faker.street_name(),
+                'altura': faker.building_number(),
+                'codigo_postal': faker.numerify(text='#####'),
             } for _ in range(15)
         ]
