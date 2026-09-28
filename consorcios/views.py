@@ -45,6 +45,10 @@ def gestionar_consorcio(request, id):
     :param id: ID del consorcio a gestionar.
     :return: Renderiza la plantilla de gestión de consorcios.
     """
+    administrador = Administrador.objects.filter(usuario=request.user).first()
+    if not request.user.is_superuser and not administrador.administra(id):
+        messages.error(request, "No tenes permisos para gestionar este consorcio.")
+        return redirect('listar_consorcios')
 
     return gestionar_modelo(
         request=request,
