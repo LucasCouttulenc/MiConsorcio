@@ -1,0 +1,39 @@
+<!-- gastos/templates/includes/_preview_liquidacion.html -->
+<div class="card shadow-sm p-4 sticky-top" style="top: 20px; background-color: #fff;">
+    <div class="border-bottom pb-3 mb-3 text-center">
+        <h4 class="fw-bold mb-1" id="pv-consorcio-nombre">Nombre del Consorcio</h4>
+        <p class="text-muted small mb-0">
+            <strong>Administración:</strong> <span id="pv-admin-nombre">--</span> | 
+            <strong>Email:</strong> <span id="pv-admin-email">--</span>
+        </p>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3 bg-light p-2 rounded border text-center small">
+        <div><strong>Período:</strong> <span id="pv-periodo">--/----</span></div>
+        <div><strong>Cierre:</strong> <span id="pv-cierre">--/--/----</span></div>
+        <div><strong>Vencimiento:</strong> <span id="pv-vencimiento">--/--/----</span></div>
+    </div>
+
+    <h6 class="fw-bold border-bottom pb-1 mb-2">Resumen de Gastos Cargados</h6>
+    <table class="table table-sm table-striped text-end align-middle small mb-3">
+        <thead class="table-dark">
+            <tr>
+                <th class="text-start">Concepto</th>
+                <th>Grupo</th>
+                <th>Tipo</th>
+                <th>Monto</th>
+            </tr>
+        </thead>
+        <tbody id="pv-tabla-gastos">
+            <tr>
+                <td colspan="4" class="text-center text-muted italic">No hay gastos ingresados</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr class="fw-bold table-active">
+                <td colspan="3" class="text-start">TOTAL ESTIMADO:</td>
+                <td id="pv-monto-total">$ 0.00</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

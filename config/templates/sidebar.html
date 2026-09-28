@@ -20,16 +20,17 @@
                         <div class="submenu-item">
                             <a href="{% url 'listar_consorcios' %}">Consorcios</a>
                         </div>
+                        <div class="submenu-item">
+                            <a href="{% url 'generar_liquidacion' %}">Liquidaciones</a>
+                        </div>
                     </div>
                 {% endif %}
 
                 <!-- TODO: esta verificación se puede hacer mas amigable haciendo un usuario custom -->
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
-                        <span class="submenu-titulo">PANEL PROPIETARIO</span>
-                        <div class="submenu-item">
-                            <a href="{% url 'pagina_en_construccion' %}">Liquidaciones</a>
-                        </div>
+                        <span class="submenu-titulo">PANEL CONSORCISTA</span>
+                        
                     </div>
                 {% endif %}
             </div>

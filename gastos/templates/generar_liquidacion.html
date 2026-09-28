@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generar Liquidación de Expensas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        .tabla-matriz th { background-color: #f8f9fa; }
+
+        /* Banner superior estilo 'Mis Expensas' */
+        .banner-expensas {
+            background-color: #1c3e7c;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 4px 4px 0 0;
+            text-align: center;
+        }
+        .banner-expensas h3 {
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .banner-expensas p {
+            margin: 2px 0;
+            font-size: 1rem;
+        }
+
+        /* Bloque de datos de Cabecera en la Vista Previa */
+        .cabecera-info {
+            background-color: #ffffff;
+            border: 1px solid #1c7c6d;
+            border-top: none;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+            font-size: 0.88rem;
+            color: #111;
+        }
+        .cabecera-info h6 {
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body class="bg-light p-3">
+
+<div class="container-fluid px-4">
+    <h2 class="mb-4">Generar Liquidación de Expensas</h2>
+
+    <form method="POST" id="form-liquidacion">
+        {% csrf_token %}
+
+        <div class="row g-4">
+            <!-- COLUMNA IZQUIERDA: FORMULARIO DE CARGA -->
+            <div class="col-lg-7">
+
+                <!-- 1. SELECCIÓN DE CONSORCIO -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header bg-primary text-white fw-bold">Selección de Consorcio</div>
+                    <div class="card-body">
+                        <label class="form-label fw-bold">Consorcio</label>
+                        <select name="consorcio" id="select-consorcio" class="form-select" required>
+                            <option value="">-- Seleccionar Consorcio --</option>
+                            {% for consorcio in consorcios %}
+                                <option value="{{ consorcio.id }}">{{ consorcio.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- DATOS EDITABLES DE LA ADMINISTRACIÓN -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header bg-secondary text-white fw-bold d-flex justify-content-between align-items-center">
+                        <span>Datos de la Administración</span>
+                        <small class="fw-normal text-white-50">Modifica cualquier dato para esta liquidación</small>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Razón Social / Encab.</label>
+                                <input type="text" name="admin_razon" id="admin_razon" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Nombre del Administrador</label>
+                                <input type="text" name="admin_nombre" id="admin_nombre" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Domicilio</label>
+                                <input type="text" name="admin_domicilio" id="admin_domicilio" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Situación Fiscal</label>
+                                <input type="text" name="admin_fiscal" id="admin_fiscal" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">CUIT</label>
+                                <input type="text" name="admin_cuit" id="admin_cuit" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">RPA</label>
+                                <input type="text" name="admin_rpa" id="admin_rpa" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Teléfono</label>
+                                <input type="text" name="admin_telefono" id="admin_telefono" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Mail de Contacto</label>
+                                <input type="email" name="admin_mail" id="admin_mail" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+
+                <!-- PERÍODO Y FECHAS -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header bg-dark text-white fw-bold">Período y Fechas de Vencimiento</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Período (Mes / Año)</label>
+                                <div class="input-group">
+                                    <select name="mes" id="select-mes" class="form-select" required>
+                                        <option value="01">01 - Enero</option>
+                                        <option value="02">02 - Febrero</option>
+                                        <option value="03">03 - Marzo</option>
+                                        <option value="04">04 - Abril</option>
+                                        <option value="05">05 - Mayo</option>
+                                        <option value="06">06 - Junio</option>
+                                        <option value="07">07 - Julio</option>
+                                        <option value="08" selected>08 - Agosto</option>
+                                        <option value="09">09 - Septiembre</option>
+                                        <option value="10">10 - Octubre</option>
+                                        <option value="11">11 - Noviembre</option>
+                                        <option value="12">12 - Diciembre</option>
+                                    </select>
+                                    <select name="anio" id="select-anio" class="form-select" required>
+                                        <option value="2025">2025</option>
+                                        <option value="2026" selected>2026</option>
+                                        <option value="2027">2027</option>
+                                        <option value="2028">2028</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Cierre de Expensas al</label>
+                                <input type="date" name="fecha_cierre" id="fecha_cierre" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Fecha Vencimiento</label>
+                                <input type="date" name="fecha_vencimiento_1" id="fecha_vencimiento_1" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GESTOR DE SUBTIPOS Y COLUMNAS -->
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-body bg-white rounded border">
+                        <h6 class="fw-bold mb-3 text-secondary">
+                            Configuración de Subtipos y Columnas
+                        </h6>
+                        
+                        <div class="row g-3">
+                            <!-- Gestor de Subtipos / Rubros -->
+                            <div class="col-md-6 border-end">
+                                <label class="form-label fw-semibold small">Crear Nuevo Subtipo / Rubro</label>
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" id="input-nuevo-subtipo" class="form-control" >
+                                    <button type="button" class="btn btn-primary" onclick="crearSubtipo()">
+                                        + Agregar
+                                    </button>
+                                </div>
+                                <div id="lista-subtipos-tags" class="d-flex flex-wrap gap-1 mt-2"></div>
+                            </div>
+
+                            <!-- Gestor de Columnas / Grupos -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Crear Nueva Columna / Grupo</label>
+                                <div class="input-group input-group-sm mb-2">
+                                    <input type="text" id="input-nuevo-grupo" class="form-control">
+                                    <button type="button" class="btn btn-primary" onclick="crearGrupo()">
+                                        + Agregar
+                                    </button>
+                                </div>
+                                <div id="lista-grupos-tags" class="d-flex flex-wrap gap-1 mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MATRIZ DE GASTOS -->
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="m-0 fw-bold">Gastos Imputados</h5>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="agregarFilaGasto()">
+                            + Agregar Fila de Gasto
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle tabla-matriz m-0" id="tabla-gastos">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 25%;">Concepto / Descripción</th>
+                                        <th style="width: 15%;">Tipo</th>
+                                        <th style="width: 25%;">Subtipo / Rubro</th>
+                                        <th style="width: 18%;">Columna / Grupo</th>
+                                        <th style="width: 12%;">Monto ($)</th>
+                                        <th style="width: 5%; text-align: center;">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="body-gastos">
+                                    <!-- Filas dinámicas -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTONES DE ACCIÓN -->
+                <div class="d-flex justify-content-end gap-2 my-4">
+                    <a href="{% url 'bienvenida' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Calcular y Procesar Liquidación</button>
+                </div>
+
+            </div>
+
+            <!-- COLUMNA DERECHA: VISTA PREVIA EN TIEMPO REAL -->
+            <div class="col-lg-5">
+                <div class="sticky-top" style="top: 20px;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="fw-bold m-0 text-secondary">Vista Previa del Encabezado</h5>
+                    </div>
+
+                    <!-- VISTA PREVIA HOJA / COMPROBANTE -->
+                    <div class="shadow rounded bg-white overflow-hidden">
+
+                        <!-- BANNER VERDE -->
+                        <div class="banner-expensas">
+                            <h3>EXPENSAS FIUBA</h3>
+                            <p>Liquidación: <span id="lbl-periodo"></span></p>
+                            <p>Cierre de expensas al: <span id="lbl-cierre"></span></p>
+                            <p>Vencimiento: <span id="lbl-vencimiento"></span></p>
+                        </div>
+
+                        <!-- DATOS ADMINISTRACIÓN Y CONSORCIO -->
+                        <div class="cabecera-info">
+                            <div class="row">
+                                <div class="col-6 border-end pe-2">
+                                    <h6 id="lbl-admin-razon">-</h6>
+                                    <div><strong>Nombre:</strong> <span id="lbl-admin-nombre">-</span></div>
+                                    <div><strong>Domicilio:</strong> <span id="lbl-admin-domicilio">-</span></div>
+                                    <div><strong>Situación Fiscal:</strong> <span id="lbl-admin-fiscal">-</span></div>
+                                    <div><strong>CUIT:</strong> <span id="lbl-admin-cuit">-</span></div>
+                                    <div><strong>RPA:</strong> <span id="lbl-admin-rpa">-</span></div>
+                                    <div><strong>Te.:</strong> <span id="lbl-admin-telefono">-</span></div>
+                                    <div class="text-break"><strong>Mail:</strong> <span id="lbl-admin-mail">-</span></div>
+                                </div>
+
+                                <div class="col-6 ps-2">
+                                    <h6>CONSORCIO</h6>
+                                    <div><strong>Nombre:</strong> <span id="lbl-consorcio-nombre">--</span></div>
+                                    <div><strong>Loc.:</strong> <span id="lbl-consorcio-localidad">--</span></div>
+                                    <div><strong>CUIT:</strong> <span id="lbl-consorcio-cuit">--</span></div>
+                                    <div><strong>SUTERH:</strong> <span id="lbl-consorcio-suterh">--</span></div>
+                                    <br>
+                                    <div><strong>H.Atención:</strong> <span id="lbl-consorcio-horario">-</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABLA RESUMEN DE GASTOS CARGADOS -->
+                        <div class="p-3 bg-light border-top">
+                            <h6 class="fw-bold border-bottom pb-1 mb-2 text-dark">Resumen de Gastos Cargados</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered align-middle small bg-white mb-0" id="pv-tabla-gastos-matriz">
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Datos base desde Django
+const datosConsorcios = {
+    {% for consorcio in consorcios %}
+        "{{ consorcio.id }}": {
+            nombre: "{{ consorcio.nombre|default:'-'|escapejs }}",
+            localidad: "{{ consorcio.localidad|default:'Ciudad De Buenos Aires, C.A.B.A'|escapejs }}",
+            cuit: "{{ consorcio.cuit|default:'-'|escapejs }}",
+            suterh: "{{ consorcio.suterh|default:'-'|escapejs }}",
+            horario_atencion: "{{ consorcio.horario_atencion|default:'-'|escapejs }}",
+
+            {% if consorcio.administracion %}
+                admin_razon: "{{ consorcio.administracion.razon_social|default:'-'|escapejs }}",
+                admin_nombre: "{{ consorcio.administracion.nombre|default:'-'|escapejs }}",
+                admin_domicilio: "{{ consorcio.administracion.domicilio|default:'-'|escapejs }}",
+                admin_fiscal: "{{ consorcio.administracion.situacion_fiscal|default:'-'|escapejs }}",
+                admin_cuit: "{{ consorcio.administracion.cuit|default:'-'|escapejs }}",
+                admin_rpa: "{{ consorcio.administracion.rpa|default:'-'|escapejs }}",
+                admin_telefono: "{{ consorcio.administracion.telefono|default:'-'|escapejs }}",
+                admin_mail: "{{ consorcio.administracion.email|default:'-'|escapejs }}"
+            {% else %}
+                admin_razon: "-", admin_nombre: "-", admin_domicilio: "-", admin_fiscal: "-",
+                admin_cuit: "-", admin_rpa: "-", admin_telefono: "-", admin_mail: "-"
+            {% endif %}
+        },
+    {% endfor %}
+};
+
+const gruposPorConsorcio = {
+    {% for consorcio in consorcios %}
+        "{{ consorcio.id }}": [
+            {% for grupo in consorcio.grupos_prorrateo.all %}
+                { val: "{{ grupo.id }}", nombre: "{{ grupo.nombre|escapejs }}" },
+            {% endfor %}
+        ],
+    {% endfor %}
+};
+
+const subtiposPorConsorcio = {
+    {% for consorcio in consorcios %}
+        "{{ consorcio.id }}": ["REMUNERACIONES AL PERSONAL", "MANTENIMIENTO DE PARTES COMUNES", "SERVICIOS PUBLICOS"],
+    {% endfor %}
+};
+
+const mesesNombres = {
+    "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
+    "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
+    "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+};
+
+let contadorFilas = 0;
+
+function setValorInput(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const limpio = (val === null || val === undefined) ? '' : String(val).trim();
+    el.value = (limpio !== '') ? limpio : '-';
+}
+
+function getConsorcioActualId() {
+    const select = document.getElementById('select-consorcio');
+    return select ? select.value : null;
+}
+
+// ==========================================
+// GESTIÓN DE SUBTIPOS
+// ==========================================
+function crearSubtipo() {
+    const consorcioId = getConsorcioActualId();
+    if (!consorcioId) {
+        alert("Por favor, seleccione primero un consorcio.");
+        return;
+    }
+
+    const input = document.getElementById('input-nuevo-subtipo');
+    const nombre = input ? input.value.trim().toUpperCase() : '';
+    if (!nombre) {
+        alert("Ingrese un nombre para el subtipo.");
+        return;
+    }
+
+    if (!subtiposPorConsorcio[consorcioId]) {
+        subtiposPorConsorcio[consorcioId] = [];
+    }
+
+    if (subtiposPorConsorcio[consorcioId].includes(nombre)) {
+        alert(`El subtipo "${nombre}" ya existe.`);
+        return;
+    }
+
+    subtiposPorConsorcio[consorcioId].push(nombre);
+    input.value = '';
+
+    renderizarListasGestion();
+    sincronizarVistaPrevia();
+}
+
+function eliminarSubtipo(index) {
+    const consorcioId = getConsorcioActualId();
+    if (!consorcioId || !subtiposPorConsorcio[consorcioId]) return;
+
+    subtiposPorConsorcio[consorcioId].splice(index, 1);
+    renderizarListasGestion();
+    sincronizarVistaPrevia();
+}
+
+function renderizarListaSubtipos() {
+    const consorcioId = getConsorcioActualId();
+    const contenedor = document.getElementById('lista-subtipos-tags');
+    if (!contenedor) return;
+
+    contenedor.innerHTML = '';
+    const lista = (consorcioId && subtiposPorConsorcio[consorcioId]) ? subtiposPorConsorcio[consorcioId] : [];
+
+    lista.forEach((subtipo, idx) => {
+        const tag = document.createElement('span');
+        tag.className = 'badge bg-secondary d-inline-flex align-items-center gap-1 p-2 fs-7';
+        tag.innerHTML = `
+            ${subtipo}
+            <button type="button" class="btn-close btn-close-white" style="font-size: 0.5rem;" onclick="eliminarSubtipo(${idx})"></button>
+        `;
+        contenedor.appendChild(tag);
+    });
+}
+
+function actualizarSelectoresSubtipos() {
+    const consorcioId = getConsorcioActualId();
+    const lista = (consorcioId && subtiposPorConsorcio[consorcioId]) ? subtiposPorConsorcio[consorcioId] : [];
+    const selects = document.querySelectorAll('.select-subtipo');
+
+    selects.forEach(select => {
+        const valActual = select.value;
+        let html = '<option value="">-- Seleccionar --</option>';
+        lista.forEach(st => {
+            const selected = st === valActual ? 'selected' : '';
+            html += `<option value="${st}" ${selected}>${st}</option>`;
+        });
+        select.innerHTML = html;
+    });
+}
+
+// ==========================================
+// GESTIÓN DE COLUMNAS / GRUPOS
+// ==========================================
+function crearGrupo() {
+    const consorcioId = getConsorcioActualId();
+    if (!consorcioId) {
+        alert("Por favor, seleccione primero un consorcio.");
+        return;
+    }
+
+    const input = document.getElementById('input-nuevo-grupo');
+    const nombre = input ? input.value.trim().toUpperCase() : '';
+    if (!nombre) {
+        alert("Ingrese un nombre para la columna.");
+        return;
+    }
+
+    if (!gruposPorConsorcio[consorcioId]) {
+        gruposPorConsorcio[consorcioId] = [];
+    }
+
+    const existe = gruposPorConsorcio[consorcioId].some(g => g.nombre.toUpperCase() === nombre);
+    if (existe) {
+        alert(`La columna "${nombre}" ya existe.`);
+        return;
+    }
+
+    const val = 'grupo_' + Date.now();
+    gruposPorConsorcio[consorcioId].push({ val: val, nombre: nombre });
+    input.value = '';
+
+    renderizarListasGestion();
+    sincronizarVistaPrevia();
+}
+
+function eliminarGrupo(index) {
+    const consorcioId = getConsorcioActualId();
+    if (!consorcioId || !gruposPorConsorcio[consorcioId]) return;
+
+    gruposPorConsorcio[consorcioId].splice(index, 1);
+    renderizarListasGestion();
+    sincronizarVistaPrevia();
+}
+
+function renderizarListaGrupos() {
+    const consorcioId = getConsorcioActualId();
+    const contenedor = document.getElementById('lista-grupos-tags');
+    if (!contenedor) return;
+
+    contenedor.innerHTML = '';
+    const lista = (consorcioId && gruposPorConsorcio[consorcioId]) ? gruposPorConsorcio[consorcioId] : [];
+
+    lista.forEach((grupo, idx) => {
+        const tag = document.createElement('span');
+        tag.className = 'badge bg-success d-inline-flex align-items-center gap-1 p-2 fs-7';
+        tag.innerHTML = `
+            ${grupo.nombre}
+            <button type="button" class="btn-close btn-close-white" style="font-size: 0.5rem;" onclick="eliminarGrupo(${idx})"></button>
+        `;
+        contenedor.appendChild(tag);
+    });
+}
+
+function actualizarSelectoresGrupos() {
+    const consorcioId = getConsorcioActualId();
+    const lista = (consorcioId && gruposPorConsorcio[consorcioId]) ? gruposPorConsorcio[consorcioId] : [];
+    const selects = document.querySelectorAll('.select-grupo');
+
+    selects.forEach(select => {
+        const valActual = select.value;
+        let html = '<option value="">-- Seleccionar --</option>';
+        lista.forEach(g => {
+            const selected = g.val === valActual ? 'selected' : '';
+            html += `<option value="${g.val}" ${selected}>${g.nombre}</option>`;
+        });
+        select.innerHTML = html;
+    });
+}
+
+function renderizarListasGestion() {
+    renderizarListaSubtipos();
+    renderizarListaGrupos();
+    actualizarSelectoresSubtipos();
+    actualizarSelectoresGrupos();
+}
+
+// ==========================================
+// FILAS Y VISTA PREVIA
+// ==========================================
+function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', grupoSel = '', monto = '') {
+    const tbody = document.getElementById('body-gastos');
+    const consorcioId = getConsorcioActualId();
+    const grupos = (consorcioId && gruposPorConsorcio[consorcioId]) ? gruposPorConsorcio[consorcioId] : [];
+    const subtipos = (consorcioId && subtiposPorConsorcio[consorcioId]) ? subtiposPorConsorcio[consorcioId] : [];
+
+    let opcionesGrupos = '<option value="">-- Seleccionar --</option>';
+    grupos.forEach(g => {
+        opcionesGrupos += `<option value="${g.val}" ${g.val === grupoSel ? 'selected' : ''}>${g.nombre}</option>`;
+    });
+
+    let opcionesSubtipos = '<option value="">-- Seleccionar --</option>';
+    subtipos.forEach(st => {
+        opcionesSubtipos += `<option value="${st}" ${st === subtipoSel ? 'selected' : ''}>${st}</option>`;
+    });
+
+    const filaId = `gasto-${contadorFilas}`;
+    const tr = document.createElement('tr');
+    tr.id = filaId;
+    tr.innerHTML = `
+        <td>
+            <input type="text" name="gastos_concepto[]" class="form-control input-concepto" value="${concepto}" required>
+        </td>
+        <td>
+            <select name="gastos_tipo[]" class="form-select select-tipo" required>
+                <option value="ordinario" ${tipo === 'ordinario' ? 'selected' : ''}>Ordinario</option>
+                <option value="extraordinario" ${tipo === 'extraordinario' ? 'selected' : ''}>Extraordinario</option>
+            </select>
+        </td>
+        <td>
+            <select name="gastos_subtipo[]" class="form-select select-subtipo" required>
+                ${opcionesSubtipos}
+            </select>
+        </td>
+        <td>
+            <select name="gastos_grupo[]" class="form-select select-grupo" required>
+                ${opcionesGrupos}
+            </select>
+        </td>
+        <td>
+            <input type="text" inputmode="decimal" min="0" name="gastos_monto[]" class="form-control input-monto" placeholder="0.00" value="${monto}" required>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="eliminarFila('${filaId}')">✕</button>
+        </td>
+    `;
+
+    tbody.appendChild(tr);
+    contadorFilas++;
+    sincronizarVistaPrevia();
+}
+
+function eliminarFila(id) {
+    const fila = document.getElementById(id);
+    if (fila) fila.remove();
+    sincronizarVistaPrevia();
+}
+
+function sincronizarVistaPrevia() {
+    const mes = document.getElementById('select-mes').value;
+    const anio = document.getElementById('select-anio').value;
+    const cierre = document.getElementById('fecha_cierre').value;
+    const venc = document.getElementById('fecha_vencimiento_1').value;
+
+    document.getElementById('lbl-periodo').textContent = `${mesesNombres[mes]} ${anio}`;
+    document.getElementById('lbl-cierre').textContent = formatearFechaAR(cierre);
+    document.getElementById('lbl-vencimiento').textContent = formatearFechaAR(venc);
+
+    const camposAdmin = [
+        ['admin_razon', 'lbl-admin-razon'], ['admin_nombre', 'lbl-admin-nombre'],
+        ['admin_domicilio', 'lbl-admin-domicilio'], ['admin_fiscal', 'lbl-admin-fiscal'],
+        ['admin_cuit', 'lbl-admin-cuit'], ['admin_rpa', 'lbl-admin-rpa'],
+        ['admin_telefono', 'lbl-admin-telefono'], ['admin_mail', 'lbl-admin-mail'],
+    ];
+    camposAdmin.forEach(([inputId, lblId]) => {
+        const val = document.getElementById(inputId).value.trim();
+        document.getElementById(lblId).textContent = val !== '' ? val : '-';
+    });
+
+    sincronizarTablaGastosVistaPrevia();
+}
+
+function alSeleccionarConsorcio(consorcioId) {
+    renderizarListasGestion();
+
+    const info = datosConsorcios[consorcioId];
+    if (info) {
+        document.getElementById('lbl-consorcio-nombre').textContent = info.nombre;
+        document.getElementById('lbl-consorcio-localidad').textContent = info.localidad;
+        document.getElementById('lbl-consorcio-cuit').textContent = info.cuit;
+        document.getElementById('lbl-consorcio-suterh').textContent = info.suterh;
+        document.getElementById('lbl-consorcio-horario').textContent = info.horario_atencion;
+
+        setValorInput('admin_razon', info.admin_razon);
+        setValorInput('admin_nombre', info.admin_nombre);
+        setValorInput('admin_domicilio', info.admin_domicilio);
+        setValorInput('admin_fiscal', info.admin_fiscal);
+        setValorInput('admin_cuit', info.admin_cuit);
+        setValorInput('admin_rpa', info.admin_rpa);
+        setValorInput('admin_telefono', info.admin_telefono);
+        setValorInput('admin_mail', info.admin_mail);
+    } else {
+        document.getElementById('lbl-consorcio-nombre').textContent = '--';
+        document.getElementById('lbl-consorcio-localidad').textContent = '--';
+        document.getElementById('lbl-consorcio-cuit').textContent = '--';
+        document.getElementById('lbl-consorcio-suterh').textContent = '--';
+        document.getElementById('lbl-consorcio-horario').textContent = '-';
+
+        ['admin_razon', 'admin_nombre', 'admin_domicilio', 'admin_fiscal',
+         'admin_cuit', 'admin_rpa', 'admin_telefono', 'admin_mail'].forEach(id => {
+            setValorInput(id, '-');
+        });
+    }
+
+    sincronizarVistaPrevia();
+}
+
+function calcularFechasSugeridas() {
+    const mesInt = parseInt(document.getElementById('select-mes').value, 10);
+    const anioInt = parseInt(document.getElementById('select-anio').value, 10);
+
+    const ultimoDia = new Date(anioInt, mesInt, 0).getDate();
+    const mesStr = mesInt.toString().padStart(2, '0');
+    document.getElementById('fecha_cierre').value = `${anioInt}-${mesStr}-${ultimoDia.toString().padStart(2, '0')}`;
+
+    let mesSig = mesInt + 1;
+    let anioSig = anioInt;
+    if (mesSig > 12) {
+        mesSig = 1;
+        anioSig += 1;
+    }
+    const mesSigStr = mesSig.toString().padStart(2, '0');
+    document.getElementById('fecha_vencimiento_1').value = `${anioSig}-${mesSigStr}-10`;
+}
+
+function actualizarFechasYVista() {
+    calcularFechasSugeridas();
+    sincronizarVistaPrevia();
+}
+
+function formatearFechaAR(fechaIso) {
+    if (!fechaIso) return '--/--/----';
+    const partes = fechaIso.split('-');
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : fechaIso;
+}
+
+function sincronizarTablaGastosVistaPrevia() {
+    const consorcioId = getConsorcioActualId();
+    const filas = document.querySelectorAll('#body-gastos tr');
+    const tablaMatriz = document.getElementById('pv-tabla-gastos-matriz');
+    
+    if (!tablaMatriz) return;
+
+    const gruposConsorcio = (consorcioId && gruposPorConsorcio[consorcioId]) ? gruposPorConsorcio[consorcioId] : [];
+
+    if (!consorcioId || gruposConsorcio.length === 0) {
+        tablaMatriz.innerHTML = `
+            <thead class="table-secondary">
+                <tr>
+                    <th class="text-start">Concepto / Detalle</th>
+                    <th class="text-center">Monto ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="2" class="text-center text-muted">Seleccione un consorcio para ver las columnas</td>
+                </tr>
+            </tbody>
+        `;
+        return;
+    }
+
+    const gastosPorSubtipo = {};
+
+    filas.forEach(fila => {
+        const concepto = fila.querySelector('.input-concepto')?.value || '';
+        const subtipoSelect = fila.querySelector('.select-subtipo');
+        const subtipoVal = subtipoSelect?.value || '';
+        const subtipo = subtipoVal.trim() !== '' ? subtipoVal.trim().toUpperCase() : 'GASTOS GENERALES';
+        const grupoSelect = fila.querySelector('.select-grupo');
+        const grupoVal = grupoSelect?.value;
+        const monto = parseFloat(fila.querySelector('.input-monto')?.value) || 0;
+
+        if (concepto.trim() !== '' || monto > 0) {
+            if (!gastosPorSubtipo[subtipo]) {
+                gastosPorSubtipo[subtipo] = [];
+            }
+            gastosPorSubtipo[subtipo].push({ concepto, grupoVal, monto });
+        }
+    });
+
+    let htmlMatriz = '';
+    let totalesPorColumna = new Array(gruposConsorcio.length).fill(0);
+    let hayGastos = false;
+
+    for (const [subtipo, listaGastos] of Object.entries(gastosPorSubtipo)) {
+        hayGastos = true;
+
+        htmlMatriz += `
+            <thead class="border-top">
+                <tr style="background-color: #1c7c6d; color: #ffffff;">
+                    <th colspan="${gruposConsorcio.length + 1}" class="text-center text-uppercase fw-bold py-1 fs-6">
+                        ${subtipo}
+                    </th>
+                </tr>
+                <tr class="table-secondary text-center align-middle small">
+                    <th class="text-start" style="min-width: 140px;">Concepto / Detalle</th>`;
+
+        gruposConsorcio.forEach(g => {
+            htmlMatriz += `<th class="text-center" style="min-width: 80px;">${g.nombre}</th>`;
+        });
+
+        htmlMatriz += `</tr></thead><tbody>`;
+
+        listaGastos.forEach(item => {
+            htmlMatriz += `<tr><td class="text-start ps-3">${item.concepto || '<em>(Sin concepto)</em>'}</td>`;
+            
+            gruposConsorcio.forEach((g, idx) => {
+                if (item.grupoVal === g.val) {
+                    totalesPorColumna[idx] += item.monto;
+                    htmlMatriz += `<td class="text-end fw-bold text-dark">$ ${item.monto.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+                } else {
+                    htmlMatriz += `<td class="text-center text-muted small">-</td>`;
+                }
+            });
+            
+            htmlMatriz += `</tr>`;
+        });
+
+        htmlMatriz += `</tbody>`;
+    }
+
+    if (!hayGastos) {
+        htmlMatriz = `
+            <thead class="table-secondary">
+                <tr>
+                    <th class="text-start">Concepto / Detalle</th>`;
+        gruposConsorcio.forEach(g => {
+            htmlMatriz += `<th class="text-center">${g.nombre}</th>`;
+        });
+        htmlMatriz += `</tr></thead>
+            <tbody>
+                <tr>
+                    <td colspan="${gruposConsorcio.length + 1}" class="text-center text-muted py-3">
+                        Sin gastos ingresados
+                    </td>
+                </tr>
+            </tbody>`;
+    } else {
+        htmlMatriz += `
+            <tfoot>
+                <tr class="fw-bold table-active border-top border-2">
+                    <td class="text-start">TOTAL ESTIMADO:</td>`;
+        
+        totalesPorColumna.forEach(tot => {
+            htmlMatriz += `<td class="text-end">$ ${tot.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>`;
+        });
+
+        htmlMatriz += `</tr></tfoot>`;
+    }
+
+    tablaMatriz.innerHTML = htmlMatriz;
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+    const formLiquidacion = document.getElementById('form-liquidacion');
+    const selectConsorcio = document.getElementById('select-consorcio');
+
+    calcularFechasSugeridas();
+
+    if (selectConsorcio.value) {
+        alSeleccionarConsorcio(selectConsorcio.value);
+    } else {
+        ['admin_razon', 'admin_nombre', 'admin_domicilio', 'admin_fiscal',
+         'admin_cuit', 'admin_rpa', 'admin_telefono', 'admin_mail'].forEach(id => {
+            setValorInput(id, '-');
+        });
+        sincronizarVistaPrevia();
+    }
+
+    agregarFilaGasto();
+
+    formLiquidacion.addEventListener('input', (e) => {
+        if (e.target.matches('.input-concepto, .input-monto, #admin_razon, #admin_nombre, #admin_domicilio, #admin_fiscal, #admin_cuit, #admin_rpa, #admin_telefono, #admin_mail')) {
+            sincronizarVistaPrevia();
+        }
+    });
+
+    formLiquidacion.addEventListener('change', (e) => {
+        if (e.target.matches('.select-tipo, .select-subtipo, .select-grupo')) {
+            sincronizarVistaPrevia();
+        }
+    });
+
+    selectConsorcio.addEventListener('change', (e) => alSeleccionarConsorcio(e.target.value));
+    document.getElementById('select-mes').addEventListener('change', actualizarFechasYVista);
+    document.getElementById('select-anio').addEventListener('change', actualizarFechasYVista);
+});
+</script>
+
+</body>
+</html>
