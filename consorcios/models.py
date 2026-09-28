@@ -16,6 +16,11 @@ class Consorcio(models.Model):
     def __str__(self):
         return f"{self.nombre} - {self.calle} {self.altura}, CP {self.codigo_postal}"
 
+    def save(self, *args, **kwargs):
+        # Validar que el CUIT tenga 11 dígitos
+        if len(self.cuit) != 11 or not self.cuit.isdigit():
+            raise ValueError("El CUIT debe tener 11 dígitos numéricos.")
+        super().save(*args, **kwargs)
 
 class GrupoProrrateo(models.Model):
     """
@@ -33,6 +38,10 @@ class GrupoProrrateo(models.Model):
     def __str__(self):
         return f"{self.consorcio.nombre} - Columna {self.codigo} ({self.nombre})"
 
+
+#####################################################################
+#                          UNIDAD FUNCIONAL                         #
+#####################################################################
 
 class UnidadFuncional(models.Model):
     class Meta:

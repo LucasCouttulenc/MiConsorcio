@@ -33,15 +33,15 @@ class TablaConsorcios(tables.Table):
 
 
 class FiltroConsorcios(django_filters.FilterSet):
-    direccion = django_filters.CharFilter(
+    texto = django_filters.CharFilter(
         method="filtrar_por_texto",
         label="Buscar",
         widget=TextInput(attrs={"placeholder": "Buscar"}),
-    )
+    ) 
 
     class Meta:
         model = Consorcio
-        fields = ["direccion"]
+        fields = ["texto"]
 
     def filtrar_por_texto(self, queryset, name, value)-> models.QuerySet:
         """
@@ -54,7 +54,14 @@ class FiltroConsorcios(django_filters.FilterSet):
         :rtype: QuerySet[Beca]
         """
 
-        return queryset.filter(Q(direccion__icontains=value))
+        return queryset.filter(
+            Q(cuit__icontains=value) |
+            Q(nombre__icontains=value) |
+            Q(calle__icontains=value) |
+            Q(altura__icontains=value) |
+            Q(codigo_postal__icontains=value)
+        )
+
     
 class TablaUnidadesFuncionales(tables.Table):
     
