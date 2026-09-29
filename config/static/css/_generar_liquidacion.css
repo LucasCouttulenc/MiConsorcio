@@ -1,0 +1,445 @@
+
+
+:root {
+    --gl-primary: #15146e;
+    --gl-primary-dark: #061c66;
+    --gl-secondary: #4a5568;
+    --gl-secondary-light: #edf2f7;
+    --gl-blue-header: #1c3e7c;
+    --gl-bg-main: #f8fafc;
+    --gl-card-bg: #ffffff;
+    --gl-border-color: #cbd5e0;
+    --gl-border-light: #e2e8f0;
+    --gl-text-dark: #2d3748;
+    --gl-text-muted: #718096;
+    --gl-danger: #e53e3e;
+    --gl-danger-hover: #c53030;
+    --gl-success: #013786;
+    --gl-radius: 8px;
+    --gl-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    --gl-transition: all 0.2s ease-in-out;
+}
+
+/* Layout General */
+.gl-wrapper {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--gl-text-dark);
+    background-color: var(--gl-bg-main);
+}
+
+.gl-header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--gl-text-dark);
+}
+
+/* Grilla principal de 2 columnas */
+.gl-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+    .gl-grid {
+        grid-template-columns: 7fr 5fr;
+    }
+}
+
+/* Tarjetas (Cards) */
+.gl-card {
+    background-color: var(--gl-card-bg);
+    border: 1px solid var(--gl-border-light);
+    border-radius: var(--gl-radius);
+    box-shadow: var(--gl-shadow);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.gl-card-header {
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--gl-border-light);
+}
+
+.gl-card-header-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.gl-card-header-sub {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+.gl-card-header-primary {
+    background-color: var(--gl-primary);
+    color: #ffffff;
+}
+
+.gl-card-header-secondary {
+    background-color: var(--gl-secondary);
+    color: #ffffff;
+}
+
+.gl-card-header-dark {
+    background-color: #2d3748;
+    color: #ffffff;
+}
+
+.gl-card-body {
+    padding: 1.25rem;
+}
+
+.gl-card-body-nopadding {
+    padding: 0;
+}
+
+/* Filas y Columnas de Formulario */
+.gl-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.gl-form-row:last-child {
+    margin-bottom: 0;
+}
+
+.gl-col-12 { flex: 0 0 100%; width: 100%; }
+.gl-col-6 { flex: 1 1 calc(50% - 0.5rem); min-width: 200px; }
+.gl-col-4 { flex: 1 1 calc(33.333% - 0.67rem); min-width: 140px; }
+
+.gl-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.gl-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gl-text-dark);
+}
+
+/* Inputs y Selects */
+.gl-input,
+.gl-select,
+.form-control,
+.form-select {
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--gl-border-color);
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: var(--gl-text-dark);
+    transition: var(--gl-transition);
+    box-sizing: border-box;
+}
+
+.gl-input:focus,
+.gl-select:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--gl-primary);
+    box-shadow: 0 0 0 3px rgba(28, 124, 109, 0.15);
+}
+
+.gl-input-sm,
+.gl-select-sm {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.825rem;
+}
+
+/* Grupos Combinados (Input + Botón) */
+.gl-input-group {
+    display: flex;
+    width: 100%;
+}
+
+.gl-input-group .gl-input,
+.gl-input-group .gl-select {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.gl-input-group .gl-select + .gl-select {
+    border-radius: 0;
+    border-left: 0;
+}
+
+.gl-input-group .gl-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    white-space: nowrap;
+}
+
+/* Botones Custom */
+.gl-btn,
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--gl-transition);
+    text-decoration: none;
+}
+
+.gl-btn-sm,
+.btn-sm {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.8rem;
+}
+
+.gl-btn-primary,
+.btn-primary {
+    background-color: var(--gl-primary);
+    color: #ffffff;
+}
+.gl-btn-primary:hover,
+.btn-primary:hover {
+    background-color: var(--gl-primary-dark);
+}
+
+.gl-btn-secondary,
+.btn-secondary {
+    background-color: #cbd5e0;
+    color: var(--gl-text-dark);
+}
+.gl-btn-secondary:hover,
+.btn-secondary:hover {
+    background-color: #a0aec0;
+}
+
+.gl-btn-danger-outline,
+.btn-outline-danger {
+    background-color: transparent;
+    border-color: var(--gl-danger);
+    color: var(--gl-danger);
+}
+.gl-btn-danger-outline:hover,
+.btn-outline-danger:hover {
+    background-color: var(--gl-danger);
+    color: #ffffff;
+}
+
+.gl-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Gestión de Subtipos y Columnas */
+.gl-config-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+@media (min-width: 600px) {
+    .gl-config-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.gl-config-col-border {
+    border-right: 1px solid var(--gl-border-light);
+    padding-right: 1rem;
+}
+
+.gl-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    min-height: 32px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+    color: #ffffff;
+}
+
+.bg-secondary { background-color: var(--gl-secondary) !important; }
+.bg-success { background-color: var(--gl-success) !important; }
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.85;
+}
+.btn-close:hover { opacity: 1; }
+
+/* Tabla Dinámica de Gastos */
+.gl-table-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.gl-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.gl-table th,
+.gl-table td {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--gl-border-light);
+    vertical-align: middle;
+}
+
+.gl-table th {
+    background-color: #f7fafc;
+    font-weight: 700;
+    color: var(--gl-text-dark);
+    text-align: left;
+}
+
+/* Panel de Vista Previa */
+.gl-preview-sticky {
+    position: sticky;
+    top: 20px;
+}
+
+.gl-preview-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gl-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.gl-preview-card {
+    background-color: #ffffff;
+    border-radius: var(--gl-radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--gl-border-light);
+    overflow: hidden;
+}
+
+/* Banner Superior Vista Previa */
+.banner-expensas {
+    background-color: var(--gl-blue-header);
+    color: #ffffff;
+    padding: 1rem;
+    text-align: center;
+}
+.banner-expensas h3 {
+    font-size: 1.3rem;
+    letter-spacing: 0.5px;
+    margin: 0 0 0.4rem 0;
+    font-weight: 700;
+}
+.banner-expensas p {
+    margin: 2px 0;
+    font-size: 0.875rem;
+    opacity: 0.95;
+}
+
+/* Bloque Cabecera Vista Previa */
+.cabecera-info {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--gl-primary);
+    padding: 1rem;
+    font-size: 0.825rem;
+    color: var(--gl-text-dark);
+}
+
+.cabecera-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.cabecera-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.cabecera-col-border {
+    border-right: 1px solid var(--gl-border-light);
+    padding-right: 0.75rem;
+}
+
+.cabecera-info h6 {
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    margin: 0 0 0.4rem 0;
+    color: #020e24;
+}
+
+.gl-preview-table-container {
+    padding: 1rem;
+    background-color: #f8fafc;
+}
+
+.gl-preview-table-title {
+    font-weight: 700;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid var(--gl-border-light);
+    color: var(--gl-text-dark);
+}
+
+/* Tabla Matriz de Vista Previa */
+#pv-tabla-gastos-matriz {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    background-color: #ffffff;
+}
+
+#pv-tabla-gastos-matriz th,
+#pv-tabla-gastos-matriz td {
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--gl-border-color);
+}
+
+/* Utilidades para mantener compatibilidad con generador dinámico de JS */
+.text-center { text-align: center !important; }
+.text-start { text-align: left !important; }
+.text-end { text-align: right !important; }
+.fw-bold { font-weight: 700 !important; }
+.text-muted { color: var(--gl-text-muted) !important; }
+.text-dark { color: var(--gl-text-dark) !important; }
+.text-uppercase { text-transform: uppercase !important; }
+.small { font-size: 0.775rem !important; }
+.py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+.ps-3 { padding-left: 0.75rem !important; }
+.border-top { border-top: 1px solid var(--gl-border-color) !important; }
+.table-secondary { background-color: #edf2f7 !important; }
+.table-active { background-color: #e2e8f0 !important; }

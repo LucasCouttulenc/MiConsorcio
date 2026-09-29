@@ -20,7 +20,6 @@ from django.contrib.auth import views as auth_views
 from usuarios import views as views_usuarios
 from gastos import views as views_gastos
 from consorcios import views as views_consorcios
-from .views import pagina_en_construccion
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -40,5 +39,7 @@ urlpatterns = [
 
     # Liquidaciones
     path('liquidaciones/generar/', views_gastos.generar_liquidacion, name='generar_liquidacion'),
+    path('liquidaciones/<int:liquidacion_id>/', views_gastos.detalle_liquidacion, name='detalle_liquidacion'),
+    path('liquidaciones/<int:liquidacion_id>/pdf/', views_gastos.descargar_liquidacion_pdf, name='descargar_liquidacion_pdf'),
    
 ]
