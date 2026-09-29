@@ -19,6 +19,9 @@ class Gasto(models.Model):
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.PROTECT, related_name='gastos', verbose_name="Columna / Grupo de Prorrateo")
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM (ej: 2026-03)", verbose_name="Período Imputado")
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
+    liquidacion = models.ForeignKey('Liquidacion', on_delete=models.CASCADE, related_name='gastos_cargados', null=True, blank=True)
+    subtipo = models.CharField(max_length=100, blank=True)
+    posicion = models.PositiveIntegerField(default=0)
 
     class Meta:
         verbose_name = "Gasto"
@@ -32,10 +35,14 @@ class Liquidacion(models.Model):
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='liquidaciones')
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM", verbose_name="Período Liquidado")
     fecha_emision = models.DateField(auto_now_add=True, verbose_name="Fecha de Emisión")
-    fecha_vencimiento_1 = models.DateField(verbose_name="Primer Vencimiento")
+    fecha_vencimiento_1 = models.DateField(null=True, blank=True, verbose_name="Primer Vencimiento")
+    fecha_cierre = models.DateField(null=True, blank=True, verbose_name="Cierre de expensas")
     total_ordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_extraordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     cerrada = models.BooleanField(default=False, verbose_name="¿Cerrada?")
+    datos_borrador = models.JSONField(default=dict, blank=True)
+    documento = models.BinaryField(null=True, blank=True)
+    actualizada = models.DateTimeField(auto_now=True, null=True)
 
     class Meta:
         unique_together = ('consorcio', 'periodo')
@@ -44,6 +51,14 @@ class Liquidacion(models.Model):
 
     def __str__(self):
         return f"Liquidación {self.consorcio.nombre} - Período {self.periodo}"
+
+    @property
+    def total(self):
+        return self.total_ordinario + self.total_extraordinario
+
+    @property
+    def cantidad_gastos_borrador(self):
+        return sum(1 for gasto in self.datos_borrador.get('gastos', []) if gasto.get('concepto') or gasto.get('monto'))
 
 
 class DetalleLiquidacionUF(models.Model):

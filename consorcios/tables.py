@@ -15,9 +15,9 @@ class TablaConsorcios(tables.Table):
     
     # Acciones
 
-    gestionar = TemplateColumn(
-        template_code='<a href="{% url "gestionar_consorcio" record.id %}" class="tabla__boton-accion-registro">Gestionar</a>',
-        verbose_name="Gestionar",
+    liquidaciones = TemplateColumn(
+        template_code='<a href="{% url "listar_liquidaciones" %}?consorcio={{ record.id }}" class="tabla__boton-accion-registro">Liquidaciones</a>',
+        verbose_name="Liquidaciones",
         orderable=False,
         exclude_from_export=True
     )
@@ -30,6 +30,13 @@ class TablaConsorcios(tables.Table):
         exclude_from_export=True
     )
     """Botón que redirige a la vista de gestión de las unidades funcionales del consorcio."""
+
+    opciones = TemplateColumn(
+        template_code='<details class="tabla__menu-opciones"><summary aria-label="Opciones de {{ record.nombre }}">⋮</summary><a href="{% url "gestionar_consorcio" record.id %}">Editar Consorcio</a></details>',
+        verbose_name="",
+        orderable=False,
+        exclude_from_export=True,
+    )
 
 
 class FiltroConsorcios(django_filters.FilterSet):
