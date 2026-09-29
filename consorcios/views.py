@@ -140,7 +140,7 @@ def crear_unidad_funcional(request, consorcio_id):
     administrador = Administrador.objects.filter(usuario=usuario).first()
     if not usuario.is_superuser and not administrador.administra(consorcio_id):
         messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
-        return redirect('listar_unidades_funcionales', consorcio_id=consorcio_id)
+        return redirect('listar_consorcios')
 
     consorcio = Consorcio.objects.filter(id=consorcio_id).first()
 
