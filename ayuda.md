@@ -16,6 +16,10 @@ Ver detalle en config/management/commands/iniciar.py
 ```
 sudo docker compose exec web python manage.py iniciardb
 ```
+En Windows:
+```
+docker compose exec web python manage.py migrar
+```
 
 Primero hace un flush de la base, así que si se quiere resetear también funciona.
 
@@ -50,6 +54,12 @@ Si se ejecuta con sudo ejecutar el siguiente comando para no tener un tema de pe
 ```
 sudo chown -R $USER:$USER .
 ```
+
+### Comando para crear usuarios (Win)
+```
+docker compose exec web python manage.py iniciardb
+```
+> Borra todos los datos de la DB
 
 ### Pgadmin
 
