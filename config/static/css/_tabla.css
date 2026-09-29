@@ -312,3 +312,11 @@
     background-color: #eff6ff;
     color: #2563eb;
 }
+
+.tabla tbody td:has(.tabla__menu-opciones) { overflow: visible; position: relative; }
+.contenedor-tabla:has(.tabla__menu-opciones) { overflow: visible; }
+.tabla__menu-opciones { position: relative; overflow: visible; }
+.tabla__menu-opciones summary { list-style: none; cursor: pointer; font-size: 20px; color: #334155; }
+.tabla__menu-opciones summary::-webkit-details-marker { display: none; }
+.tabla__menu-opciones a { display: block; padding: 9px 12px; white-space: nowrap; }
+.tabla__menu-opciones[open] a { position: absolute; top: 100%; right: 0; z-index: 5; background: white; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 10px #0002; }

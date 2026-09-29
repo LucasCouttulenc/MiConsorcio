@@ -11,10 +11,18 @@
 <body>
 
 <div class="gl-wrapper">
+    {% for message in messages %}
+        <div style="padding:10px 14px; margin-bottom:12px; border-radius:6px; background:#fff3cd; border:1px solid #e0c36a;">{{ message }}</div>
+    {% endfor %}
     <h2 class="gl-header-title">Generar Liquidación de Expensas</h2>
 
-    <form method="POST" id="form-liquidacion">
+    <form method="POST" action="{% url 'finalizar_liquidacion' %}" id="form-liquidacion" data-autosave-url="{% url 'autosave_liquidacion' %}">
         {% csrf_token %}
+        <input type="hidden" name="liquidacion_id" id="liquidacion-id" value="{{ liquidacion.id|default:'' }}">
+        <input type="hidden" name="gastos" id="gastos-json">
+        <input type="hidden" name="grupos_nuevos" id="grupos-nuevos-json">
+        <input type="hidden" name="subtipos" id="subtipos-json">
+        <small id="estado-guardado" class="text-muted" aria-live="polite"></small>
 
         <div class="gl-grid">
             <!-- COLUMNA IZQUIERDA: FORMULARIO DE CARGA -->
@@ -201,11 +209,7 @@
                     </div>
                 </div>
 
-                <!-- BOTONES DE ACCIÓN -->
-                <div class="gl-actions">
-                    <a href="{% url 'bienvenida' %}" class="gl-btn gl-btn-secondary">Cancelar</a>
-                    <button type="submit" class="gl-btn gl-btn-primary">Crear Liquidación</button>
-                </div>
+                
 
             </div>
 
@@ -264,8 +268,14 @@
                 </div>
             </div>
         </div>
+        <!-- BOTONES DE ACCIÓN -->
+        <div class="d-flex justify-content-end gap-2 my-4">
+            <a href="{% url 'listar_liquidaciones' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary fw-bold px-4">Finalizar y calcular liquidación</button>
+        </div>
     </form>
 </div>
+{{ datos_iniciales|json_script:"datos-iniciales" }}
 
 <!-- Inyección de variables Django a JavaScript -->
 <script>
@@ -316,6 +326,4 @@
 <!-- Carga de scripts utilizando el tag estático de Django -->
 <script src="{% static 'js/liquidacion_gestion.js' %}"></script>
 <script src="{% static 'js/liquidacion_render.js' %}"></script>
-
-</body>
-</html>
+<script src="{% static 'js/liquidacion_autosave.js' %}"></script>
