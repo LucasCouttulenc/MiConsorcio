@@ -211,13 +211,17 @@ def _tabla_total_general(totales, nombres_grupos, est):
     return tabla
 
 
-def generar_pdf_liquidacion(liquidacion, gastos, admin=None):
+def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     """
     liquidacion : instancia de Liquidacion (con .consorcio)
     gastos      : iterable de Gasto (con .grupo_id, .concepto, .monto, .subtipo)
     admin       : dict con las claves admin_razon, admin_nombre, ... (opcional)
     Devuelve los bytes del PDF.
     """
+    if gastos is None:
+        gastos = liquidacion.gastos_cargados.select_related('grupo').order_by('posicion')
+    if admin is None:
+        admin = (liquidacion.datos_borrador or {}).get('administracion', {})
     est = _estilos()
     gastos = list(gastos)
 

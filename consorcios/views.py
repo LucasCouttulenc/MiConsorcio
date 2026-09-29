@@ -96,7 +96,7 @@ class ListarUnidadesFuncionales(Lista):
     acciones = [
         { "nombre": "Crear", "tipo": "link", "perm": "consorcios.add_unidadfuncional", "url": "crear_unidad_funcional"},
     ]
-    columnas_con_permiso = {} # dict
+    columnas_con_permiso = {"gestionar": "consorcios.change_unidadfuncional"} # dict
     columnas_a_ocultar = {} # set
 
     def get_queryset(self):
@@ -140,7 +140,7 @@ def crear_unidad_funcional(request, consorcio_id):
     administrador = Administrador.objects.filter(usuario=usuario).first()
     if not usuario.is_superuser and not administrador.administra(consorcio_id):
         messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
-        return redirect('listar_unidades_funcionales', consorcio_id=consorcio_id)
+        return redirect('listar_consorcios')
 
     consorcio = Consorcio.objects.filter(id=consorcio_id).first()
 
@@ -151,4 +151,30 @@ def crear_unidad_funcional(request, consorcio_id):
         vista_exito="listar_unidades_funcionales",
         params_vista_exito={"consorcio_id": consorcio_id},
         modelo_secundario=consorcio
+    )
+
+@login_required
+@permission_required('consorcios.change_unidadfuncional', raise_exception=True)
+def gestionar_unidad_funcional(request, unidad_id):
+    """
+    Vista para gestionar una unidad funcional específica.
+    Permite ver y editar los datos de la unidad funcional.
+
+    :param request: Objeto HttpRequest.
+    :param id: ID de la unidad funcional a gestionar.
+    :return: Renderiza la plantilla de gestión de unidades funcionales.
+    """
+
+    unidad_funcional = UnidadFuncional.objects.filter(id=unidad_id).first()
+    consorcio_id = unidad_funcional.consorcio.id
+    administrador = Administrador.objects.filter(usuario=request.user).first()
+    if not request.user.is_superuser and not administrador.administra(consorcio_id):
+        messages.error(request, "No tenes permisos para gestionar esta unidad funcional.")
+        return redirect('listar_consorcios')
+
+    return gestionar_modelo(
+        request=request,
+        id_modelo=unidad_id,
+        formulario_modelo=FormularioUnidadFuncional,
+        template="gestionar_unidad_funcional.html",
     )

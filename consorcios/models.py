@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Consorcio(models.Model):
     class Meta:
@@ -20,6 +21,11 @@ class Consorcio(models.Model):
         # Validar que el CUIT tenga 11 dígitos
         if len(self.cuit) != 11 or not self.cuit.isdigit():
             raise ValueError("El CUIT debe tener 11 dígitos numéricos.")
+
+        # Validar que la fecha de creación no sea futura
+        if self.fecha_creacion > timezone.now().date():
+            raise ValueError("La fecha de creación no puede ser futura.")
+        
         super().save(*args, **kwargs)
 
 class GrupoProrrateo(models.Model):
