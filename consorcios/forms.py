@@ -67,7 +67,8 @@ class FormularioUnidadFuncional(forms.ModelForm):
         if consorcio:
             self.fields['consorcio'].queryset = Consorcio.objects.filter(id=consorcio.id)
             self.fields['consorcio'].initial = consorcio
-            self.fields['consorcio'].disabled = True  # Deshabilita el campo para que no se pueda cambiar
+
+        self.fields['consorcio'].disabled = True  
 
         self.helper.layout = Layout(
             Row(

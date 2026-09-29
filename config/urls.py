@@ -37,6 +37,7 @@ urlpatterns = [
     path('consorcios/crear/', views_consorcios.crear_consorcio, name='crear_consorcio'),
     path('consorcios/<int:consorcio_id>/unidades/', views_consorcios.ListarUnidadesFuncionales.as_view(), name='listar_unidades_funcionales'),
     path('consorcios/<int:consorcio_id>/unidades/crear/', views_consorcios.crear_unidad_funcional, name='crear_unidad_funcional'),
+    path('consorcios/unidades/<int:unidad_id>/gestionar/', views_consorcios.gestionar_unidad_funcional, name='gestionar_unidad_funcional'),
 
     # Liquidaciones
     path('liquidaciones/', views_gastos.listar_liquidaciones, name='listar_liquidaciones'),

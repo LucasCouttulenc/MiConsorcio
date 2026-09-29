@@ -80,13 +80,13 @@ class TablaUnidadesFuncionales(tables.Table):
     
     # Acciones
 
-    # gestionar = TemplateColumn(
-    #     template_code='<a href="{% url "gestionar_unidad_funcional" record.id %}" class="tabla__boton-accion-registro">Gestionar</a>',
-    #     verbose_name="Gestionar",
-    #     orderable=False,
-    #     exclude_from_export=True
-    # )
-    # """Botón que redirige a la vista de gestión de la unidad funcional."""
+    gestionar = TemplateColumn(
+        template_code='<a href="{% url "gestionar_unidad_funcional" record.id %}" class="tabla__boton-accion-registro">Gestionar</a>',
+        verbose_name="Gestionar",
+        orderable=False,
+        exclude_from_export=True
+    )
+    """Botón que redirige a la vista de gestión de la unidad funcional."""
 
 class FiltroUnidadesFuncionales(django_filters.FilterSet):
     direccion = django_filters.CharFilter(
