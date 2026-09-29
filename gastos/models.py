@@ -2,8 +2,8 @@ from django.db import models
 from consorcios.models import Consorcio, UnidadFuncional, GrupoProrrateo
 
 class TipoGasto(models.TextChoices):
-    ORDINARIO = 'ordinario', 'Ordinario'
-    EXTRAORDINARIO = 'extraordinario', 'Extraordinario'
+    ORDINARIO = 'ordinario'
+    EXTRAORDINARIO = 'extraordinario'
 
 
 class Gasto(models.Model):
@@ -16,6 +16,7 @@ class Gasto(models.Model):
         default=TipoGasto.ORDINARIO, 
         verbose_name="Tipo de Gasto"
     )
+    subtipo = models.CharField(max_length=100, blank=True, default='', verbose_name="Subtipo / Rubro")
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.PROTECT, related_name='gastos', verbose_name="Columna / Grupo de Prorrateo")
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM (ej: 2026-03)", verbose_name="Período Imputado")
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
@@ -32,10 +33,12 @@ class Liquidacion(models.Model):
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='liquidaciones')
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM", verbose_name="Período Liquidado")
     fecha_emision = models.DateField(auto_now_add=True, verbose_name="Fecha de Emisión")
+    fecha_cierre = models.DateField(null=True, blank=True, verbose_name="Fecha de Cierre")
     fecha_vencimiento_1 = models.DateField(verbose_name="Primer Vencimiento")
     total_ordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_extraordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     cerrada = models.BooleanField(default=False, verbose_name="¿Cerrada?")
+    datos_administracion = models.JSONField(default=dict, blank=True)
 
     class Meta:
         unique_together = ('consorcio', 'periodo')

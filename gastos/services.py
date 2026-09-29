@@ -5,7 +5,7 @@ from consorcios.models import UnidadFuncional, GrupoProrrateo, CoeficienteUF
 from .models import Gasto, Liquidacion, DetalleLiquidacionUF, TipoGasto
 
 @transaction.atomic
-def procesar_liquidacion_periodo(consorcio, periodo, fecha_vencimiento_1):
+def procesar_liquidacion_periodo(consorcio, periodo, fecha_vencimiento_1, fecha_cierre=None):
     gastos = Gasto.objects.filter(consorcio=consorcio, periodo=periodo)
     grupos = GrupoProrrateo.objects.filter(consorcio=consorcio)
     
@@ -30,6 +30,7 @@ def procesar_liquidacion_periodo(consorcio, periodo, fecha_vencimiento_1):
         periodo=periodo,
         defaults={
             'fecha_vencimiento_1': fecha_vencimiento_1,
+            'fecha_cierre': fecha_cierre,
             'total_ordinario': total_ordinario_general,
             'total_extraordinario': total_extraordinario_general,
             'cerrada': True,
