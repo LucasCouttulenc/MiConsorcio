@@ -27,13 +27,13 @@ PERMISOS_ADMINISTRADORES = [
     "change_unidadfuncional",
     "delete_unidadfuncional",
 
-    # Grupos de prorrateo  ← NUEVOS
+    # Grupos de prorrateo  
     "add_grupoprorrateo",
     "view_grupoprorrateo",
     "change_grupoprorrateo",
     "delete_grupoprorrateo",
 
-    # Coeficientes UF  ← NUEVOS
+    # Coeficientes UF  
     "add_coeficienteuf",
     "view_coeficienteuf",
     "change_coeficienteuf",

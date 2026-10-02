@@ -35,7 +35,7 @@ class FixtureDeGroup(Fixture):
                 p = Permission.objects.get(codename=codename)
                 ids.append(p.pk)
             except Permission.DoesNotExist:
-                print(f"⚠️  Permiso no encontrado: {codename}")
+                print(f"  Permiso no encontrado: {codename}")
             except Permission.MultipleObjectsReturned:
-                print(f"⚠️  Permiso ambiguo (existe en varias apps): {codename}")
+                print(f"  Permiso ambiguo (existe en varias apps): {codename}")
         return ids
