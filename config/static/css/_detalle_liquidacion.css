@@ -1,0 +1,173 @@
+/* ==========================================================================
+   Detalle de liquidación
+   ========================================================================== */
+
+.dl-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.dl-subtitulo {
+    margin: 0.25rem 0 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.dl-acciones {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+/* ---------- Tarjetas de resumen ---------- */
+
+.dl-resumen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.8rem;
+}
+
+.dl-card {
+    padding: 1rem 1.2rem;
+    border-radius: 10px;
+    border: 1px solid #e3e6ea;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dl-card-etiqueta {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+}
+
+.dl-card-monto {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #222;
+}
+
+.dl-card-ordinario { border-left: 4px solid #1a7f37; }
+.dl-card-ordinario .dl-card-monto { color: #1a7f37; }
+
+.dl-card-extra { border-left: 4px solid #cf222e; }
+.dl-card-extra .dl-card-monto { color: #cf222e; }
+
+.dl-card-total {
+    border-left: 4px solid #1f6feb;
+    background: #f5f9ff;
+}
+.dl-card-total .dl-card-monto { color: #1f6feb; }
+
+/* ---------- Secciones ---------- */
+
+.dl-seccion {
+    background: #fff;
+    border: 1px solid #e3e6ea;
+    border-radius: 10px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dl-seccion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.dl-seccion-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #222;
+}
+
+.dl-badge {
+    background: #eef2f6;
+    color: #475569;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ---------- Tablas ---------- */
+
+.dl-tabla-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e3e6ea;
+    background: #fff;
+}
+
+.dl-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.dl-tabla thead th {
+    background: #f4f6f8;
+    color: #333;
+    font-weight: 600;
+    padding: 0.65rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e3e6ea;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.dl-tabla tbody td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f0f2f5;
+    vertical-align: middle;
+}
+
+.dl-tabla tbody tr:hover { background: #fafbfc; }
+
+.dl-tabla tfoot td {
+    padding: 0.75rem;
+    background: #f4f6f8;
+    border-top: 2px solid #e3e6ea;
+    font-weight: 700;
+    color: #222;
+}
+
+.col-uf      { width: 60px; text-align: center; font-weight: 600; color: #1f6feb; }
+.col-dpto    { width: 90px; white-space: nowrap; }
+.col-prop    { color: #333; }
+.col-tipo    { width: 120px; }
+.col-num     { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-total   { font-weight: 700; color: #1f6feb; }
+.col-etiqueta { text-align: right; }
+
+.dl-vacio {
+    padding: 1.2rem;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+    .dl-header { align-items: flex-start; }
+    .dl-acciones { flex-direction: column; align-items: stretch; width: 100%; }
+    .col-prop { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

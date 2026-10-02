@@ -8,12 +8,23 @@
 {% include "componentes/mensajes.html" %}
 
 <link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+<link rel="stylesheet" href="{% static 'css/_alicuotas.css' %}">
 
 <h1 class="titulo">Gestionar consorcio</h1>
+
 <div class="flex around">
     <div>
         {% include "formulario.html" with formulario=formulario %}
     </div>
 </div>
+
+<section class="acciones-consorcio">
+    <a href="{% url 'definir_alicuotas' consorcio.id %}" class="accion-card">
+        <div class="accion-texto">
+            <strong>Definir alícuotas de UF</strong>
+            <p>Configurá los porcentajes de cada unidad funcional</p>
+        </div>
+    </a>
+</section>
 
 {% endblock %}

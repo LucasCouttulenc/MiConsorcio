@@ -21,7 +21,6 @@ class Gasto(models.Model):
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM (ej: 2026-03)", verbose_name="Período Imputado")
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
     liquidacion = models.ForeignKey('Liquidacion', on_delete=models.CASCADE, related_name='gastos_cargados', null=True, blank=True)
-    subtipo = models.CharField(max_length=100, blank=True)
     posicion = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -65,6 +64,10 @@ class Liquidacion(models.Model):
 class DetalleLiquidacionUF(models.Model):
     liquidacion = models.ForeignKey(Liquidacion, on_delete=models.CASCADE, related_name='detalles_uf')
     unidad_funcional = models.ForeignKey(UnidadFuncional, on_delete=models.CASCADE)
+    alicuota = models.DecimalField(
+        max_digits=6, decimal_places=4, default=0,
+        verbose_name="Alícuota aplicada (%)",
+    )
     monto_ordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_extraordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)

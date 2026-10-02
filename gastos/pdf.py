@@ -255,6 +255,12 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
             for gid, valor in subtotales.items():
                 totales[gid] = totales.get(gid, Decimal("0.00")) + valor
         story.append(_tabla_total_general(totales, nombres_grupos, est))
+        
+    # --- Detalle por UF ---
+    story.append(Spacer(1, 8 * mm))
+    story.append(Paragraph("Estado de Cuentas y Prorrateo", est["titulo"]))
+    story.append(Spacer(1, 2 * mm))
+    story.append(_tabla_detalle_uf(liquidacion, est))
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -264,3 +270,71 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     )
     doc.build(story)
     return buffer.getvalue()
+
+def _tabla_detalle_uf(liquidacion, est):
+    """
+    Tabla con el detalle por UF: alícuota, ordinario, extraordinario, total.
+    Réplica simplificada del PDF real (falta saldo anterior, deuda, intereses).
+    """
+    encabezado = [
+        Paragraph("U.F.", est["subtipo"]),
+        Paragraph("Dpto", est["subtipo"]),
+        Paragraph("Propietario", est["subtipo"]),
+        Paragraph("%UF", est["subtipo"]),
+        Paragraph("Ordinario", est["subtipo"]),
+        Paragraph("Extraord.", est["subtipo"]),
+        Paragraph("Total", est["subtipo"]),
+    ]
+
+    filas = [encabezado]
+    total_ord = Decimal("0.00")
+    total_ext = Decimal("0.00")
+    total_gen = Decimal("0.00")
+
+    detalles = liquidacion.detalles_uf.select_related(
+        'unidad_funcional__propietario__usuario'
+    ).order_by('unidad_funcional__piso', 'unidad_funcional__departamento')
+
+    for detalle in detalles:
+        uf = detalle.unidad_funcional
+        propietario = (
+            uf.propietario.usuario.get_full_name()
+            or uf.propietario.usuario.username
+        )
+        filas.append([
+            Paragraph(str(uf.pk).zfill(3), est["th"]),
+            Paragraph(f"{uf.piso}° {uf.departamento or ''}".strip(), est["small"]),
+            Paragraph(escape(propietario), est["small"]),
+            Paragraph(f"{detalle.alicuota:.2f}", est["num"]),
+            Paragraph(_money(detalle.monto_ordinario), est["num"]),
+            Paragraph(_money(detalle.monto_extraordinario), est["num"]),
+            Paragraph(_money(detalle.monto_total), est["num_b"]),
+        ])
+        total_ord += detalle.monto_ordinario
+        total_ext += detalle.monto_extraordinario
+        total_gen += detalle.monto_total
+
+    # Fila de totales
+    filas.append([
+        Paragraph("", est["small"]),
+        Paragraph("", est["small"]),
+        Paragraph("TOTAL", est["bold"]),
+        Paragraph("100.00", est["th"]),
+        Paragraph(_money(total_ord), est["num_b"]),
+        Paragraph(_money(total_ext), est["num_b"]),
+        Paragraph(_money(total_gen), est["num_b"]),
+    ])
+
+    anchos = [30, 45, 180, 45, 80, 80, 85]
+    tabla = Table(filas, colWidths=anchos, repeatRows=1)
+    ultima = len(filas) - 1
+    tabla.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), AZUL),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND", (0, ultima), (-1, ultima), GRIS_TOTAL),
+        ("GRID", (0, 0), (-1, -1), 0.5, BORDE),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    return tabla

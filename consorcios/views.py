@@ -6,6 +6,13 @@ from usuarios.models import Administrador
 from .tables import *
 from .models import *
 from .forms import *
+from decimal import Decimal
+from django.contrib import messages
+from django.db import transaction
+from django.db.models import ProtectedError
+from django.shortcuts import get_object_or_404
+from .alicuotas import leer_alicuotas, guardar_alicuotas, suma_alicuotas, consorcio_tiene_alicuotas_validas
+
 
 @method_decorator(login_required, name='dispatch')
 @method_decorator(permission_required('consorcios.view_consorcio', raise_exception=True), name='dispatch')
@@ -178,3 +185,61 @@ def gestionar_unidad_funcional(request, unidad_id):
         formulario_modelo=FormularioUnidadFuncional,
         template="gestionar_unidad_funcional.html",
     )
+    
+    
+    
+
+
+def _consorcio_gestionable(request, consorcio_id):
+    """Devuelve el consorcio si el usuario puede gestionarlo, o None si no tiene permiso."""
+    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
+    if not request.user.is_superuser:
+        administrador = Administrador.objects.filter(usuario=request.user).first()
+        if not administrador or not administrador.administra(consorcio_id):
+            return None
+    return consorcio
+ 
+ 
+ 
+ 
+@login_required
+@permission_required('consorcios.change_unidadfuncional', raise_exception=True)
+def definir_alicuotas(request, consorcio_id):
+    """
+    Pantalla simple: una sola alícuota por UF, la suma debe dar 100%.
+    """
+    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
+
+    # Permisos
+    administrador = Administrador.objects.filter(usuario=request.user).first()
+    if not request.user.is_superuser and not administrador.administra(consorcio_id):
+        messages.error(request, "No tenés permisos para gestionar este consorcio.")
+        return redirect('listar_consorcios')
+
+    unidades = (
+        consorcio.unidades_funcionales
+        .select_related('propietario')
+        .order_by('piso', 'departamento')
+    )
+
+    if request.method == 'POST':
+        valores, errores = leer_alicuotas(request.POST, unidades)
+        if errores:
+            for e in errores:
+                messages.error(request, e)
+        else:
+            guardar_alicuotas(consorcio, valores)
+            messages.success(request, "Alícuotas guardadas correctamente.")
+            return redirect('definir_alicuotas', consorcio_id=consorcio_id)
+
+    suma = suma_alicuotas(consorcio)
+    return render(request, 'definir_alicuotas.html', {
+        'consorcio': consorcio,
+        'unidades': unidades,
+        'suma': suma,
+        'suma_valida': suma == 100,
+    })
+
+
+
+

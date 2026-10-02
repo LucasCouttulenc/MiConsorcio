@@ -15,6 +15,8 @@ from consorcios.models import Consorcio, GrupoProrrateo
 from .models import Gasto, Liquidacion, TipoGasto
 from .pdf import generar_pdf_liquidacion
 from .services import procesar_liquidacion_periodo
+from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
+
 
 class BorradorExistente(ValueError):
     def __init__(self, liquidacion):
@@ -51,6 +53,8 @@ def listar_liquidaciones(request):
     })
 
 
+
+
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def generar_liquidacion(request, liquidacion_id=None):
@@ -61,6 +65,10 @@ def generar_liquidacion(request, liquidacion_id=None):
     consorcio_id = request.GET.get('consorcio', '')
     if consorcio_id and (not consorcio_id.isdecimal() or not consorcios.filter(pk=consorcio_id).exists()):
         raise Http404('Consorcio no disponible')
+    
+    
+    
+    
     return render(request, 'generar_liquidacion.html', {
         'consorcios': consorcios, 'liquidacion': liquidacion,
         'datos_iniciales': liquidacion.datos_borrador if liquidacion else {},
@@ -120,6 +128,16 @@ def leer_datos(request, finalizar=False):
 
 def guardar_borrador(request, finalizar=False):
     consorcio, periodo, cierre, vencimiento, datos = leer_datos(request, finalizar)
+    
+    if not consorcio_tiene_alicuotas_validas(consorcio):
+        raise ValueError(
+            f"El consorcio '{consorcio.nombre}' no tiene sus alícuotas sumando 100% "
+            f"(suma actual: {suma_alicuotas(consorcio)}%). "
+            "Corregí las alícuotas antes de liquidar."
+        )
+    
+    
+    
     liquidacion_id = request.POST.get('liquidacion_id', '')
     if liquidacion_id:
         liquidacion = liquidacion_permitida(request, liquidacion_id)
