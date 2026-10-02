@@ -6,17 +6,16 @@ import random
 class FixtureDeUnidadFuncional(Fixture):
     def __init__(self):
         super().__init__(UnidadFuncional)
-        
-    def campos(self):
 
+    def campos(self):
         propietarios = self.administrador.obtener_ids(Propietario)
         consorcios = self.administrador.obtener_ids(Consorcio)
 
         resultado = []
 
-        # 5 unidadades funcionales por cada consorcio. 
-        # Cada propitario tiene una sola unidad funcional en total.
-        # No se repiten departamentos dentro de un mismo consorcio.
+        # 5 UF por consorcio, repartidas 20% cada una (suma 100%).
+        alicuota = "20.0000"
+
         for consorcio_id in consorcios:
             for piso in range(1, 6):
                 departamento = "A"
@@ -25,12 +24,9 @@ class FixtureDeUnidadFuncional(Fixture):
                     'propietario_id': propietario,
                     'consorcio_id': consorcio_id,
                     'piso': piso,
-                    'departamento': departamento
+                    'departamento': departamento,
+                    'alicuota': alicuota,
                 })
 
         return resultado
-        
-        
-            
-
         

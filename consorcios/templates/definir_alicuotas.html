@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Alícuotas - {{ consorcio.nombre }}{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'css/_alicuotas.css' %}">
+
+{% include "componentes/mensajes.html" %}
+
+<div class="alicuotas-header">
+    <div>
+        <h1 class="titulo">Definir alícuotas de UF</h1>
+        <p class="alicuotas-subtitulo">
+            {{ consorcio.nombre }} · {{ consorcio.calle }} {{ consorcio.altura }}
+        </p>
+    </div>
+    <a href="{% url 'gestionar_consorcio' consorcio.id %}" class="boton-secundario">← Volver</a>
+</div>
+
+{% if not unidades %}
+    <div class="alerta alerta-info">
+        Este consorcio todavía no tiene unidades funcionales cargadas.
+        <a href="{% url 'crear_unidad_funcional' consorcio.id %}">Crear la primera UF</a>.
+    </div>
+{% else %}
+
+    {% if not suma_valida %}
+        <div class="alerta alerta-warning">
+            <strong>Las alícuotas no suman 100%.</strong>
+            Suma actual: <strong>{{ suma }}%</strong>.
+            El consorcio no podrá liquidar expensas hasta corregirlo.
+        </div>
+    {% endif %}
+
+    <form method="post" class="form-alicuotas">
+        {% csrf_token %}
+
+        <div class="alicuotas-tabla-wrapper">
+            <table class="tabla-alicuotas">
+                <thead>
+                    <tr>
+                        <th class="col-uf">UF</th>
+                        <th class="col-prop">Propietario</th>
+                        <th class="col-alicuota">Alícuota (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for uf in unidades %}
+                        <tr>
+                            <td class="col-uf">
+                                <span class="uf-piso">{{ uf.piso }}°</span>
+                                <span class="uf-depto">{{ uf.departamento|default:"—" }}</span>
+                            </td>
+                            <td class="col-prop" title="{{ uf.propietario }}">{{ uf.propietario }}</td>
+                            <td class="col-alicuota">
+                                <div class="input-wrapper">
+                                    <input type="number" step="0.0001" min="0" max="100"
+                                           inputmode="decimal"
+                                           name="alicuota_{{ uf.pk }}"
+                                           data-uf="{{ uf.pk }}"
+                                           value="{{ uf.alicuota }}"
+                                           class="input-alicuota"
+                                           placeholder="0.0000">
+                                    <span class="input-sufijo">%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="2" class="pie-etiqueta">Total</th>
+                        <th id="pie-suma" class="pie-suma {% if suma == 100 %}suma-ok{% else %}suma-mal{% endif %}">
+                            {{ suma }}%
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="acciones-form">
+            <button type="submit" class="boton-primario">Guardar alícuotas</button>
+        </div>
+    </form>
+{% endif %}
+
+<script src="{% static 'js/alicuotas.js' %}"></script>
+
+{% endblock %}

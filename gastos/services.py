@@ -10,7 +10,8 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.utils import simpleSplit
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
-from consorcios.models import CoeficienteUF, UnidadFuncional
+from consorcios.models import UnidadFuncional
+
 from .models import DetalleLiquidacionUF, TipoGasto
 
 
@@ -20,33 +21,41 @@ def dinero(valor):
 
 @transaction.atomic
 def procesar_liquidacion_periodo(liquidacion):
-    # Totales por grupo y tipo, a partir de los gastos cargados en esta liquidación
-    totales = defaultdict(lambda: {TipoGasto.ORDINARIO: Decimal('0'), TipoGasto.EXTRAORDINARIO: Decimal('0')})
-    for gasto in liquidacion.gastos_cargados.all():
-        totales[gasto.grupo_id][gasto.tipo] += gasto.monto
+    """
+    Calcula los totales ordinario/extraordinario del período y arma
+    el DetalleLiquidacionUF aplicando la alícuota única de cada UF.
+    """
+    # 1. Totales por tipo
+    total_ordinario = Decimal('0')
+    total_extraordinario = Decimal('0')
 
-    liquidacion.total_ordinario = dinero(sum((m[TipoGasto.ORDINARIO] for m in totales.values()), Decimal('0')))
-    liquidacion.total_extraordinario = dinero(sum((m[TipoGasto.EXTRAORDINARIO] for m in totales.values()), Decimal('0')))
+    for gasto in liquidacion.gastos_cargados.all():
+        if gasto.tipo == TipoGasto.ORDINARIO:
+            total_ordinario += gasto.monto
+        else:
+            total_extraordinario += gasto.monto
+
+    liquidacion.total_ordinario = dinero(total_ordinario)
+    liquidacion.total_extraordinario = dinero(total_extraordinario)
     liquidacion.save(update_fields=['total_ordinario', 'total_extraordinario'])
 
+    # 2. Detalle por UF
     liquidacion.detalles_uf.all().delete()
-
-    coeficientes = defaultdict(dict)
-    for coef in CoeficienteUF.objects.filter(unidad_funcional__consorcio=liquidacion.consorcio):
-        coeficientes[coef.unidad_funcional_id][coef.grupo_id] = coef.porcentaje
 
     detalles = []
     for uf in UnidadFuncional.objects.filter(consorcio=liquidacion.consorcio):
-        ordinario = extraordinario = Decimal('0')
-        for grupo_id, montos in totales.items():
-            factor = coeficientes[uf.pk].get(grupo_id, Decimal('0')) / Decimal('100')
-            ordinario += montos[TipoGasto.ORDINARIO] * factor
-            extraordinario += montos[TipoGasto.EXTRAORDINARIO] * factor
-        ordinario, extraordinario = dinero(ordinario), dinero(extraordinario)
+        factor = uf.alicuota / Decimal('100')
+        ordinario = dinero(total_ordinario * factor)
+        extraordinario = dinero(total_extraordinario * factor)
         detalles.append(DetalleLiquidacionUF(
-            liquidacion=liquidacion, unidad_funcional=uf,
-            monto_ordinario=ordinario, monto_extraordinario=extraordinario,
-            monto_total=ordinario + extraordinario))
+            liquidacion=liquidacion,
+            unidad_funcional=uf,
+            alicuota=uf.alicuota,
+            monto_ordinario=ordinario,
+            monto_extraordinario=extraordinario,
+            monto_total=ordinario + extraordinario,
+        ))
+
     DetalleLiquidacionUF.objects.bulk_create(detalles)
     return liquidacion
 

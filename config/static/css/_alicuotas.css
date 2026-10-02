@@ -1,0 +1,150 @@
+/* ==========================================================================
+   Alícuotas — matriz simple UF × %
+   ========================================================================== */
+
+.alicuotas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.alicuotas-subtitulo {
+    margin: 0.25rem 0 0;
+    color: #666;
+    font-size: 0.92rem;
+}
+
+.alerta {
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.92rem;
+    border: 1px solid transparent;
+    line-height: 1.4;
+}
+.alerta a { color: inherit; text-decoration: underline; font-weight: 600; }
+.alerta-warning { background: #fff8e5; border-color: #f0d999; color: #7a5900; }
+.alerta-info    { background: #eaf3ff; border-color: #b6d4fe; color: #0a4a99; }
+
+.alicuotas-tabla-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e3e6ea;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.tabla-alicuotas {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+.tabla-alicuotas thead th {
+    background: #f4f6f8;
+    color: #333;
+    font-weight: 600;
+    padding: 0.75rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid #e3e6ea;
+    white-space: nowrap;
+}
+.tabla-alicuotas tbody td {
+    padding: 0.55rem 0.85rem;
+    border-bottom: 1px solid #f0f2f5;
+    vertical-align: middle;
+}
+.tabla-alicuotas tbody tr:hover { background: #fafbfc; }
+
+.col-uf { width: 90px; font-weight: 600; color: #333; }
+.uf-piso { display: inline-block; }
+.uf-depto { display: inline-block; margin-left: 0.2rem; color: #666; font-weight: 400; }
+.col-prop { color: #444; }
+.col-alicuota { text-align: right; width: 160px; }
+
+.input-wrapper { position: relative; display: inline-block; }
+.input-alicuota {
+    width: 110px;
+    padding: 0.4rem 1.4rem 0.4rem 0.55rem;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    text-align: right;
+    background: #fff;
+    color: #222;
+    -moz-appearance: textfield;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input-alicuota::-webkit-outer-spin-button,
+.input-alicuota::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.input-alicuota:focus {
+    outline: none;
+    border-color: #1f6feb;
+    box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.15);
+}
+.input-sufijo {
+    position: absolute;
+    right: 0.55rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    font-size: 0.78rem;
+    pointer-events: none;
+}
+
+.tabla-alicuotas tfoot th {
+    padding: 0.8rem 0.85rem;
+    background: #f4f6f8;
+    border-top: 2px solid #e3e6ea;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+.pie-etiqueta { text-align: right !important; color: #444; }
+.pie-suma.suma-ok { color: #1a7f37; }
+.pie-suma.suma-mal { color: #cf222e; }
+
+.acciones-form {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.acciones-consorcio {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+}
+.accion-card {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1rem 1.4rem;
+    background: #fff;
+    border: 1px solid #e3e6ea;
+    border-radius: 10px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+    max-width: 460px;
+}
+.accion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #1f6feb;
+}
+.accion-icono { font-size: 1.6rem; line-height: 1; }
+.accion-texto strong {
+    display: block;
+    color: #1f6feb;
+    font-size: 0.98rem;
+    margin-bottom: 0.15rem;
+}
+.accion-texto p { margin: 0; color: #666; font-size: 0.85rem; line-height: 1.35; }
+
+@media (max-width: 768px) {
+    .alicuotas-header { align-items: flex-start; }
+    .col-prop { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .input-alicuota { width: 90px; font-size: 0.85rem; }
+}

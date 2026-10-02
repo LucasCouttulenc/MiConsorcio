@@ -13,6 +13,8 @@ class Consorcio(models.Model):
     calle = models.CharField(max_length=150)
     altura = models.PositiveIntegerField()
     codigo_postal = models.IntegerField(verbose_name="Código Postal")
+    localidad = models.CharField(max_length=100, blank=True, default='', verbose_name="Localidad")
+    horario_atencion = models.CharField(max_length=100, blank=True, default='', verbose_name="Horario de atención")
 
     def __str__(self):
         return f"{self.nombre} - {self.calle} {self.altura}, CP {self.codigo_postal}"
@@ -58,15 +60,21 @@ class UnidadFuncional(models.Model):
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='unidades_funcionales')
     piso = models.PositiveIntegerField(verbose_name="Piso")
     departamento = models.CharField(max_length=10, verbose_name="Departamento", blank=True, null=True)
+    alicuota = models.DecimalField(
+        max_digits=6, decimal_places=4, default=0,
+        verbose_name="Alícuota (%)",
+        help_text="Porcentaje que le corresponde a esta UF sobre el total del consorcio.",
+    )
 
     def __str__(self):
         return f"{self.piso}° {self.departamento} (Propietario: {self.propietario})"
 
     def save(self, *args, **kwargs):
-        if UnidadFuncional.objects.filter(consorcio=self.consorcio, piso=self.piso, departamento=self.departamento).exclude(id=self.id).exists():
+        if UnidadFuncional.objects.filter(
+            consorcio=self.consorcio, piso=self.piso, departamento=self.departamento
+        ).exclude(id=self.id).exists():
             raise ValueError("Ya existe una unidad funcional con el mismo piso y departamento en este consorcio.")
         super().save(*args, **kwargs)
-
 
 class CoeficienteUF(models.Model):
     """
@@ -74,7 +82,7 @@ class CoeficienteUF(models.Model):
     """
     unidad_funcional = models.ForeignKey(UnidadFuncional, on_delete=models.CASCADE, related_name='coeficientes')
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.CASCADE, related_name='coeficientes_uf')
-    porcentaje = models.DecimalField(max_digits=6, decimal_places=4, default=0.0000, verbose_name="Porcentaje / Coeficiente")
+    porcentaje = models.DecimalField(max_digits=7, decimal_places=4, default=0, verbose_name="Porcentaje / Coeficiente")
 
     class Meta:
         verbose_name = "Coeficiente UF"
