@@ -221,3 +221,6 @@ server.md
 
 
 docker-compose.local.yaml
+
+# Archivos subidos (comprobantes, etc.)
+media/

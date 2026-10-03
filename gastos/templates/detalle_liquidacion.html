@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load tags_custom %}
 
 {% block title %}Liquidación {{ liquidacion.periodo }} - {{ liquidacion.consorcio.nombre }}{% endblock %}
 
@@ -109,6 +110,7 @@
                     <th class="col-tipo">Tipo</th>
                     <th>Grupo</th>
                     <th class="col-num">Monto</th>
+                    <th>Comprobante</th>
                 </tr>
             </thead>
             <tbody>
@@ -118,9 +120,33 @@
                         <td class="col-tipo">{{ gasto.get_tipo_display }}</td>
                         <td>{{ gasto.grupo.nombre }}</td>
                         <td class="col-num">$ {{ gasto.monto }}</td>
+                        <td class="col-comprobante">
+                            {% if gasto.comprobante %}
+                                <div class="dl-comp-box">
+                                    <span class="dl-comp-nombre" title="{{ gasto.comprobante.name|basename }}">📄 {{ gasto.comprobante.name|basename }}</span>
+                                    <a class="dl-comp-ver" href="{{ gasto.comprobante.url }}" target="_blank" rel="noopener" title="Ver comprobante" aria-label="Ver">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </a>
+                                    <form method="post" action="{% url 'quitar_comprobante' gasto.id %}" onsubmit="return confirm('¿Quitar el comprobante?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dl-comp-quitar" title="Quitar comprobante" aria-label="Quitar">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <form method="post" action="{% url 'subir_comprobante' gasto.id %}" enctype="multipart/form-data" class="dl-comp-form">
+                                    {% csrf_token %}
+                                    <label class="dl-comp-adjuntar">
+                                        📎 Adjuntar
+                                        <input type="file" name="comprobante" accept=".pdf,.jpg,.jpeg,.png" onchange="this.form.submit()" hidden>
+                                    </label>
+                                </form>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="4" class="dl-vacio">Sin gastos registrados.</td></tr>
+                    <tr><td colspan="5" class="dl-vacio">Sin gastos registrados.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
