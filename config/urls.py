@@ -39,6 +39,9 @@ urlpatterns = [
     path('consorcios/<int:consorcio_id>/unidades/', views_consorcios.ListarUnidadesFuncionales.as_view(), name='listar_unidades_funcionales'),
     path('consorcios/<int:consorcio_id>/unidades/crear/', views_consorcios.crear_unidad_funcional, name='crear_unidad_funcional'),
     path('consorcios/unidades/<int:unidad_id>/gestionar/', views_consorcios.gestionar_unidad_funcional, name='gestionar_unidad_funcional'),
+    path('consorcios/<int:consorcio_id>/personal/', views_consorcios.ListarPersonal.as_view(), name='listar_personal'),
+    path('consorcios/<int:consorcio_id>/personal/agregar/', views_consorcios.crear_personal, name='crear_personal'),
+    path('consorcios/personal/<int:personal_id>/gestionar/', views_consorcios.gestionar_personal, name='gestionar_personal'),
       path('consorcios/<int:consorcio_id>/alicuotas/',views_consorcios.definir_alicuotas,name='definir_alicuotas'),
     # Liquidaciones
     path('liquidaciones/', views_gastos.listar_liquidaciones, name='listar_liquidaciones'),
