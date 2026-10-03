@@ -11,8 +11,8 @@ from django.urls import reverse
 from django.utils.http import content_disposition_header
 from django.views.decorators.http import require_POST
 
-from consorcios.models import Consorcio, GrupoProrrateo
-from .models import Gasto, Liquidacion, TipoGasto
+from consorcios.models import Consorcio, GrupoProrrateo, UnidadFuncional
+from .models import Gasto, Liquidacion, TipoGasto, ModoReparto
 from .pdf import generar_pdf_liquidacion
 from .services import procesar_liquidacion_periodo
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
@@ -58,7 +58,7 @@ def listar_liquidaciones(request):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def generar_liquidacion(request, liquidacion_id=None):
-    consorcios = consorcios_permitidos(request.user).prefetch_related('grupos_prorrateo').order_by('nombre')
+    consorcios = consorcios_permitidos(request.user).prefetch_related('grupos_prorrateo', 'unidades_funcionales').order_by('nombre')
     liquidacion = liquidacion_permitida(request, liquidacion_id) if liquidacion_id else None
     if liquidacion and liquidacion.cerrada:
         return redirect('detalle_liquidacion', liquidacion_id=liquidacion.pk)
@@ -111,8 +111,8 @@ def leer_datos(request, finalizar=False):
                 raise ValueError('Todos los gastos deben tener un monto válido.') from exc
             if monto <= 0 or monto.as_tuple().exponent < -2:
                 raise ValueError('Los montos deben ser positivos y tener hasta dos decimales.')
-            if not str(gasto.get('concepto', '')).strip() or gasto.get('tipo') not in TipoGasto.values or not gasto.get('grupo'):
-                raise ValueError('Completá concepto, tipo y grupo en cada gasto.')
+            if not str(gasto.get('concepto', '')).strip() or gasto.get('tipo') not in TipoGasto.values or gasto.get('modo') not in ModoReparto.values:
+                raise ValueError('Completá concepto, tipo y columna en cada gasto.')
     if finalizar and not gastos:
         raise ValueError('Agregá al menos un gasto antes de finalizar.')
     administracion = {campo: request.POST.get(campo, '').strip()[:200] for campo in (
@@ -184,28 +184,32 @@ def finalizar_liquidacion(request):
         with transaction.atomic():
             liquidacion = guardar_borrador(request, finalizar=True)
             datos = liquidacion.datos_borrador
-            grupos = {str(g.pk): g for g in GrupoProrrateo.objects.filter(consorcio=liquidacion.consorcio)}
-            for nuevo in datos['grupos_nuevos']:
-                if not isinstance(nuevo, dict):
-                    raise ValueError('Un grupo nuevo no es válido.')
-                codigo = str(nuevo.get('codigo', '')).strip()[:10]
-                nombre = str(nuevo.get('nombre', '')).strip()[:100]
-                if not codigo or not nombre:
-                    raise ValueError('Completá el nombre de los grupos nuevos.')
-                grupo, _ = GrupoProrrateo.objects.get_or_create(
-                    consorcio=liquidacion.consorcio, codigo=codigo, defaults={'nombre': nombre})
-                grupos[str(nuevo.get('id', ''))] = grupo
             liquidacion.gastos_cargados.all().delete()
+            ufs_validas = {uf.pk for uf in UnidadFuncional.objects.filter(consorcio=liquidacion.consorcio)}
             for posicion, gasto in enumerate(datos['gastos']):
-                grupo = grupos.get(str(gasto.get('grupo', '')))
-                if not grupo:
-                    raise ValueError('Un gasto usa un grupo que no pertenece al consorcio.')
-                Gasto.objects.create(
+                modo = gasto.get('modo')
+                if modo not in ModoReparto.values:
+                    raise ValueError('Un gasto tiene una columna inválida.')
+                seleccion = []
+                if modo in (ModoReparto.PARCIAL, ModoReparto.PARTICULAR):
+                    for uf_id in gasto.get('ufs', []):
+                        try:
+                            uf_pk = int(uf_id)
+                        except (TypeError, ValueError):
+                            raise ValueError('Una UF seleccionada no es válida.')
+                        if uf_pk not in ufs_validas:
+                            raise ValueError('Una UF seleccionada no pertenece al consorcio.')
+                        seleccion.append(uf_pk)
+                    if modo == ModoReparto.PARTICULAR and not seleccion:
+                        raise ValueError('En un gasto Particular elegí al menos una UF que pague.')
+                nuevo_gasto = Gasto.objects.create(
                     liquidacion=liquidacion, consorcio=liquidacion.consorcio,
                     periodo=liquidacion.periodo, fecha_comprobante=date.today(),
                     posicion=posicion, concepto=str(gasto['concepto']).strip()[:200],
                     tipo=gasto['tipo'], subtipo=str(gasto.get('subtipo', ''))[:100],
-                    grupo=grupo, monto=Decimal(str(gasto['monto']).replace(',', '.')))
+                    modo_reparto=modo, monto=Decimal(str(gasto['monto']).replace(',', '.')))
+                if seleccion:
+                    nuevo_gasto.unidades.set(seleccion)
             procesar_liquidacion_periodo(liquidacion)
             liquidacion.documento = generar_pdf_liquidacion(liquidacion)
             liquidacion.cerrada = True

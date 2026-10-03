@@ -24,20 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (campo) campo.value = valor;
         });
         subtiposPorConsorcio[consorcio.value] = inicial.subtipos || subtiposPorConsorcio[consorcio.value];
-        (inicial.grupos_nuevos || []).forEach(g => {
-            if (!gruposPorConsorcio[consorcio.value].some(actual => actual.val === g.id)) {
-                gruposPorConsorcio[consorcio.value].push({val: g.id, nombre: g.nombre});
-            }
-        });
         renderizarListasGestion();
         document.getElementById('body-gastos').replaceChildren();
         (inicial.gastos || []).forEach(gasto => {
-            agregarFilaGasto();
-            const fila = document.getElementById('body-gastos').lastElementChild;
+            agregarFilaGasto('', gasto.tipo || 'ordinario', gasto.subtipo || '', gasto.modo || gasto.grupo || 'general', '', gasto.ufs || []);
+            const filas = document.querySelectorAll('#body-gastos tr.fila-gasto');
+            const fila = filas[filas.length - 1];
             fila.querySelector('.input-concepto').value = gasto.concepto || '';
-            fila.querySelector('.select-tipo').value = gasto.tipo || 'ordinario';
-            fila.querySelector('.select-subtipo').value = gasto.subtipo || '';
-            fila.querySelector('.select-grupo').value = gasto.grupo || '';
             fila.querySelector('.input-monto').value = gasto.monto || '';
         });
         if (!inicial.gastos?.length) agregarFilaGasto();
@@ -47,22 +40,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function completarDatos() {
         const consorcio = document.getElementById('select-consorcio').value;
-        const grupos = gruposPorConsorcio[consorcio] || [];
-        const nuevos = grupos.filter(g => !/^\d+$/.test(g.val)).map(g => ({
-            id: g.val,
-            nombre: g.nombre,
-            codigo: gruposIniciales.get(g.val)?.codigo || `N${g.val.slice(-9)}`.slice(0, 10),
-        }));
-        const gastos = [...document.querySelectorAll('#body-gastos tr')].map(fila => ({
-            fila: fila.id,
-            concepto: fila.querySelector('.input-concepto').value,
-            tipo: fila.querySelector('.select-tipo').value,
-            subtipo: fila.querySelector('.select-subtipo').value,
-            grupo: fila.querySelector('.select-grupo').value,
-            monto: fila.querySelector('.input-monto').value,
-        }));
+        const gastos = [...document.querySelectorAll('#body-gastos tr.fila-gasto')].map(fila => {
+            const rec = document.getElementById(`${fila.id}-rec`);
+            const ufs = rec ? [...rec.querySelectorAll('.uf-check:checked')].map(ch => ch.dataset.uf) : [];
+            return {
+                fila: fila.id,
+                concepto: fila.querySelector('.input-concepto').value,
+                tipo: fila.querySelector('.select-tipo').value,
+                subtipo: fila.querySelector('.select-subtipo').value,
+                modo: fila.querySelector('.select-grupo').value,
+                ufs: ufs,
+                monto: fila.querySelector('.input-monto').value,
+            };
+        });
         document.getElementById('gastos-json').value = JSON.stringify(gastos);
-        document.getElementById('grupos-nuevos-json').value = JSON.stringify(nuevos);
+        document.getElementById('grupos-nuevos-json').value = JSON.stringify([]);
         document.getElementById('subtipos-json').value = JSON.stringify(subtiposPorConsorcio[consorcio] || []);
     }
 

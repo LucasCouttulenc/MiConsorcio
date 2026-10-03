@@ -12,7 +12,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 
 from consorcios.models import UnidadFuncional
 
-from .models import DetalleLiquidacionUF, TipoGasto
+from .models import DetalleLiquidacionUF, TipoGasto, ModoReparto
 
 
 def dinero(valor):
@@ -22,40 +22,72 @@ def dinero(valor):
 @transaction.atomic
 def procesar_liquidacion_periodo(liquidacion):
     """
-    Calcula los totales ordinario/extraordinario del período y arma
-    el DetalleLiquidacionUF aplicando la alícuota única de cada UF.
+    Calcula los totales ordinario/extraordinario del período y arma el
+    DetalleLiquidacionUF repartiendo CADA gasto solo entre las UF que lo pagan
+    (según su modo de reparto), proporcional a la alícuota de cada una.
     """
-    # 1. Totales por tipo
+    ufs = list(UnidadFuncional.objects.filter(consorcio=liquidacion.consorcio))
+    acum = {uf.pk: {'ord': Decimal('0.00'), 'ext': Decimal('0.00')} for uf in ufs}
     total_ordinario = Decimal('0')
     total_extraordinario = Decimal('0')
 
-    for gasto in liquidacion.gastos_cargados.all():
-        if gasto.tipo == TipoGasto.ORDINARIO:
-            total_ordinario += gasto.monto
+    for gasto in liquidacion.gastos_cargados.prefetch_related('unidades'):
+        monto = gasto.monto
+        es_ordinario = gasto.tipo == TipoGasto.ORDINARIO
+        if es_ordinario:
+            total_ordinario += monto
         else:
-            total_extraordinario += gasto.monto
+            total_extraordinario += monto
+
+        seleccion = {uf.pk for uf in gasto.unidades.all()}
+        if gasto.modo_reparto == ModoReparto.PARTICULAR:
+            pagadores = [uf for uf in ufs if uf.pk in seleccion]
+        elif gasto.modo_reparto == ModoReparto.PARCIAL:
+            pagadores = [uf for uf in ufs if uf.pk not in seleccion]
+        else:
+            pagadores = list(ufs)
+        if not pagadores:
+            # salvaguarda: si no quedaría nadie pagando, lo pagan todas
+            pagadores = list(ufs)
+        if not pagadores:
+            continue
+
+        pesos = [uf.alicuota for uf in pagadores]
+        suma = sum(pesos)
+        if suma <= 0:
+            # sin alícuotas válidas entre los pagadores: partes iguales
+            pesos = [Decimal('1')] * len(pagadores)
+            suma = Decimal(len(pagadores))
+
+        asignado = Decimal('0.00')
+        ultimo = len(pagadores) - 1
+        for i, uf in enumerate(pagadores):
+            if i < ultimo:
+                parte = dinero(monto * pesos[i] / suma)
+                asignado += parte
+            else:
+                parte = monto - asignado  # el último absorbe el redondeo
+            if es_ordinario:
+                acum[uf.pk]['ord'] += parte
+            else:
+                acum[uf.pk]['ext'] += parte
 
     liquidacion.total_ordinario = dinero(total_ordinario)
     liquidacion.total_extraordinario = dinero(total_extraordinario)
     liquidacion.save(update_fields=['total_ordinario', 'total_extraordinario'])
 
-    # 2. Detalle por UF
     liquidacion.detalles_uf.all().delete()
-
-    detalles = []
-    for uf in UnidadFuncional.objects.filter(consorcio=liquidacion.consorcio):
-        factor = uf.alicuota / Decimal('100')
-        ordinario = dinero(total_ordinario * factor)
-        extraordinario = dinero(total_extraordinario * factor)
-        detalles.append(DetalleLiquidacionUF(
+    detalles = [
+        DetalleLiquidacionUF(
             liquidacion=liquidacion,
             unidad_funcional=uf,
             alicuota=uf.alicuota,
-            monto_ordinario=ordinario,
-            monto_extraordinario=extraordinario,
-            monto_total=ordinario + extraordinario,
-        ))
-
+            monto_ordinario=acum[uf.pk]['ord'],
+            monto_extraordinario=acum[uf.pk]['ext'],
+            monto_total=acum[uf.pk]['ord'] + acum[uf.pk]['ext'],
+        )
+        for uf in ufs
+    ]
     DetalleLiquidacionUF.objects.bulk_create(detalles)
     return liquidacion
 

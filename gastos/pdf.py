@@ -148,7 +148,7 @@ def _cabecera(liquidacion, admin, est):
 
 def _tabla_subtipo(nombre_subtipo, gastos, nombres_grupos, est):
     """Una tabla por subtipo. Solo muestra los grupos que ese subtipo usa."""
-    ids_usados = sorted({g.grupo_id for g in gastos}, key=lambda x: (x is None, x))
+    ids_usados = sorted({g.modo_reparto for g in gastos}, key=lambda x: (x is None, x))
     columnas = len(ids_usados)
     anchos = _anchos(columnas)
 
@@ -162,7 +162,7 @@ def _tabla_subtipo(nombre_subtipo, gastos, nombres_grupos, est):
     for gasto in gastos:
         fila = [Paragraph(escape(gasto.concepto or "(Sin concepto)"), est["normal"])]
         for i in ids_usados:
-            if gasto.grupo_id == i:
+            if gasto.modo_reparto == i:
                 subtotales[i] += gasto.monto
                 fila.append(Paragraph(_money(gasto.monto), est["num_b"]))
             else:
@@ -225,10 +225,10 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     est = _estilos()
     gastos = list(gastos)
 
+    etiquetas_modo = {'general': 'General', 'parcial': 'Parcial', 'particular': 'Particular'}
     nombres_grupos = {}
     for g in gastos:
-        if g.grupo_id is not None:
-            nombres_grupos[g.grupo_id] = g.grupo.nombre
+        nombres_grupos[g.modo_reparto] = etiquetas_modo.get(g.modo_reparto, g.get_modo_reparto_display())
 
     por_subtipo = OrderedDict()
     for g in gastos:
