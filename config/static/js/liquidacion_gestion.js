@@ -13,7 +13,7 @@ function setValorInput(id, val) {
     const el = document.getElementById(id);
     if (!el) return;
     const limpio = (val === null || val === undefined) ? '' : String(val).trim();
-    el.value = (limpio !== '') ? limpio : '-';
+    el.value = (limpio !== '' && limpio !== '-') ? limpio : '';
 }
 
 function getConsorcioActualId() {
