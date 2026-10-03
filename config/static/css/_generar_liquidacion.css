@@ -443,3 +443,46 @@
 .border-top { border-top: 1px solid var(--gl-border-color) !important; }
 .table-secondary { background-color: #edf2f7 !important; }
 .table-active { background-color: #e2e8f0 !important; }
+
+/* ---------- Recuadro de reparto por UF (Particular / Parcial) ---------- */
+.fila-rec > td { padding: 0 !important; border-top: none !important; }
+
+.rec-panel {
+    border-left: 3px solid var(--gl-primary);
+    background: #f8fafc;
+    padding: 0.75rem 0.9rem;
+    margin: 0 0 0.1rem;
+}
+.rec-panel.modo-parcial { border-left-color: #c2410c; background: #fffaf5; }
+
+.rec-title { font-size: 0.82rem; margin-bottom: 0.55rem; color: var(--gl-text-dark); }
+.rec-title b { color: var(--gl-primary); }
+.rec-panel.modo-parcial .rec-title b { color: #c2410c; }
+
+.rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.4rem;
+}
+
+.uf-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--gl-border-light);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gl-text-muted);
+    cursor: pointer;
+}
+.uf-chip input { cursor: pointer; }
+.rec-panel.modo-particular .uf-chip:has(input:checked) { border-color: var(--gl-primary); background: #EEF2FF; color: var(--gl-primary); }
+.rec-panel.modo-parcial .uf-chip:has(input:checked) { border-color: #c2410c; background: #FFF7ED; color: #c2410c; }
+
+.rec-vacio { font-size: 0.8rem; color: var(--gl-text-muted); font-style: italic; }
+
+.select-grupo.modo-particular { border-color: var(--gl-primary); color: var(--gl-primary); font-weight: 700; background: #EEF2FF; }
+.select-grupo.modo-parcial { border-color: #c2410c; color: #c2410c; font-weight: 700; background: #FFF7ED; }

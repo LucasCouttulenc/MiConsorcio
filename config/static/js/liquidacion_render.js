@@ -58,12 +58,13 @@ function renderizarListaGrupos() {
 
 function actualizarSelectoresGrupos() {
     const consorcioId = getConsorcioActualId();
-    const lista = (consorcioId && window.gruposPorConsorcio[consorcioId]) ? window.gruposPorConsorcio[consorcioId] : [];
+    let lista = (consorcioId && window.gruposPorConsorcio[consorcioId]) ? window.gruposPorConsorcio[consorcioId] : [];
+    if (!lista.length) lista = [{val:'general',nombre:'General'},{val:'parcial',nombre:'Parcial'},{val:'particular',nombre:'Particular'}];
     const selects = document.querySelectorAll('.select-grupo');
 
     selects.forEach(select => {
-        const valActual = select.value;
-        let html = '<option value="">-- Seleccionar --</option>';
+        const valActual = select.value || 'general';
+        let html = '';
         lista.forEach(g => {
             const selected = g.val === valActual ? 'selected' : '';
             html += `<option value="${g.val}" ${selected}>${g.nombre}</option>`;
@@ -138,6 +139,7 @@ function alSeleccionarConsorcio(consorcioId) {
         });
     }
 
+    refrescarRecuadros();
     sincronizarVistaPrevia();
 }
 

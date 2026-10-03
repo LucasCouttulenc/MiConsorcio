@@ -108,7 +108,7 @@
                 <tr>
                     <th>Concepto</th>
                     <th class="col-tipo">Tipo</th>
-                    <th>Grupo</th>
+                    <th>Columna</th>
                     <th class="col-num">Monto</th>
                     <th>Comprobante</th>
                 </tr>
@@ -118,7 +118,7 @@
                     <tr>
                         <td>{{ gasto.concepto }}</td>
                         <td class="col-tipo">{{ gasto.get_tipo_display }}</td>
-                        <td>{{ gasto.grupo.nombre }}</td>
+                        <td>{{ gasto.get_modo_reparto_display }}</td>
                         <td class="col-num">$ {{ gasto.monto }}</td>
                         <td class="col-comprobante">
                             {% if gasto.comprobante %}

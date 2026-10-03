@@ -149,12 +149,12 @@
                 <div class="gl-card">
                     <div class="gl-card-body">
                         <h4 class="gl-label" style="font-size: 0.95rem; margin-bottom: 1rem;">
-                            Configuración de Subtipos y Columnas
+                            Configuración de Subtipos
                         </h4>
                         
                         <div class="gl-config-grid">
                             <!-- Gestor de Subtipos / Rubros -->
-                            <div class="gl-config-col-border">
+                            <div>
                                 <label class="gl-label" style="font-size: 0.8rem;">Crear Nuevo Subtipo / Rubro</label>
                                 <div class="gl-input-group" style="margin-top: 0.25rem;">
                                     <input type="text" id="input-nuevo-subtipo" class="gl-input gl-input-sm">
@@ -165,17 +165,6 @@
                                 <div id="lista-subtipos-tags" class="gl-tags-container"></div>
                             </div>
 
-                            <!-- Gestor de Columnas / Grupos -->
-                            <div>
-                                <label class="gl-label" style="font-size: 0.8rem;">Crear Nueva Columna / Grupo</label>
-                                <div class="gl-input-group" style="margin-top: 0.25rem;">
-                                    <input type="text" id="input-nuevo-grupo" class="gl-input gl-input-sm">
-                                    <button type="button" class="gl-btn gl-btn-primary gl-btn-sm" onclick="crearGrupo()">
-                                        + Agregar
-                                    </button>
-                                </div>
-                                <div id="lista-grupos-tags" class="gl-tags-container"></div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -305,11 +294,23 @@
         {% endfor %}
     };
 
+    // Modos de reparto fijos (General/Parcial/Particular).
     window.gruposPorConsorcio = {
         {% for consorcio in consorcios %}
             "{{ consorcio.id }}": [
-                {% for grupo in consorcio.grupos_prorrateo.all %}
-                    { val: "{{ grupo.id }}", nombre: "{{ grupo.nombre|escapejs }}" },
+                { val: "general", nombre: "General" },
+                { val: "parcial", nombre: "Parcial" },
+                { val: "particular", nombre: "Particular" },
+            ],
+        {% endfor %}
+    };
+
+    // Unidades funcionales por consorcio (para el recuadro de Particular/Parcial).
+    window.ufsPorConsorcio = {
+        {% for consorcio in consorcios %}
+            "{{ consorcio.id }}": [
+                {% for uf in consorcio.unidades_funcionales.all %}
+                    { id: "{{ uf.id }}", label: "{{ uf.piso }}° {{ uf.departamento|default:''|escapejs }}" },
                 {% endfor %}
             ],
         {% endfor %}
