@@ -76,6 +76,34 @@ class UnidadFuncional(models.Model):
             raise ValueError("Ya existe una unidad funcional con el mismo piso y departamento en este consorcio.")
         super().save(*args, **kwargs)
 
+#####################################################################
+#                             PERSONAL                               #
+#####################################################################
+
+class Personal(models.Model):
+    class Meta:
+        verbose_name = "Personal"
+        verbose_name_plural = "Personal"
+
+    TIPO_CONTRATACION = [
+        ("directo", "Relación de dependencia"),
+        ("tercerizado", "Tercerizado"),
+    ]
+
+    consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='personal')
+    nombre = models.CharField(max_length=100, verbose_name="Nombre")
+    apellido = models.CharField(max_length=100, verbose_name="Apellido")
+    dni = models.CharField(max_length=20, verbose_name="DNI")
+    cargo = models.CharField(max_length=100, verbose_name="Cargo", help_text="Ej: Encargado, Portero, Limpieza")
+    tipo_contratacion = models.CharField(max_length=20, choices=TIPO_CONTRATACION, default="directo", verbose_name="Tipo de contratación")
+    empresa_tercerizada = models.CharField(max_length=150, blank=True, default='', verbose_name="Empresa tercerizada")
+    telefono = models.CharField(max_length=30, blank=True, default='', verbose_name="Teléfono")
+    fecha_ingreso = models.DateField(null=True, blank=True, verbose_name="Fecha de ingreso")
+
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre} ({self.cargo})"
+
+
 class CoeficienteUF(models.Model):
     """
     Porcentaje asignado a una Unidad Funcional para una Columna/Grupo específico
