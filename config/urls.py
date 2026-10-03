@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from usuarios import views as views_usuarios
 from gastos import views as views_gastos
@@ -46,5 +48,10 @@ urlpatterns = [
     path('liquidaciones/finalizar/', views_gastos.finalizar_liquidacion, name='finalizar_liquidacion'),
     path('liquidaciones/<int:liquidacion_id>/', views_gastos.detalle_liquidacion, name='detalle_liquidacion'),
     path('liquidaciones/<int:liquidacion_id>/documento/', views_gastos.descargar_documento, name='descargar_documento'),
+    path('liquidaciones/gastos/<int:gasto_id>/comprobante/', views_gastos.subir_comprobante, name='subir_comprobante'),
+    path('liquidaciones/gastos/<int:gasto_id>/comprobante/quitar/', views_gastos.quitar_comprobante, name='quitar_comprobante'),
    
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

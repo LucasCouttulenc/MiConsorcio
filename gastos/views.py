@@ -245,3 +245,40 @@ def descargar_documento(request, liquidacion_id):
     respuesta = HttpResponse(bytes(liquidacion.documento), content_type='application/pdf')
     respuesta['Content-Disposition'] = content_disposition_header(True, f'liquidacion-{liquidacion.consorcio_id}-{liquidacion.periodo}.pdf')
     return respuesta
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def subir_comprobante(request, gasto_id):
+    gasto = get_object_or_404(Gasto.objects.select_related('liquidacion'), pk=gasto_id)
+    liquidacion_permitida(request, gasto.liquidacion_id)
+    archivo = request.FILES.get('comprobante')
+    if not archivo:
+        messages.error(request, 'No se selecciono ningun archivo.')
+        return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
+    tipos_permitidos = {'application/pdf', 'image/jpeg', 'image/png'}
+    if archivo.content_type not in tipos_permitidos:
+        messages.error(request, 'El comprobante debe ser PDF, JPG o PNG.')
+        return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
+    if archivo.size > 5 * 1024 * 1024:
+        messages.error(request, 'El comprobante no puede superar los 5 MB.')
+        return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
+    gasto.comprobante = archivo
+    gasto.save(update_fields=['comprobante'])
+    messages.success(request, 'Comprobante adjuntado.')
+    return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def quitar_comprobante(request, gasto_id):
+    gasto = get_object_or_404(Gasto.objects.select_related('liquidacion'), pk=gasto_id)
+    liquidacion_permitida(request, gasto.liquidacion_id)
+    if gasto.comprobante:
+        gasto.comprobante.delete(save=False)
+        gasto.comprobante = None
+        gasto.save(update_fields=['comprobante'])
+        messages.success(request, 'Comprobante quitado.')
+    return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)

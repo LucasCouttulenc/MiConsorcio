@@ -22,6 +22,7 @@ class Gasto(models.Model):
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
     liquidacion = models.ForeignKey('Liquidacion', on_delete=models.CASCADE, related_name='gastos_cargados', null=True, blank=True)
     posicion = models.PositiveIntegerField(default=0)
+    comprobante = models.FileField(upload_to='comprobantes/%Y/%m/', null=True, blank=True, verbose_name="Comprobante / Factura")
 
     class Meta:
         verbose_name = "Gasto"

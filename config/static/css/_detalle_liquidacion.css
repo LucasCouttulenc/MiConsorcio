@@ -184,3 +184,75 @@
 .dl-tabla.dl-tabla-centrada .col-num {
     text-align: center;
 }
+
+/* ---------- Comprobante ---------- */
+.dl-comp-form { margin: 0; }
+
+.dl-comp-adjuntar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.9rem;
+    font-family: var(--fuenteCuerpo);
+    font-size: var(--textoChico);
+    font-weight: 700;
+    color: var(--colorPrincipal);
+    background: #fff;
+    border: 1px solid var(--colorPrincipal);
+    border-radius: var(--radioSutil);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dl-comp-adjuntar:hover {
+    background: var(--colorPrincipal);
+    color: var(--colorTextoBlanco);
+}
+
+.dl-comp-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.3rem 0.65rem;
+    background: var(--fondoColorExitoBackground);
+    border: 1px solid var(--colorExito);
+    border-radius: var(--radioSutil);
+    max-width: 280px;
+}
+
+.dl-comp-box form { margin: 0; display: inline-flex; align-items: center; }
+
+.dl-comp-nombre {
+    font-size: var(--textoChico);
+    color: var(--colorTextoPrincipal);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+}
+
+.dl-comp-ver {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    color: #0f172a;
+}
+
+.dl-comp-ver svg { width: 18px; height: 18px; display: block; }
+
+.dl-comp-ver:hover { color: var(--colorPrincipal); }
+
+.dl-comp-quitar {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    color: #dc2626;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.dl-comp-quitar svg { width: 18px; height: 18px; display: block; }
+
+.dl-comp-quitar:hover { color: #991b1b; }

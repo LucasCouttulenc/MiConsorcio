@@ -1,3 +1,4 @@
+import os
 from django import template
 register = template.Library()
 
@@ -31,3 +32,9 @@ def dict_get_tupla(diccionario, args):
         return diccionario.get((int(a), int(b)))
     except (ValueError, AttributeError):
         return None
+
+
+@register.filter
+def basename(valor):
+    """Nombre del archivo sin la ruta (comprobantes/2026/10/x.pdf -> x.pdf)."""
+    return os.path.basename(str(valor))
