@@ -87,3 +87,42 @@ class DetalleLiquidacionUF(models.Model):
 
     def __str__(self):
         return f"UF {self.unidad_funcional} - Período {self.liquidacion.periodo}: ${self.monto_total}"
+
+    @property
+    def total_pagado(self):
+        """Suma todos los pagos validados"""
+        pagos_validos = self.pagos.filter(estado='validado')
+        return sum(pago.monto_pagado for pago in pagos_validos) if pagos_validos else 0
+
+    @property
+    def deuda_total_actualizada(self):
+        return self.monto_total - self.total_pagado
+
+    @property
+    def esta_pagado(self):
+        return self.deuda_total_actualizada <= 0
+
+    @property
+    def tiene_pago_pendiente(self):
+        return self.pagos.filter(estado='pendiente').exists()
+
+class Pago(models.Model):
+    ESTADOS = (
+        ('pendiente', 'Pendiente de Validación'),
+        ('validado', 'Validado'),
+        ('rechazado', 'Rechazado'),
+    )
+    detalle_liquidacion = models.ForeignKey(DetalleLiquidacionUF, on_delete=models.CASCADE, related_name='pagos')
+    fecha_pago = models.DateField(verbose_name="Fecha de pago")
+    monto_pagado = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto pagado")
+    comprobante = models.FileField(upload_to='comprobantes_pago/', verbose_name="Comprobante de transferencia")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    notas_admin = models.TextField(blank=True, default='', verbose_name="Notas del Administrador")
+    
+    class Meta:
+        verbose_name = "Pago de Expensa"
+        verbose_name_plural = "Pagos de Expensas"
+
+    def __str__(self):
+        return f"Pago de {self.detalle_liquidacion.unidad_funcional} - ${self.monto_pagado}"
