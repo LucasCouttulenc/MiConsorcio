@@ -23,6 +23,9 @@
                         <div class="submenu-item">
                             <a href="{% url 'listar_liquidaciones' %}">Liquidaciones</a>
                         </div>
+                        <div class="submenu-item">
+                            <a href="{% url 'pagos_pendientes' %}">Pagos Pendientes</a>
+                        </div>
                     </div>
                 {% endif %}
 
@@ -30,7 +33,9 @@
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL CONSORCISTA</span>
-                        
+                        <div class="submenu-item">
+                            <a href="{% url 'mis_expensas' %}">Mis Expensas</a>
+                        </div>
                     </div>
                 {% endif %}
             </div>

@@ -53,7 +53,10 @@ urlpatterns = [
     path('liquidaciones/<int:liquidacion_id>/documento/', views_gastos.descargar_documento, name='descargar_documento'),
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/', views_gastos.subir_comprobante, name='subir_comprobante'),
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/quitar/', views_gastos.quitar_comprobante, name='quitar_comprobante'),
-   
+    path('mis-expensas/', views_gastos.mis_expensas, name='mis_expensas'),
+    path('liquidaciones/detalle/<int:detalle_id>/pagar/', views_gastos.registrar_pago, name='registrar_pago'),
+    path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),
+    path('pagos/<int:pago_id>/procesar/', views_gastos.procesar_pago, name='procesar_pago'),
 ]
 
 if settings.DEBUG:

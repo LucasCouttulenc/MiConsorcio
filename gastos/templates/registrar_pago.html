@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registrar Pago{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .pago-container {
+        max-width: 480px;
+        margin: 40px auto;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    .pago-header {
+        background: #1b365d;
+        color: #ffffff;
+        padding: 24px;
+        text-align: center;
+    }
+    .pago-header h2 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-family: 'Exo 2', sans-serif;
+    }
+    .pago-body {
+        padding: 30px;
+    }
+    .pago-info {
+        background: #f8f9fa;
+        border-left: 4px solid #f57f17;
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 24px;
+        font-size: 0.95rem;
+    }
+    .pago-info p { 
+        margin: 0 0 8px 0; 
+        color: #444; 
+    }
+    .pago-info p:last-child { 
+        margin: 0; 
+    }
+    .pago-deuda {
+        font-size: 1.1rem;
+        color: #c62828 !important;
+        font-weight: 700;
+        margin-top: 5px !important;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    /* Estilos para los inputs generados por Django */
+    .form-group input[type="date"],
+    .form-group input[type="number"],
+    .form-group input[type="text"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: 'Nunito', sans-serif;
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+    }
+    .form-group input[type="date"]:focus,
+    .form-group input[type="number"]:focus {
+        border-color: #1b365d;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(27, 54, 93, 0.1);
+    }
+    /* Estilo para la subida de archivo */
+    .form-group input[type="file"] {
+        width: 100%;
+        padding: 10px;
+        background: #f1f3f5;
+        border: 2px dashed #adb5bd;
+        border-radius: 8px;
+        cursor: pointer;
+        color: #495057;
+    }
+    .form-group input[type="file"]:hover {
+        background: #e9ecef;
+    }
+    .pago-acciones {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+    .boton-cancelar {
+        color: #6c757d;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s;
+    }
+    .boton-cancelar:hover {
+        color: #343a40;
+    }
+    .boton-enviar {
+        background: #1b365d;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.3s, transform 0.1s;
+    }
+    .boton-enviar:hover {
+        background: #132644;
+    }
+    .boton-enviar:active {
+        transform: scale(0.98);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pago-container">
+    <div class="pago-header">
+        <h2>Informar Pago</h2>
+    </div>
+    
+    <div class="pago-body">
+        <div class="pago-info">
+            <p><strong>Consorcio:</strong> {{ detalle.liquidacion.consorcio.nombre }}</p>
+            <p><strong>Unidad:</strong> Piso {{ detalle.unidad_funcional.piso }}° {{ detalle.unidad_funcional.departamento|default:"" }}</p>
+            <p><strong>Período:</strong> {{ detalle.liquidacion.periodo }}</p>
+            <p class="pago-deuda">Total a pagar: ${{ detalle.deuda_total_actualizada }}</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.fecha_pago.id_for_label }}">Fecha de la transferencia</label>
+                {{ form.fecha_pago }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.monto_pagado.id_for_label }}">Monto transferido ($)</label>
+                {{ form.monto_pagado }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.comprobante.id_for_label }}">Comprobante (PDF o Imagen)</label>
+                {{ form.comprobante }}
+            </div>
+
+            <div class="pago-acciones">
+                <a href="javascript:history.back()" class="boton-cancelar">← Volver</a>
+                <button type="submit" class="boton-enviar">Enviar comprobante</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
