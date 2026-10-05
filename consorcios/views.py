@@ -11,6 +11,8 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
+import re
 from .alicuotas import leer_alicuotas, guardar_alicuotas, suma_alicuotas, consorcio_tiene_alicuotas_validas
 
 
@@ -241,5 +243,78 @@ def definir_alicuotas(request, consorcio_id):
     })
 
 
+def _generar_codigo_columna(consorcio, nombre):
+    base = re.sub(r'[^A-Za-z0-9]', '', nombre).upper()[:10] or 'COL'
+    codigo = base
+    i = 1
+    while GrupoProrrateo.objects.filter(consorcio=consorcio, codigo=codigo).exists():
+        sufijo = str(i)
+        codigo = base[:10 - len(sufijo)] + sufijo
+        i += 1
+    return codigo
 
 
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def configurar_columnas(request):
+    if request.user.is_superuser:
+        consorcios_disp = Consorcio.objects.all().order_by('nombre')
+    else:
+        consorcios_disp = Consorcio.objects.filter(administradores__usuario=request.user).distinct().order_by('nombre')
+
+    consorcio_id = request.POST.get('consorcio') or request.GET.get('consorcio', '')
+    consorcio = consorcios_disp.filter(id=consorcio_id).first() if consorcio_id else None
+    if consorcio_id and not consorcio:
+        messages.error(request, "No tenés acceso a ese consorcio.")
+        return redirect('configurar_columnas')
+
+    if request.method == 'POST' and consorcio:
+        accion = request.POST.get('accion', '')
+        try:
+            with transaction.atomic():
+                if accion == 'borrar':
+                    columna = get_object_or_404(GrupoProrrateo, pk=request.POST.get('columna_id', ''), consorcio=consorcio)
+                    nombre_col = columna.nombre
+                    try:
+                        columna.delete()
+                        messages.success(request, f"Columna '{nombre_col}' eliminada.")
+                    except ProtectedError:
+                        messages.error(request, f"No se puede borrar '{nombre_col}': tiene gastos de liquidaciones asociados.")
+                else:
+                    nombre = request.POST.get('nombre', '').strip()[:100]
+                    tipo = request.POST.get('tipo_reparto', '')
+                    if not nombre:
+                        raise ValueError("Poné un nombre para la columna.")
+                    if tipo not in TipoReparto.values:
+                        raise ValueError("Elegí un tipo de reparto válido.")
+                    ufs_ids = request.POST.getlist('unidades')
+                    ufs = list(consorcio.unidades_funcionales.filter(id__in=ufs_ids)) if ufs_ids else []
+                    if tipo == TipoReparto.PARTICULAR and not ufs:
+                        raise ValueError("En una columna Particular elegí al menos una UF que pague.")
+                    if accion == 'editar':
+                        columna = get_object_or_404(GrupoProrrateo, pk=request.POST.get('columna_id', ''), consorcio=consorcio)
+                        columna.nombre = nombre
+                        columna.tipo_reparto = tipo
+                        columna.save(update_fields=['nombre', 'tipo_reparto'])
+                    else:
+                        columna = GrupoProrrateo.objects.create(
+                            consorcio=consorcio, nombre=nombre, tipo_reparto=tipo,
+                            codigo=_generar_codigo_columna(consorcio, nombre))
+                    columna.unidades.set(ufs if tipo != TipoReparto.GENERAL else [])
+                    messages.success(request, f"Columna '{nombre}' guardada.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect(f"{reverse('configurar_columnas')}?consorcio={consorcio.id}")
+
+    columnas, unidades = [], []
+    if consorcio:
+        columnas = consorcio.grupos_prorrateo.prefetch_related('unidades').order_by('nombre')
+        unidades = consorcio.unidades_funcionales.order_by('piso', 'departamento')
+
+    return render(request, 'configurar_columnas.html', {
+        'consorcios': consorcios_disp,
+        'consorcio': consorcio,
+        'columnas': columnas,
+        'unidades': unidades,
+        'tipos': TipoReparto.choices,
+    })

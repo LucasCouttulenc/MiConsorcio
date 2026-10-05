@@ -6,12 +6,6 @@ class TipoGasto(models.TextChoices):
     EXTRAORDINARIO = 'extraordinario'
 
 
-class ModoReparto(models.TextChoices):
-    GENERAL = 'general', 'General'
-    PARCIAL = 'parcial', 'Parcial'
-    PARTICULAR = 'particular', 'Particular'
-
-
 class Gasto(models.Model):
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='gastos')
     concepto = models.CharField(max_length=200, verbose_name="Concepto del Gasto")
@@ -24,8 +18,6 @@ class Gasto(models.Model):
     )
     subtipo = models.CharField(max_length=100, blank=True, default='', verbose_name="Subtipo / Rubro")
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.PROTECT, related_name='gastos', null=True, blank=True, verbose_name="Columna / Grupo de Prorrateo")
-    modo_reparto = models.CharField(max_length=20, choices=ModoReparto.choices, default=ModoReparto.GENERAL, verbose_name="Modo de reparto")
-    unidades = models.ManyToManyField(UnidadFuncional, blank=True, related_name='gastos_afectados', verbose_name="UF afectadas / exentas", help_text="Particular: UF que pagan. Parcial: UF exentas.")
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM (ej: 2026-03)", verbose_name="Período Imputado")
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
     liquidacion = models.ForeignKey('Liquidacion', on_delete=models.CASCADE, related_name='gastos_cargados', null=True, blank=True)
@@ -37,7 +29,7 @@ class Gasto(models.Model):
         verbose_name_plural = "Gastos"
 
     def __str__(self):
-        return f"{self.concepto} - ${self.monto} [{self.get_tipo_display()} - {self.get_modo_reparto_display()}]"
+        return f"{self.concepto} - ${self.monto} [{self.get_tipo_display()} - {self.grupo.codigo if self.grupo else '-'}]"
 
 
 class Liquidacion(models.Model):

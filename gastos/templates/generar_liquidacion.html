@@ -294,23 +294,12 @@
         {% endfor %}
     };
 
-    // Modos de reparto fijos (General/Parcial/Particular).
+    // Columnas configuradas de cada consorcio (Configurar columnas).
     window.gruposPorConsorcio = {
         {% for consorcio in consorcios %}
             "{{ consorcio.id }}": [
-                { val: "general", nombre: "General" },
-                { val: "parcial", nombre: "Parcial" },
-                { val: "particular", nombre: "Particular" },
-            ],
-        {% endfor %}
-    };
-
-    // Unidades funcionales por consorcio (para el recuadro de Particular/Parcial).
-    window.ufsPorConsorcio = {
-        {% for consorcio in consorcios %}
-            "{{ consorcio.id }}": [
-                {% for uf in consorcio.unidades_funcionales.all %}
-                    { id: "{{ uf.id }}", label: "{{ uf.piso }}° {{ uf.departamento|default:''|escapejs }}" },
+                {% for grupo in consorcio.grupos_prorrateo.all %}
+                    { val: "{{ grupo.id }}", nombre: "{{ grupo.nombre|escapejs }}" },
                 {% endfor %}
             ],
         {% endfor %}

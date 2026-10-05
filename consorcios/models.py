@@ -30,6 +30,12 @@ class Consorcio(models.Model):
         
         super().save(*args, **kwargs)
 
+class TipoReparto(models.TextChoices):
+    GENERAL = 'general', 'General'
+    PARCIAL = 'parcial', 'Parcial'
+    PARTICULAR = 'particular', 'Particular'
+
+
 class GrupoProrrateo(models.Model):
     """
     Columna/Rubro de prorrateo dinámico (ej: "A - General", "B - Ascensores", "Fachada")
@@ -37,6 +43,8 @@ class GrupoProrrateo(models.Model):
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='grupos_prorrateo')
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Grupo/Columna")
     codigo = models.CharField(max_length=10, help_text="Ej: A, B, C, PISCINA", verbose_name="Código / Identificador")
+    tipo_reparto = models.CharField(max_length=20, choices=TipoReparto.choices, default=TipoReparto.GENERAL, verbose_name="Tipo de reparto")
+    unidades = models.ManyToManyField('UnidadFuncional', blank=True, related_name='columnas', verbose_name="UF afectadas / exentas", help_text="Particular: UF que pagan. Parcial: UF exentas. General: se ignora.")
 
     class Meta:
         verbose_name = "Grupo de Prorrateo"

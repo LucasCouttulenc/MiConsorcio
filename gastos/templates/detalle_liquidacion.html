@@ -118,7 +118,7 @@
                     <tr>
                         <td>{{ gasto.concepto }}</td>
                         <td class="col-tipo">{{ gasto.get_tipo_display }}</td>
-                        <td>{{ gasto.get_modo_reparto_display }}</td>
+                        <td>{{ gasto.grupo.nombre }}</td>
                         <td class="col-num">$ {{ gasto.monto }}</td>
                         <td class="col-comprobante">
                             {% if gasto.comprobante %}

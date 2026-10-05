@@ -10,9 +10,9 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.utils import simpleSplit
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
-from consorcios.models import UnidadFuncional
+from consorcios.models import UnidadFuncional, TipoReparto
 
-from .models import DetalleLiquidacionUF, TipoGasto, ModoReparto
+from .models import DetalleLiquidacionUF, TipoGasto
 
 
 def dinero(valor):
@@ -31,7 +31,7 @@ def procesar_liquidacion_periodo(liquidacion):
     total_ordinario = Decimal('0')
     total_extraordinario = Decimal('0')
 
-    for gasto in liquidacion.gastos_cargados.prefetch_related('unidades'):
+    for gasto in liquidacion.gastos_cargados.select_related('grupo').prefetch_related('grupo__unidades'):
         monto = gasto.monto
         es_ordinario = gasto.tipo == TipoGasto.ORDINARIO
         if es_ordinario:
@@ -39,10 +39,12 @@ def procesar_liquidacion_periodo(liquidacion):
         else:
             total_extraordinario += monto
 
-        seleccion = {uf.pk for uf in gasto.unidades.all()}
-        if gasto.modo_reparto == ModoReparto.PARTICULAR:
+        columna = gasto.grupo
+        tipo_rep = columna.tipo_reparto if columna else TipoReparto.GENERAL
+        seleccion = {uf.pk for uf in columna.unidades.all()} if columna else set()
+        if tipo_rep == TipoReparto.PARTICULAR:
             pagadores = [uf for uf in ufs if uf.pk in seleccion]
-        elif gasto.modo_reparto == ModoReparto.PARCIAL:
+        elif tipo_rep == TipoReparto.PARCIAL:
             pagadores = [uf for uf in ufs if uf.pk not in seleccion]
         else:
             pagadores = list(ufs)
