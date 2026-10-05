@@ -179,6 +179,7 @@ def gestionar_unidad_funcional(request, unidad_id):
         id_modelo=unidad_id,
         formulario_modelo=FormularioUnidadFuncional,
         template="gestionar_unidad_funcional.html",
+        modelo_secundario=request.user
     )
     
     
