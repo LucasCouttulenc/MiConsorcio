@@ -1,11 +1,22 @@
 {% load static %}
 
-<nav class="sidebar">
-    <div class="sidebar-empresa">
-        <div class="empresa-icono">🏢</div>
-        <div class="empresa-texto">
-            <h2>Consorcios</h2>
-            <span>Administración</span>
+<nav class="sidebar" id="sidebar">
+    <!-- Encabezado con Botón Hamburguesa -->
+    <div class="sidebar-header">
+        <button class="btn-toggle-sidebar" id="toggleSidebarBtn" aria-label="Toggle Sidebar">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+        <div class="sidebar-empresa">
+            <div class="empresa-icono">
+                <img src="{% static 'imagenes/logo.svg' %}" alt="Logo" class="svg-icono logo-svg">
+            </div>
+            <div class="empresa-texto">
+                <h2>MisConsorcios</h2>
+            </div>
         </div>
     </div>
 
@@ -13,50 +24,93 @@
         <!-- Menú -->
         <div class="sidebar-menu flex column between">
             <div class="sidebar-submenu">
-                <!-- TODO: esta verificación se puede hacer mas amigable haciendo un usuario custom -->
                 {% if user.is_superuser or 'Administrador' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL ADMIN</span>
-                        <div class="submenu-item">
-                            <a href="{% url 'listar_consorcios' %}">Consorcios</a>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'listar_consorcios' %}active{% endif %}">
+                            <a href="{% url 'listar_consorcios' %}" title="Consorcios">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/consorcios.svg' %}" class="svg-icono default-icon" alt="Consorcios">
+                                    <img src="{% static 'imagenes/consorcios_blanco.svg' %}" class="svg-icono hover-icon" alt="Consorcios">
+                                </span>
+                                <span class="item-texto">Consorcios</span>
+                            </a>
                         </div>
-                        <div class="submenu-item">
-                            <a href="{% url 'listar_liquidaciones' %}">Liquidaciones</a>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'listar_liquidaciones' %}active{% endif %}">
+                            <a href="{% url 'listar_liquidaciones' %}" title="Liquidaciones">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Liquidaciones">
+                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Liquidaciones">
+                                </span>
+                                <span class="item-texto">Liquidaciones</span>
+                            </a>
                         </div>
-                        <div class="submenu-item">
-                            <a href="{% url 'configurar_columnas' %}">Configurar columnas</a>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'configurar_columnas' %}active{% endif %}">
+                            <a href="{% url 'configurar_columnas' %}" title="Configurar columnas">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/prorrateo.svg' %}" class="svg-icono default-icon" alt="Configurar columnas">
+                                    <img src="{% static 'imagenes/prorrateo_blanco.svg' %}" class="svg-icono hover-icon" alt="Configurar columnas">
+                                </span>
+                                <span class="item-texto">Prorrateo</span>
+                            </a>
                         </div>
-                        <div class="submenu-item">
-                            <a href="{% url 'pagos_pendientes' %}">Pagos Pendientes</a>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'pagos_pendientes' %}active{% endif %}">
+                            <a href="{% url 'pagos_pendientes' %}" title="Pagos Pendientes">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Pagos Pendientes">
+                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Pagos Pendientes">
+                                </span>
+                                <span class="item-texto">Pagos Pendientes</span>
+                            </a>
                         </div>
                     </div>
                 {% endif %}
 
-                <!-- TODO: esta verificación se puede hacer mas amigable haciendo un usuario custom -->
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL CONSORCISTA</span>
-                        <div class="submenu-item">
-                            <a href="{% url 'mis_expensas' %}">Mis Expensas</a>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'mis_expensas' %}active{% endif %}">
+                            <a href="{% url 'mis_expensas' %}" title="Mis Expensas">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/expensas.svg' %}" class="svg-icono default-icon" alt="Mis Expensas">
+                                    <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Mis Expensas">
+                                </span>
+                                <span class="item-texto">Mis Expensas</span>
+                            </a>
                         </div>
                     </div>
                 {% endif %}
             </div>
 
-                <!-- Perfil del Usuario al Pie -->
+            <!-- Perfil / Salida al Pie -->
             <div class="sidebar-footer">
-                <!-- <div class="user-avatar">
-                    {{ request.user.username|slice:":2"|upper }}
-                </div>
-                <div class="user-info">
-                    <span class="user-name">{{ request.user.first_name }} {{ request.user.last_name }}</span>
-                    <span class="user-role">Administrador</span>
-                </div> -->
-                <form action="{% url 'cerrar_sesion' %}" method="post" style="display: inline;">
+                <form action="{% url 'cerrar_sesion' %}" method="post" class="form-logout">
                     {% csrf_token %}
-                    <button class="boton-secundario" type="submit">Cerrar sesión</button>
+                    <button class="boton-logout-sidebar" type="submit" title="Cerrar sesión">
+                        <span class="item-icono">
+                            <img src="{% static 'imagenes/logout.svg' %}" class="svg-icono default-icon" alt="Cerrar sesión">
+                            <img src="{% static 'imagenes/logout_blanco.svg' %}" class="svg-icono hover-icon" alt="Cerrar sesión">
+                        </span>
+                        <span class="item-texto">Cerrar sesión</span>
+                    </button>
                 </form>
             </div>
         </div>
     {% endif %}
 </nav>
+
+<script>
+$(document).ready(function() {
+    $('#toggleSidebarBtn').on('click', function(e) {
+        e.stopPropagation();
+        $('#sidebar').toggleClass('open');
+    });
+
+    // Cierra el sidebar al hacer clic fuera de él cuando está abierto
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#sidebar').length && $('#sidebar').hasClass('open')) {
+            $('#sidebar').removeClass('open');
+        }
+    });
+});
+</script>

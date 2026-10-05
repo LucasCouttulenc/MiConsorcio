@@ -1,101 +1,229 @@
+/* CONTENEDOR SIDEBAR Y POSICIONAMIENTO EN OVERLAY */
+.contenedor-sidebar {
+    width: 64px;
+    height: 100vh;
+    position: relative;
+    z-index: 1000;
+    flex-shrink: 0;
+}
+
 .sidebar {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    position: sticky;
+    width: 64px;
+    position: fixed;
     top: 0;
-    padding: 20px 16px;
+    left: 0;
+    background-color: #0b192c;
+    padding: 16px 8px;
     color: #94a3b8;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    white-space: nowrap;
 }
 
-.contenedor-sidebar {
-    width: 20vw;
-    background-color: #0b192c; /* Azul oscuro de la imagen */
+.sidebar.open {
+    width: 260px;
+}
+
+/* ENCABEZADO Y LOGO */
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 48px;
+}
+
+.btn-toggle-sidebar {
+    background: transparent;
+    border: none;
+    color: #38bdf8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
     flex-shrink: 0;
+}
+
+.btn-toggle-sidebar:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
 }
 
 .sidebar-empresa {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 8px 24px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.sidebar.open .sidebar-empresa {
+    opacity: 1;
 }
 
 .empresa-icono {
-    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-svg {
+    width: 24px;
+    height: 24px;
 }
 
 .empresa-texto h2 {
     font-family: 'Exo 2', sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     color: #ffffff;
     font-weight: 700;
     line-height: 1.1;
 }
 
 .empresa-texto span {
-    font-size: 12px;
+    font-size: 11px;
     color: #38bdf8;
 }
 
-/* SECCIONES Y ITEMS DEL MENÚ */
+/* MENÚ Y SUBMENÚS */
 .sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     flex-grow: 1;
     overflow-y: auto;
-    margin-top: 20px;
-    height: 80vh;
-}
-
-.submenu {
-    margin-bottom: 24px;
-}
-
-.sidebar-submenu {
-    margin-bottom: 24px;
+    overflow-x: hidden;
+    margin-top: 16px;
 }
 
 .submenu-titulo {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     color: #475569;
     letter-spacing: 0.05em;
     display: block;
-    margin-bottom: 12px;
-    padding-left: 12px;
+    margin: 16px 0 8px 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.sidebar.open .submenu-titulo {
+    opacity: 1;
 }
 
 .submenu-item {
     width: 100%;
-    margin: 2px 0;
+    margin: 4px 0;
 }
 
-.submenu-item a {
+.submenu-item a,
+.boton-logout-sidebar {
     display: flex;
     align-items: center;
-    padding: 8px 16px 8px 36px; /* Sangría a la izquierda para jerarquía */
-    color: #94a3b8; /* Gris sutil acorde al tema oscuro */
+    height: 40px;
+    padding: 0 10px;
+    color: #94a3b8;
     font-family: var(--fuenteCuerpo, inherit);
     font-size: 13px;
     font-weight: 500;
     text-decoration: none;
-    border-radius: 6px;
-    transition: color 0.2s ease, background-color 0.2s ease;
+    border-radius: 8px;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
 }
 
-.submenu-item a:hover {
-    color: #ffffff;
-    background-color: rgba(255, 255, 255, 0.05);
+/* MANEJO Y CONMUTACIÓN DE ICONOS SVG */
+.item-icono {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* ESTADO ACTIVO (Cuando el usuario está en esa página) */
+.svg-icono {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    transition: opacity 0.2s ease;
+}
+
+/* Estado por defecto (Celeste visible, Blanco oculto) */
+.item-icono .default-icon {
+    display: block;
+    opacity: 1;
+}
+
+.item-icono .hover-icon {
+    display: none;
+    opacity: 0;
+}
+
+/* ESTADOS HOVER Y ACTIVO: CAJA SUTIL Y CAMBIO A ÍCONO BLANCO */
+.submenu-item a:hover,
 .submenu-item.active a,
-.submenu-item a.active {
-    color: #38bdf8; /* Azul destacado */
-    background-color: rgba(56, 189, 248, 0.1);
-    font-weight: 600;
+.boton-logout-sidebar:hover {
+    color: #ffffff;
+    /* Caja sutil de fondo y borde tenue */
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* Intercambiar íconos en Hover o Activo */
+.submenu-item a:hover .item-icono .default-icon,
+.submenu-item.active a .item-icono .default-icon,
+.boton-logout-sidebar:hover .item-icono .default-icon {
+    display: none;
+    opacity: 0;
+}
 
+.submenu-item a:hover .item-icono .hover-icon,
+.submenu-item.active a .item-icono .hover-icon,
+.boton-logout-sidebar:hover .item-icono .hover-icon {
+    display: block;
+    opacity: 1;
+}
 
+.item-texto {
+    margin-left: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
 
+.sidebar.open .item-texto {
+    opacity: 1;
+}
+
+/* FOOTER Y CERRAR SESIÓN */
+.sidebar-footer {
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-logout {
+    display: block;
+    width: 100%;
+}
+
+.boton-logout-sidebar {
+    color: #f87171;
+}
+
+.boton-logout-sidebar:hover {
+    background-color: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #ffffff;
+}
