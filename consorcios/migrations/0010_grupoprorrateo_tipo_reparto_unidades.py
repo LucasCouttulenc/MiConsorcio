@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('consorcios', '0008_unidadfuncional_alicuota_and_more'),
+        ('consorcios', '0009_personal'),
     ]
 
     operations = [

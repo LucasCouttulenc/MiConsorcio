@@ -42,6 +42,65 @@ class FormularioConsorcio(forms.ModelForm):
             Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')
         )
 
+class FormularioPersonal(forms.ModelForm):
+    """
+    Formulario para crear o editar personal de un consorcio.
+    """
+
+    class Meta:
+        model = Personal
+        fields = [
+            "consorcio",
+            "nombre",
+            "apellido",
+            "dni",
+            "cargo",
+            "tipo_contratacion",
+            "empresa_tercerizada",
+            "telefono",
+            "fecha_ingreso",
+        ]
+        widgets = {
+            "fecha_ingreso": DatePickerInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        consorcio = kwargs.pop('consorcio', None) # debe estar en la primera línea
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'POST'
+        if consorcio:
+            self.fields['consorcio'].queryset = Consorcio.objects.filter(id=consorcio.id)
+            self.fields['consorcio'].initial = consorcio
+
+        self.fields['consorcio'].disabled = True
+
+        # El DNI no debe poder modificarse una vez creado el registro
+        if self.instance and self.instance.pk:
+            self.fields['dni'].disabled = True
+
+        self.helper.layout = Layout(
+            Row(
+                Column('consorcio'),
+                Column('nombre'),
+                Column('apellido'),
+                Column('dni'),
+                css_class='row'
+            ),
+            Row(
+                Column('cargo'),
+                Column('tipo_contratacion'),
+                Column('empresa_tercerizada'),
+                css_class='row'
+            ),
+            Row(
+                Column('telefono'),
+                Column('fecha_ingreso'),
+                css_class='row'
+            ),
+            Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')
+        )
+
 class FormularioUnidadFuncional(forms.ModelForm):
     """
     Formulario para crear o editar una unidad funcional.

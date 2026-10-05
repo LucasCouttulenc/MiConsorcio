@@ -31,6 +31,14 @@ class TablaConsorcios(tables.Table):
     )
     """Botón que redirige a la vista de gestión de las unidades funcionales del consorcio."""
 
+    personal = TemplateColumn(
+        template_code='<a href="{% url "listar_personal" record.id %}" class="tabla__boton-accion-registro">Personal</a>',
+        verbose_name="Personal",
+        orderable=False,
+        exclude_from_export=True
+    )
+    """Botón que redirige a la vista de gestión del personal del consorcio."""
+
     opciones = TemplateColumn(
         template_code='<details class="tabla__menu-opciones"><summary aria-label="Opciones de {{ record.nombre }}">⋮</summary><a href="{% url "gestionar_consorcio" record.id %}">Editar Consorcio</a></details>',
         verbose_name="",
@@ -70,6 +78,61 @@ class FiltroConsorcios(django_filters.FilterSet):
         )
 
     
+class TablaPersonal(tables.Table):
+
+    class Meta:
+        model = Personal
+        template_name = "tabla.html"
+        exclude = ('id', 'consorcio')
+        sequence = ('nombre', 'apellido', 'dni', 'cargo', 'tipo_contratacion', 'empresa_tercerizada', 'telefono', 'fecha_ingreso', '...')
+
+    gestionar = TemplateColumn(
+        template_code='<a href="{% url "gestionar_personal" record.id %}" class="tabla__boton-accion-registro">Gestionar</a>',
+        verbose_name="Gestionar",
+        orderable=False,
+        exclude_from_export=True
+    )
+    """Botón que redirige a la vista de gestión del personal."""
+
+    def render_tipo_contratacion(self, record):
+        return record.get_tipo_contratacion_display()
+
+
+class FiltroPersonal(django_filters.FilterSet):
+    texto = django_filters.CharFilter(
+        method="filtrar_por_texto",
+        label="Buscar",
+        widget=TextInput(attrs={"placeholder": "Buscar por nombre, apellido o cargo"}),
+    )
+    tipo_contratacion = django_filters.ChoiceFilter(
+        choices=Personal.TIPO_CONTRATACION,
+        label="Tipo de contratación",
+        empty_label="Todos",
+    )
+
+    class Meta:
+        model = Personal
+        fields = ["texto", "tipo_contratacion"]
+
+    def filtrar_por_texto(self, queryset, name, value) -> models.QuerySet:
+        """
+        Filtra el queryset de personal por nombre, apellido o cargo.
+
+        :param queryset: QuerySet de personal.
+        :param name: Nombre del campo a filtrar (no se usa en este caso).
+        :param value: Valor por el cual se filtra.
+        :return: QuerySet filtrado.
+        :rtype: QuerySet[Personal]
+        """
+
+        return queryset.filter(
+            Q(nombre__icontains=value) |
+            Q(apellido__icontains=value) |
+            Q(cargo__icontains=value) |
+            Q(dni__icontains=value)
+        )
+
+
 class TablaUnidadesFuncionales(tables.Table):
     
     class Meta:
