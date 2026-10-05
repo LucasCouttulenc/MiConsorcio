@@ -227,3 +227,115 @@
     border-color: rgba(239, 68, 68, 0.2);
     color: #ffffff;
 }
+
+/* OVERLAY DEL MODAL (CUBRE TODA LA PANTALLA Y CENTRA EL CONTENIDO) */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(11, 25, 44, 0.65); /* Fondo oscuro semitransparente */
+    backdrop-filter: blur(4px); /* Efecto desโฟque de fondo elegante */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999; /* Asegura que quede encima de la sidebar y navbar */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+/* Estado Visible */
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* TARJETA / CARTEL DE CONFIRMACIÓN */
+.modal-card {
+    background-color: #ffffff;
+    width: 90%;
+    max-width: 400px;
+    padding: 28px 24px;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.active .modal-card {
+    transform: scale(1);
+}
+
+/* ICONO SUPERIOR DE ADVERTENCIA / SALIDA */
+.modal-icono {
+    width: 56px;
+    height: 56px;
+    background-color: #fef2f2;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px auto;
+}
+
+/* TEXTOS DEL MODAL */
+.modal-titulo {
+    font-family: 'Exo 2', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.modal-descripcion {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 24px;
+}
+
+/* BOTONES DE ACCIÓN */
+.modal-acciones {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-modal {
+    flex: 1;
+    height: 42px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-modal:active {
+    transform: scale(0.98);
+}
+
+/* Botón Cancelar */
+.btn-cancelar {
+    background-color: #f1f5f9;
+    color: #475569;
+}
+
+.btn-cancelar:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+}
+
+/* Botón Confirmar */
+.btn-confirmar {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+.btn-confirmar:hover {
+    background-color: #dc2626;
+}
