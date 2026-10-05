@@ -55,14 +55,13 @@
 
 .alerta {
     font-family: var(--fuenteSecundaria);
-    font-size: var(--textoMedio);
     font-weight: bold;
     position: fixed;
     width: fit-content;
     min-width: 40vw;
-    height: 5vh;
+    height: 30px;
     text-align: center;
-    top: calc(1vh + 1em);
+    top: 25px;
     right: 1em;
     padding: .5em;
     border-radius: var(--radioEstandar);
@@ -100,11 +99,11 @@
     font-weight: bolder;
     transition: all 0.3s;
     cursor: pointer;
-    width: 1.5em;
-    height: 1.5em;
+    width: 1.2em;
+    height: 1.2em;
     border-radius: 100%;
     position: fixed;
-    top: calc(2vh + 1.5em);
+    top: calc(25px + 4px);
     right: 2em;
 }
 
