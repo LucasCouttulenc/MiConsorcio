@@ -39,6 +39,9 @@ urlpatterns = [
     path('consorcios/<int:consorcio_id>/unidades/', views_consorcios.ListarUnidadesFuncionales.as_view(), name='listar_unidades_funcionales'),
     path('consorcios/<int:consorcio_id>/unidades/crear/', views_consorcios.crear_unidad_funcional, name='crear_unidad_funcional'),
     path('consorcios/unidades/<int:unidad_id>/gestionar/', views_consorcios.gestionar_unidad_funcional, name='gestionar_unidad_funcional'),
+    path('consorcios/<int:consorcio_id>/personal/', views_consorcios.ListarPersonal.as_view(), name='listar_personal'),
+    path('consorcios/<int:consorcio_id>/personal/agregar/', views_consorcios.crear_personal, name='crear_personal'),
+    path('consorcios/personal/<int:personal_id>/gestionar/', views_consorcios.gestionar_personal, name='gestionar_personal'),
       path('consorcios/<int:consorcio_id>/alicuotas/',views_consorcios.definir_alicuotas,name='definir_alicuotas'),
     path('consorcios/columnas/', views_consorcios.configurar_columnas, name='configurar_columnas'),
     # Liquidaciones
@@ -51,7 +54,10 @@ urlpatterns = [
     path('liquidaciones/<int:liquidacion_id>/documento/', views_gastos.descargar_documento, name='descargar_documento'),
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/', views_gastos.subir_comprobante, name='subir_comprobante'),
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/quitar/', views_gastos.quitar_comprobante, name='quitar_comprobante'),
-   
+    path('mis-expensas/', views_gastos.mis_expensas, name='mis_expensas'),
+    path('liquidaciones/detalle/<int:detalle_id>/pagar/', views_gastos.registrar_pago, name='registrar_pago'),
+    path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),
+    path('pagos/<int:pago_id>/procesar/', views_gastos.procesar_pago, name='procesar_pago'),
 ]
 
 if settings.DEBUG:

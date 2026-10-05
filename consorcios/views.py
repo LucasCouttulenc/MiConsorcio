@@ -192,6 +192,100 @@ def gestionar_unidad_funcional(request, unidad_id):
     
 
 
+@method_decorator(login_required, name='dispatch')
+@method_decorator(permission_required('consorcios.view_personal', raise_exception=True), name='dispatch')
+class ListarPersonal(Lista):
+    model = Personal
+    table_class = TablaPersonal
+    export_name = 'personal'
+    filterset_class = FiltroPersonal
+    template_name = 'listar_personal.html'
+    acciones = [
+        { "nombre": "Agregar", "tipo": "link", "perm": "consorcios.add_personal", "url": "crear_personal"},
+    ]
+    columnas_con_permiso = {"gestionar": "consorcios.change_personal"} # dict
+    columnas_a_ocultar = {} # set
+
+    def get_queryset(self):
+        """
+        Obtiene el queryset de personal según el consorcio deseado y el usuario autenticado.
+        """
+        usuario = self.request.user
+        consorcio_id = self.kwargs.get('consorcio_id')
+        queryset = super().get_queryset()
+
+        # Si es administrador de este consorcio
+        administrador = Administrador.objects.filter(usuario=usuario).first()
+        if (administrador and administrador.administra(consorcio_id)) or usuario.is_superuser:
+            return queryset.filter(consorcio_id=consorcio_id)
+
+        messages.error(self.request, "No tenes permisos para ver el personal de este consorcio.")
+        return queryset.none()
+
+    def get_context_data(self, **kwargs):
+        """
+        Agrega el consorcio al contexto para poder mostrar su nombre en la plantilla.
+        """
+        context = super().get_context_data(**kwargs)
+        consorcio_id = self.kwargs.get('consorcio_id')
+        consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+        context['consorcio'] = consorcio
+        context['elemento'] = consorcio
+        return context
+
+@login_required
+@permission_required('consorcios.add_personal', raise_exception=True)
+def crear_personal(request, consorcio_id):
+    """
+    Vista para agregar personal a un consorcio específico.
+
+    :param request: Objeto HttpRequest.
+    :param consorcio_id: ID del consorcio al que pertenece el personal.
+    """
+
+    usuario = request.user
+    administrador = Administrador.objects.filter(usuario=usuario).first()
+    if not usuario.is_superuser and not administrador.administra(consorcio_id):
+        messages.error(request, "No tenes permisos para agregar personal en este consorcio.")
+        return redirect('listar_consorcios')
+
+    consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+
+    return crear_modelo(
+        request=request,
+        formulario_modelo=FormularioPersonal,
+        template="crear_personal.html",
+        vista_exito="listar_personal",
+        params_vista_exito={"consorcio_id": consorcio_id},
+        modelo_secundario=consorcio
+    )
+
+@login_required
+@permission_required('consorcios.change_personal', raise_exception=True)
+def gestionar_personal(request, personal_id):
+    """
+    Vista para gestionar los datos de un personal específico.
+
+    :param request: Objeto HttpRequest.
+    :param personal_id: ID del personal a gestionar.
+    :return: Renderiza la plantilla de gestión de personal.
+    """
+
+    personal = Personal.objects.filter(id=personal_id).first()
+    consorcio_id = personal.consorcio.id
+    administrador = Administrador.objects.filter(usuario=request.user).first()
+    if not request.user.is_superuser and not administrador.administra(consorcio_id):
+        messages.error(request, "No tenes permisos para gestionar este personal.")
+        return redirect('listar_consorcios')
+
+    return gestionar_modelo(
+        request=request,
+        id_modelo=personal_id,
+        formulario_modelo=FormularioPersonal,
+        template="gestionar_personal.html",
+    )
+
+
 def _consorcio_gestionable(request, consorcio_id):
     """Devuelve el consorcio si el usuario puede gestionarlo, o None si no tiene permiso."""
     consorcio = get_object_or_404(Consorcio, id=consorcio_id)

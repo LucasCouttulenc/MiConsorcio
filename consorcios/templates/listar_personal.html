@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{%block title%}Personal{% endblock %}
+
+{%block content %}
+
+{% include "componentes/mensajes.html" %}
+
+<h1 class="titulo">Personal de {{ consorcio.nombre }}</h1>
+
+{% include "componentes/tabla.html" %}
+
+{% endblock %}

@@ -11,12 +11,13 @@ from django.urls import reverse
 from django.utils.http import content_disposition_header
 from django.views.decorators.http import require_POST
 
+from usuarios.models import Propietario
+from .forms import FormularioPago
 from consorcios.models import Consorcio, GrupoProrrateo
-from .models import Gasto, Liquidacion, TipoGasto
+from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleLiquidacionUF
 from .pdf import generar_pdf_liquidacion
 from .services import procesar_liquidacion_periodo
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
-
 
 class BorradorExistente(ValueError):
     def __init__(self, liquidacion):
@@ -272,3 +273,77 @@ def quitar_comprobante(request, gasto_id):
         gasto.save(update_fields=['comprobante'])
         messages.success(request, 'Comprobante quitado.')
     return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
+
+
+@login_required
+def mis_expensas(request):
+    """Muestra al propietario sus liquidaciones y el estado de deuda."""
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    
+    # Traemos todas las expensas de sus departamentos
+    detalles = DetalleLiquidacionUF.objects.filter(
+        unidad_funcional__propietario=propietario
+    ).order_by('-liquidacion__periodo')
+    
+    return render(request, 'mis_expensas.html', {'detalles': detalles})
+
+@login_required
+def registrar_pago(request, detalle_id):
+    """Procesa el formulario cuando el propietario sube un comprobante."""
+    detalle = get_object_or_404(DetalleLiquidacionUF, pk=detalle_id)
+    
+    if request.method == 'POST':
+        form = FormularioPago(request.POST, request.FILES)
+        if form.is_valid():
+            pago = form.save(commit=False)
+            pago.detalle_liquidacion = detalle
+            pago.estado = 'pendiente'
+            pago.save()
+            
+            messages.success(request, 'Comprobante enviado exitosamente. Queda pendiente de validación.')
+            
+            # Verificamos si es Propietario para llevarlo a su panel
+            if Propietario.objects.filter(usuario=request.user).exists():
+                return redirect('mis_expensas')
+            return redirect('detalle_liquidacion', liquidacion_id=detalle.liquidacion.id)
+    else:
+        monto_sugerido = detalle.deuda_total_actualizada
+        form = FormularioPago(initial={'monto_pagado': monto_sugerido, 'fecha_pago': date.today()})
+        
+    return render(request, 'registrar_pago.html', {
+        'form': form,
+        'detalle': detalle
+    })
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def listar_pagos_pendientes(request):
+    """Muestra al administrador los pagos que esperan revisión."""
+    consorcios = consorcios_permitidos(request.user)
+    pagos = Pago.objects.filter(
+        detalle_liquidacion__liquidacion__consorcio__in=consorcios,
+        estado='pendiente'
+    ).order_by('-fecha_registro')
+    
+    return render(request, 'pagos_pendientes.html', {'pagos': pagos})
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def procesar_pago(request, pago_id):
+    """Aprueba o rechaza un pago."""
+    pago = get_object_or_404(Pago, pk=pago_id)
+    
+    if pago.detalle_liquidacion.liquidacion.consorcio not in consorcios_permitidos(request.user):
+        raise Http404('No tenés permisos para gestionar este pago.')
+        
+    accion = request.POST.get('accion')
+    if accion == 'validar':
+        pago.estado = 'validado'
+        messages.success(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} validado.')
+    elif accion == 'rechazar':
+        pago.estado = 'rechazado'
+        messages.error(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} rechazado. La deuda vuelve a estar activa.')
+        
+    pago.save()
+    return redirect('pagos_pendientes')

@@ -27,7 +27,13 @@ PERMISOS_ADMINISTRADORES = [
     "change_unidadfuncional",
     "delete_unidadfuncional",
 
-    # Grupos de prorrateo  
+    # Personal
+    "add_personal",
+    "view_personal",
+    "change_personal",
+    "delete_personal",
+
+    # Grupos de prorrateo
     "add_grupoprorrateo",
     "view_grupoprorrateo",
     "change_grupoprorrateo",

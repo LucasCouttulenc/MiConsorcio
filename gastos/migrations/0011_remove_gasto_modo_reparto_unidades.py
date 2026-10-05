@@ -4,7 +4,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('gastos', '0008_gasto_modo_reparto_unidades'),
+        ('gastos', '0010_pago_notas_admin'),
     ]
 
     operations = [
