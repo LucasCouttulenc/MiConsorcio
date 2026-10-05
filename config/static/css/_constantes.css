@@ -33,8 +33,8 @@
     /* Colores para Estados y Botones */
     --colorExito: #0f6514;
     --fondoColorExitoBackground: #b7d2ba;
-    --colorError: #ef4444;
-    --colorErrorHover: #dc2626;
+    --colorError: #660c0c;
+    --colorErrorHover: #660c0c;
     --colorErrorTexto: #660c0c;
     --fondoColorError: #DCCACB;
     --fondoColorErrorSuave: #fef2f2;

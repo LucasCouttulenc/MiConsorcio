@@ -18,7 +18,7 @@
 
 .alerta {
     padding: 0.8rem 1rem;
-    border-radius: 8px;
+    /* border-radius: 8px; se mezcla con el alerta de componentes, cambiar nombre? */
     margin-bottom: 1rem;
     font-size: 0.92rem;
     border: 1px solid transparent;
