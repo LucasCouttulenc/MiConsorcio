@@ -36,6 +36,15 @@
                                 <span class="item-texto">Consorcios</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'listar_unidades_funcionales' %}active{% endif %}">
+                            <a href="{% url 'listar_unidades_funcionales' %}" title="Unidades Funcionales">
+                                <!-- <span class="item-icono">
+                                    <img src="{% static 'imagenes/unidades_funcionales.svg' %}" class="svg-icono default-icon" alt="Unidades Funcionales">
+                                    <img src="{% static 'imagenes/unidades_funcionales_blanco.svg' %}" class="svg-icono hover-icon" alt="Unidades Funcionales">
+                                </span> -->
+                                <span class="item-texto">Unidades Funcionales</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'listar_liquidaciones' %}active{% endif %}">
                             <a href="{% url 'listar_liquidaciones' %}" title="Liquidaciones">
                                 <span class="item-icono">
