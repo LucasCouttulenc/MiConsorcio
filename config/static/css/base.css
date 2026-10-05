@@ -21,9 +21,8 @@ body {
 }
 
 .contenedor-principal {
-    width: 80vw;
+    width: 100%;
     min-height: 100vh;
-    margin-left: 1.5rem;
     background-color: var(--colorFondo);
 }
 

@@ -1,21 +1,28 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Inicio de Sesión{% endblock %}
+{% block title %}Iniciar Sesión | MisConsorcios{% endblock %}
 
 {% block content %}
-
 <div class="pagina-login flex center column">
 
+    <div class="marca-login flex center column">
+        <div class="logo-contenedor">
+            <img src="{% static 'imagenes/logo.svg' %}" alt="Logo MisConsorcios" class="logo-svg">
+        </div>
+        <h1 class="marca-nombre">Mis<span>Consorcios</span></h1>
+    </div>
+
+    <!-- Contenedor del Formulario -->
     <div class="contenedor-login flex center column">
         
         <!-- Header del Formulario -->
         <div class="encabezado-login flex center column">
-            <h2 class="formulario-inicio-sesion__titulo">Inicio de sesión</h2>            
-            <p class="formulario-inicio-sesion__subtitulo">Gestión de Consorcios</p>
+            <h2 class="formulario-inicio-sesion__titulo">Iniciar Sesión</h2>            
+            <p class="formulario-inicio-sesion__subtitulo">Ingresa tus credenciales para acceder</p>
         </div>  
 
-        <!-- Formulario -->
+        <!-- Formulario de Django -->
         {% include "formulario.html" with formulario=formulario %}
 
     </div>

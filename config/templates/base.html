@@ -18,9 +18,11 @@
     
     <body>
         <div class="flex">
-            <aside class="contenedor-sidebar">
-                {% include "sidebar.html" %}
-            </aside>
+            {% if user.is_authenticated %}
+                <aside class="contenedor-sidebar">
+                    {% include "sidebar.html" %}
+                </aside>
+            {% endif %}
 
             <main class="contenedor-principal">
                 {% block content %}{% endblock %}
