@@ -9,7 +9,8 @@
 
 <link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
 
-<h1 class="titulo">Crear unidad funcional para {{ consorcio.nombre }}</h1>
+<h1 class="titulo">Crear unidad funcional</h1>
+<a href="{% url 'listar_unidades_funcionales' %}" class="link-cancelar"> ↩ Cancelar</a>
 <div class="flex around">
     <div>
         {% include "formulario.html" with formulario=formulario %}

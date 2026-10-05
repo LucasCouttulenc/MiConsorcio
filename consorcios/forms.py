@@ -3,6 +3,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit, Div
 from django_flatpickr.widgets import DatePickerInput
 from django_select2.forms import Select2Widget
+from usuarios.models import Administrador
 from .models import *
 
 class FormularioConsorcio(forms.ModelForm):
@@ -122,15 +123,19 @@ class FormularioUnidadFuncional(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        consorcio = kwargs.pop('consorcio', None) # debe estar en la primera línea
+        usuario = kwargs.pop('user', None)  # debe estar en la primera línea
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_method = 'POST'
-        if consorcio:
-            self.fields['consorcio'].queryset = Consorcio.objects.filter(id=consorcio.id)
-            self.fields['consorcio'].initial = consorcio
 
-        self.fields['consorcio'].disabled = True  
+        if usuario.is_superuser:
+            self.fields['consorcio'].queryset = Consorcio.objects.all()
+        else:
+            administrador = Administrador.objects.filter(usuario=usuario).first()
+            if administrador:
+                self.fields['consorcio'].queryset = administrador.consorcios.all()
+            else:
+                self.fields['consorcio'].queryset = Consorcio.objects.none()
 
         self.helper.layout = Layout(
             Row(

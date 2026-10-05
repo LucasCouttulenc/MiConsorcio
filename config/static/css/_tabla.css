@@ -320,3 +320,61 @@
 .tabla__menu-opciones summary::-webkit-details-marker { display: none; }
 .tabla__menu-opciones a { display: block; padding: 9px 12px; white-space: nowrap; }
 .tabla__menu-opciones[open] a { position: absolute; top: 100%; right: 0; z-index: 5; background: white; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 10px #0002; }
+
+/* Ajustes para Select2 dentro de los filtros de tabla */
+.tabla__filtro .select2-container {
+    font-size: 13px;
+}
+
+.tabla__filtro .select2-container--default .select2-selection--single {
+    min-width: 250px;
+    margin-left: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tabla__filtro .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #1e293b;
+    line-height: normal;
+    padding-left: 0.8em;
+    padding-right: 2em;
+}
+
+.tabla__filtro .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100%;
+    right: 8px;
+    display: flex;
+    align-items: center;
+}
+
+/* Estado de enfoque / Focus */
+.tabla__filtro .select2-container--default.select2-container--open .select2-selection--single,
+.tabla__filtro .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+/* Desplegable de opciones (Dropdown) */
+.select2-dropdown {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    z-index: 9999;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #eff6ff;
+    color: #2563eb;
+}
+
+.select2-container--default .select2-results__option[aria-selected="true"] {
+    background-color: #f1f5f9;
+    color: #0f172a;
+    font-weight: 600;
+}

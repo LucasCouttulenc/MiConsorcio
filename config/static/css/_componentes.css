@@ -111,3 +111,18 @@
 .alerta__cerrar:hover {
     transform: scale(1.1);
 }
+
+.link-cancelar {
+    display: inline-block;
+    margin-bottom: 1em;
+    color: var(--colorPrincipal);
+    text-decoration: none;
+    font-family: var(--fuenteCuerpo);
+    font-size: var(--textoChico);
+    transition: color 0.2s ease;
+}
+
+.link-cancelar:hover {
+    color: var(--colorPrincipalHover);
+    transform: scale(1.02);
+}

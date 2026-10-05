@@ -3,7 +3,10 @@ from django_tables2 import tables
 from django_tables2 import TemplateColumn
 from django.forms import TextInput
 from django.db.models import Q
+
+from usuarios.models import Administrador
 from .models import *
+from config.comun import GRUPO_ADMINISTRADORES
 
 class TablaConsorcios(tables.Table):
 
@@ -23,7 +26,7 @@ class TablaConsorcios(tables.Table):
     """Botón que redirige a la vista de gestión de la beca."""
 
     unidades = TemplateColumn(
-        template_code='<a href="{% url "listar_unidades_funcionales" record.id %}" class="tabla__boton-accion-registro">Unidades</a>',
+        template_code='<a href="{% url "listar_unidades_funcionales" %}?consorcio={{ record.id }}" class="tabla__boton-accion-registro">Unidades</a>',
         verbose_name="Unidades",
         orderable=False,
         exclude_from_export=True
@@ -137,8 +140,10 @@ class TablaUnidadesFuncionales(tables.Table):
     class Meta:
         model = UnidadFuncional
         template_name = "tabla.html"
-        exclude = ('id', 'consorcio')
+        exclude = ('id', )
         # sequence = ('direccion',...
+
+    consorcio = tables.columns.Column(accessor='consorcio.nombre', verbose_name='Consorcio')
     
     # Acciones
 
@@ -151,25 +156,47 @@ class TablaUnidadesFuncionales(tables.Table):
     """Botón que redirige a la vista de gestión de la unidad funcional."""
 
 class FiltroUnidadesFuncionales(django_filters.FilterSet):
-    direccion = django_filters.CharFilter(
+    texto = django_filters.CharFilter(
         method="filtrar_por_texto",
         label="Buscar",
-        widget=TextInput(attrs={"placeholder": "Buscar"}),
+    )
+
+    consorcio = django_filters.ModelChoiceFilter(
+        queryset=Consorcio.objects.none(),
+        label="Consorcio",
+        empty_label="Todos",
     )
 
     class Meta:
         model = UnidadFuncional
-        fields = ["direccion"]
+        fields = ["texto"]
 
-    def filtrar_por_texto(self, queryset, name, value)-> models.QuerySet:
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+        usuario = request.user
+        if usuario.is_superuser:
+            self.filters['consorcio'].queryset = Consorcio.objects.all()
+        elif usuario.groups.filter(name=GRUPO_ADMINISTRADORES).exists():
+            administrador = Administrador.objects.filter(usuario=usuario).first()
+            self.filters['consorcio'].queryset = administrador.consorcios.all()
+        else:
+            self.filters['consorcio'].queryset = Consorcio.objects.none()
+
+    def filtrar_por_texto(self, queryset, name, value) -> models.QuerySet:
         """
-        Filtra el queryset de unidades funcionales por el nombre de la unidad funcional.
+        Filtra el queryset de unidades funcionales por dirección.
 
         :param queryset: QuerySet de unidades funcionales.
         :param name: Nombre del campo a filtrar (no se usa en este caso).
-        :param value: Valor por el cual se filtra (nombre de la unidad funcional).
-        :return: QuerySet filtrado por el nombre de la unidad funcional.
+        :param value: Valor por el cual se filtra.
+        :return: QuerySet filtrado.
         :rtype: QuerySet[UnidadFuncional]
         """
 
-        return queryset.filter(Q(direccion__icontains=value))
+        return queryset.filter(
+            Q(piso__icontains=value) |
+            Q(departamento__icontains=value) |
+            Q(propietario__usuario__first_name__icontains=value) |
+            Q(propietario__usuario__last_name__icontains=value) 
+        )
