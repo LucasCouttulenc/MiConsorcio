@@ -84,9 +84,10 @@
 
             <!-- Perfil / Salida al Pie -->
             <div class="sidebar-footer">
-                <form action="{% url 'cerrar_sesion' %}" method="post" class="form-logout">
+                <!-- Formulario con ID para poder enviarlo mediante JS -->
+                <form id="formCerrarSesion" action="{% url 'cerrar_sesion' %}" method="post" class="form-logout">
                     {% csrf_token %}
-                    <button class="boton-logout-sidebar" type="submit" title="Cerrar sesión">
+                    <button id="btnAbrirModalLogout" class="boton-logout-sidebar" type="button" title="Cerrar sesión">
                         <span class="item-icono">
                             <img src="{% static 'imagenes/logout.svg' %}" class="svg-icono default-icon" alt="Cerrar sesión">
                             <img src="{% static 'imagenes/logout_blanco.svg' %}" class="svg-icono hover-icon" alt="Cerrar sesión">
@@ -95,7 +96,25 @@
                     </button>
                 </form>
             </div>
-        </div>
+
+            <!-- Modal de Confirmación de Cerrar Sesión (Centrado) -->
+            <div id="modalLogout" class="modal-overlay">
+                <div class="modal-card">
+                    <div class="modal-icono">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </div>
+                    <h3 class="modal-titulo">¿Cerrar sesión?</h3>
+                    <p class="modal-descripcion">Estás a punto de salir de la plataforma.</p>
+                    <div class="modal-acciones">
+                        <button id="btnCancelarLogout" class="btn-modal btn-cancelar" type="button">Cancelar</button>
+                        <button id="btnConfirmarLogout" class="btn-modal btn-confirmar" type="button">Sí, cerrar sesión</button>
+                    </div>
+                </div>
+            </div>
     {% endif %}
 </nav>
 
@@ -110,6 +129,31 @@ $(document).ready(function() {
     $(document).on('click', function(e) {
         if (!$(e.target).closest('#sidebar').length && $('#sidebar').hasClass('open')) {
             $('#sidebar').removeClass('open');
+        }
+    });
+});
+
+$(document).ready(function() {
+    // Abrir el modal de confirmación al hacer clic en "Cerrar sesión"
+    $('#btnAbrirModalLogout').on('click', function(e) {
+        e.preventDefault();
+        $('#modalLogout').addClass('active');
+    });
+
+    // Cerrar el modal al presionar "Cancelar"
+    $('#btnCancelarLogout').on('click', function() {
+        $('#modalLogout').removeClass('active');
+    });
+
+    // Confirmar y enviar el formulario de Django
+    $('#btnConfirmarLogout').on('click', function() {
+        $('#formCerrarSesion').submit();
+    });
+
+    // Cerrar si se hace clic fuera de la tarjeta blanca (en la zona oscura)
+    $('#modalLogout').on('click', function(e) {
+        if ($(e.target).is('#modalLogout')) {
+            $('#modalLogout').removeClass('active');
         }
     });
 });
