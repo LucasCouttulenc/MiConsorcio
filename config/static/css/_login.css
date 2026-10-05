@@ -3,7 +3,7 @@
    ========================================== */
 .pagina-login {
     min-height: 100vh;
-    width: 100%;
+    width: 100vw;
     background-color: var(--colorFondoPagina);
     display: flex;
     flex-direction: column;
@@ -58,8 +58,7 @@
    ========================================== */
 .contenedor-login {
     background-color: var(--colorTarjeta);
-    width: 100%;
-    max-width: 420px;
+    width: 30vw;
     padding: 40px 32px;
     border-radius: var(--radioContenedor);
     box-shadow: var(--sombraTarjetaFlotante);
@@ -103,7 +102,7 @@
 
 .formulario-inicio-sesion__campo label {
     display: block;
-    font-size: 0.75rem;
+    font-size: var(--textoMicro);
     font-weight: 700;
     color: var(--colorTextoMuted);
     text-transform: uppercase;
@@ -112,8 +111,8 @@
 }
 
 .formulario-inicio-sesion__campo input {
-    width: 100%;
-    padding: 12px 16px;
+    width: 20vw;
+    padding: 10px 10px;
     border: 1.5px solid var(--colorBordeSuave);
     border-radius: var(--radioInput);
     font-family: var(--fuenteCuerpo);

@@ -23,7 +23,9 @@ body {
 .contenedor-principal {
     width: 100%;
     min-height: 100vh;
-    background-color: var(--colorFondo);
+    background-color: var(--colorFondoSecundario);
+    padding-left: 20px;
+    padding-right: 20px;
 }
 
 .titulo {

@@ -1,11 +1,10 @@
 /***************** CONTENEDOR ESPECÍFICO *****************/
-
 .contenedor-formulario-custom {
-    background-color: #ffffff;
-    border-radius: 10px;
-    border: 1px solid #f1f5f9;
+    background-color: var(--colorTarjeta);
+    border-radius: var(--radioInput);
+    border: 1px solid var(--colorBordeSuave);
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--sombraTarjeta);
     max-width: 100%;
 }
 
@@ -35,17 +34,25 @@
 
 .contenedor-formulario-custom .form-group label,
 .contenedor-formulario-custom .requiredField {
-    font-size: 13px;
-    font-weight: 600;
-    color: #475569;
+    font-family: var(--fuenteCuerpo);
+    font-size: var(--textoChico);
+    font-weight: 700;
+    color: var(--colorTextoMuted);
     margin-bottom: 0.4rem;
     display: inline-block;
 }
 
 .contenedor-formulario-custom .asteriskField {
-    color: #ef4444;
+    color: var(--colorError);
     margin-left: 0.2rem;
     font-weight: bold;
+}
+
+.contenedor-formulario-custom .form-text {
+    font-family: var(--fuenteCuerpo);
+    font-size: var(--textoMicro);
+    color: var(--colorTextoMuted);
+    margin-top: 0.25rem;
 }
 
 /***************** INPUTS Y CONTROLES *****************/
@@ -59,12 +66,13 @@
 .contenedor-formulario-custom select,
 .contenedor-formulario-custom textarea {
     width: 100%;
-    padding: 0.55rem 0.8rem;
-    font-size: 13px;
-    color: #1e293b;
-    background-color: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
+    padding: 0.35rem 0.8rem;
+    font-family: var(--fuenteCuerpo);
+    font-size: var(--textoChico);
+    color: var(--colorTextoPrincipal);
+    background-color: var(--colorTarjeta);
+    border: 1px solid var(--colorBorde);
+    border-radius: var(--radioBoton);
     box-sizing: border-box;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -73,8 +81,8 @@
 .contenedor-formulario-custom input:focus,
 .contenedor-formulario-custom select:focus,
 .contenedor-formulario-custom textarea:focus {
-    border-color: #2563eb !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--colorPrincipal) !important;
+    box-shadow: 0 0 0 3px var(--colorPrincipalTransparente);
     outline: none;
 }
 
@@ -82,43 +90,78 @@
     min-height: 80px;
 }
 
-/***************** BOTONES Y ACCIONES *****************/
+/***************** INTEGRACIÓN Y NORMALIZACIÓN DE SELECT2 *****************/
 
-.contenedor-formulario-custom .flex.wrap.center,
-.contenedor-formulario-custom form .flex {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
+/* Contenedor principal de Select2 dentro del formulario */
+.contenedor-formulario-custom .select2-container {
+    width: 100% !important;
+    font-family: var(--fuenteCuerpo) !important;
+    font-size: var(--textoChico) !important;
 }
 
-.contenedor-formulario-custom .btn-primary,
-.contenedor-formulario-custom .boton-primario,
-.contenedor-formulario-custom input[type="submit"] {
-    background-color: #2563eb;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    padding: 0.55rem 1.4rem;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+/* Caja de selección (Input cerrado) */
+.contenedor-formulario-custom .select2-container--default .select2-selection--single {
+    height: 38px !important; /* Misma altura relativa a los inputs padding 0.55rem */
+    background-color: var(--colorTarjeta) !important;
+    border: 1px solid var(--colorBorde) !important;
+    border-radius: var(--radioBoton) !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.contenedor-formulario-custom .btn-primary:hover,
-.contenedor-formulario-custom .boton-primario:hover,
-.contenedor-formulario-custom input[type="submit"]:hover {
-    background-color: #1d4ed8;
+/* Texto interno del campo Select2 seleccionado */
+.contenedor-formulario-custom .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--colorTextoPrincipal) !important;
+    font-size: var(--textoChico) !important;
+    line-height: normal !important;
+    padding-left: 0.8rem !important;
+    padding-right: 2rem !important;
 }
 
-.contenedor-formulario-custom .btn-primary:active,
-.contenedor-formulario-custom .boton-primario:active,
-.contenedor-formulario-custom input[type="submit"]:active {
-    transform: scale(0.98);
+/* Flechita / Icono desplegable */
+.contenedor-formulario-custom .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+    right: 8px !important;
+}
+
+/* Enfoque / Focus en Select2 */
+.contenedor-formulario-custom .select2-container--default.select2-container--open .select2-selection--single,
+.contenedor-formulario-custom .select2-container--default.select2-container--focus .select2-selection--single {
+    border-color: var(--colorPrincipal) !important;
+    box-shadow: 0 0 0 3px var(--colorPrincipalTransparente) !important;
+    outline: none !important;
+}
+
+/* Menú Desplegable (Dropdown flotante de opciones) */
+.select2-dropdown {
+    border: 1px solid var(--colorBorde) !important;
+    border-radius: var(--radioBoton) !important;
+    box-shadow: var(--sombraTarjeta) !important;
+    font-family: var(--fuenteCuerpo) !important;
+    font-size: var(--textoChico) !important;
+    z-index: 9999 !important;
+}
+
+/* Opciones individuales dentro del menú */
+.select2-results__option {
+    padding: 8px 12px !important;
+    color: var(--colorTextoPrincipal) !important;
+    font-size: var(--textoChico) !important;
+}
+
+/* Opción sobre la que se pasa el cursor / seleccionada */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--colorPrincipal) !important;
+    color: var(--colorTextoBlanco) !important;
+}
+
+/***************** SOPORTE DE DISABLED PARA SELECT2 *****************/
+
+/* Estado deshabilitado en el contenedor de Select2 */
+.contenedor-formulario-custom .select2-container--default.select2-container--disabled .select2-selection--single {
+    background-color: #f1f5f9 !important;
+    border-color: var(--colorBordeSuave) !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
 }

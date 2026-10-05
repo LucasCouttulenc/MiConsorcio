@@ -24,7 +24,7 @@
                 </aside>
             {% endif %}
 
-            <main class="contenedor-principal">
+            <main {% if user.is_authenticated %}class="contenedor-principal"{% endif %}">
                 {% block content %}{% endblock %}
             </main>
 

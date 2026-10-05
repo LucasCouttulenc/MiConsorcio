@@ -10,8 +10,7 @@ class TablaConsorcios(tables.Table):
     class Meta:
         model = Consorcio
         template_name = "tabla.html"
-        exclude = ('id', 'clave_suterh')
-        # sequence = ('direccion',...
+        exclude = ('id', 'clave_suterh', 'fecha_creacion', 'horario_atencion')
     
     # Acciones
 

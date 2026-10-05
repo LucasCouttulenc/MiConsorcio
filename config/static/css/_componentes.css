@@ -10,10 +10,10 @@
     background-color: var(--colorPrincipal);
     color: var(--colorTextoBlanco);
     border: none;
-    padding: 3px 5px;
+    padding: 5px 5px;
     border-radius: 8px;
     font-family: var(--fuenteCuerpo);
-    font-size: 15px;
+    font-size: var(--textoChico);
     font-weight: 700;
     cursor: pointer;
     transition: background-color 0.2s ease, transform 0.1s ease;

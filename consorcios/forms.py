@@ -34,6 +34,9 @@ class FormularioConsorcio(forms.ModelForm):
                 Column('nombre'),
                 Column('cuit'),
                 Column('fecha_creacion'),
+                css_class = 'row'
+            ),
+            Row(
                 Column('calle'),
                 Column('altura'),
                 Column('codigo_postal'),
