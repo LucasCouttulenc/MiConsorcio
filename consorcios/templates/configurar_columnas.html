@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Configurar columnas{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/_columnas.css' %}">
+
+{% include "componentes/mensajes.html" %}
+
+<div class="cols-header">
+    <div>
+        <h1 class="titulo">Configurar columnas</h1>
+        <p class="cols-sub">Definí las columnas de prorrateo del consorcio y quién paga cada una.</p>
+    </div>
+</div>
+
+<form method="get" class="cols-selector">
+    <label class="cols-label">Consorcio</label>
+    <select name="consorcio" class="cols-input" onchange="this.form.submit()">
+        <option value="">-- Elegí un consorcio --</option>
+        {% for c in consorcios %}
+            <option value="{{ c.id }}" {% if consorcio and c.id == consorcio.id %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if consorcio %}
+    {% if not unidades %}
+        <div class="alerta alerta-warning">
+            Este consorcio no tiene unidades funcionales cargadas.
+            <a href="{% url 'crear_unidad_funcional' consorcio.id %}">Crear la primera UF</a>.
+        </div>
+    {% endif %}
+
+    <div class="cols-card">
+        <div class="cols-card-head">
+            <span>Columnas de {{ consorcio.nombre }}</span>
+            <button type="button" class="boton-primario" onclick="nuevaColumna()">+ Nueva columna</button>
+        </div>
+
+        <div class="cols-tabla-wrap">
+            <table class="cols-tabla">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th class="col-tipo">Tipo de reparto</th>
+                        <th>UF afectadas</th>
+                        <th class="col-acc">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for col in columnas %}
+                        <tr>
+                            <td class="col-nombre">{{ col.nombre }}</td>
+                            <td class="col-tipo"><span class="badge-tipo tipo-{{ col.tipo_reparto }}">{{ col.get_tipo_reparto_display }}</span></td>
+                            <td class="col-ufs">
+                                {% if col.tipo_reparto == 'general' %}
+                                    Todas las UF
+                                {% elif col.tipo_reparto == 'parcial' %}
+                                    Exentas: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
+                                {% else %}
+                                    Pagan: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
+                                {% endif %}
+                            </td>
+                            <td class="col-acc">
+                                <button type="button" class="cols-ic" title="Editar" onclick="editarColumna(this)"
+                                    data-id="{{ col.id }}" data-nombre="{{ col.nombre }}" data-tipo="{{ col.tipo_reparto }}"
+                                    data-ufs="{% for u in col.unidades.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}">✎</button>
+                                <form method="post" style="display:inline" onsubmit="return confirm('¿Borrar la columna {{ col.nombre|escapejs }}?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+                                    <input type="hidden" name="accion" value="borrar">
+                                    <input type="hidden" name="columna_id" value="{{ col.id }}">
+                                    <button type="submit" class="cols-ic del" title="Borrar">✕</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4" class="cols-vacio">Todavía no hay columnas. Creá la primera con "+ Nueva columna".</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <form method="post" class="cols-form" id="cols-form" style="display:none">
+            {% csrf_token %}
+            <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+            <input type="hidden" name="accion" value="crear" id="cols-accion">
+            <input type="hidden" name="columna_id" value="" id="cols-col-id">
+            <h4 class="cols-form-title" id="cols-form-title">Nueva columna</h4>
+            <div class="cols-form-row">
+                <div class="cols-fg">
+                    <label class="cols-label">Nombre de la columna</label>
+                    <input type="text" name="nombre" id="cols-nombre" class="cols-input" placeholder="Ej: Fondo de reserva" required>
+                </div>
+                <div class="cols-fg">
+                    <label class="cols-label">Tipo de reparto</label>
+                    <select name="tipo_reparto" id="cols-tipo" class="cols-input" onchange="toggleUFs()">
+                        {% for val, label in tipos %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="cols-ufwrap" id="cols-ufwrap" style="display:none">
+                <label class="cols-label" id="cols-uflabel">¿Quiénes pagan?</label>
+                <div class="cols-ufgrid">
+                    {% for u in unidades %}
+                        <label class="cols-uf"><input type="checkbox" name="unidades" value="{{ u.id }}" class="cols-ufchk"><span>{{ u.piso }}° {{ u.departamento|default:"" }}</span></label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="cols-form-actions">
+                <button type="submit" class="boton-primario">Guardar columna</button>
+                <button type="button" class="boton-secundario" onclick="cancelarColumna()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+{% else %}
+    <div class="alerta alerta-info">Elegí un consorcio para configurar sus columnas.</div>
+{% endif %}
+
+<script>
+function toggleUFs() {
+    const tipo = document.getElementById('cols-tipo').value;
+    const wrap = document.getElementById('cols-ufwrap');
+    const lbl = document.getElementById('cols-uflabel');
+    if (tipo === 'general') { wrap.style.display = 'none'; }
+    else {
+        wrap.style.display = '';
+        lbl.textContent = tipo === 'particular' ? '¿Quiénes pagan? (elegí las UF)' : '¿Quiénes quedan afuera? (exentas)';
+    }
+}
+function nuevaColumna() {
+    document.getElementById('cols-accion').value = 'crear';
+    document.getElementById('cols-col-id').value = '';
+    document.getElementById('cols-form-title').textContent = 'Nueva columna';
+    document.getElementById('cols-nombre').value = '';
+    document.getElementById('cols-tipo').value = 'general';
+    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = false);
+    toggleUFs();
+    document.getElementById('cols-form').style.display = '';
+    document.getElementById('cols-nombre').focus();
+}
+function editarColumna(btn) {
+    document.getElementById('cols-accion').value = 'editar';
+    document.getElementById('cols-col-id').value = btn.dataset.id;
+    document.getElementById('cols-form-title').textContent = 'Editar columna';
+    document.getElementById('cols-nombre').value = btn.dataset.nombre;
+    document.getElementById('cols-tipo').value = btn.dataset.tipo;
+    const ufs = (btn.dataset.ufs || '').split(',').filter(Boolean);
+    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = ufs.includes(ch.value));
+    toggleUFs();
+    document.getElementById('cols-form').style.display = '';
+    document.getElementById('cols-nombre').focus();
+}
+function cancelarColumna() { document.getElementById('cols-form').style.display = 'none'; }
+</script>
+{% endblock %}

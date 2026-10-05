@@ -83,67 +83,15 @@ function eliminarSubtipo(index) {
 // ==========================================
 // CREACIÓN Y ELIMINACIÓN DE FILAS DE GASTO
 // ==========================================
-function escaparHtml(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function construirChecklistUF(consorcioId, seleccionadas) {
-    const ufs = (consorcioId && window.ufsPorConsorcio && window.ufsPorConsorcio[consorcioId]) ? window.ufsPorConsorcio[consorcioId] : [];
-    if (!ufs.length) {
-        return '<div class="rec-vacio">Seleccioná un consorcio con unidades funcionales cargadas.</div>';
-    }
-    const sel = new Set((seleccionadas || []).map(String));
-    return ufs.map(uf => {
-        const checked = sel.has(String(uf.id)) ? 'checked' : '';
-        return `<label class="uf-chip"><input type="checkbox" class="uf-check" data-uf="${uf.id}" ${checked}><span>${escaparHtml(uf.label)}</span></label>`;
-    }).join('');
-}
-
-function cambioModo(filaId, seleccionadasForzadas) {
-    const fila = document.getElementById(filaId);
-    const rec = document.getElementById(`${filaId}-rec`);
-    if (!fila || !rec) return;
-    const select = fila.querySelector('.select-grupo');
-    const modo = select ? select.value : 'general';
-
-    select.classList.remove('modo-particular', 'modo-parcial');
-    if (modo === 'particular') select.classList.add('modo-particular');
-    if (modo === 'parcial') select.classList.add('modo-parcial');
-
-    if (modo === 'particular' || modo === 'parcial') {
-        let seleccionadas = seleccionadasForzadas;
-        if (!seleccionadas) {
-            seleccionadas = [...rec.querySelectorAll('.uf-check:checked')].map(ch => ch.dataset.uf);
-        }
-        const consorcioId = getConsorcioActualId();
-        const panel = rec.querySelector('.rec-panel');
-        const titulo = rec.querySelector('.rec-title');
-        panel.classList.remove('modo-particular', 'modo-parcial');
-        panel.classList.add(modo === 'particular' ? 'modo-particular' : 'modo-parcial');
-        titulo.innerHTML = modo === 'particular'
-            ? 'Gasto <b>Particular</b> — elegí las UF que <b>pagan</b> este gasto:'
-            : 'Gasto <b>Parcial</b> — marcá las UF que quedan <b>afuera</b> (no lo pagan):';
-        rec.querySelector('.rec-grid').innerHTML = construirChecklistUF(consorcioId, seleccionadas);
-        rec.style.display = '';
-    } else {
-        rec.style.display = 'none';
-    }
-}
-
-function refrescarRecuadros() {
-    document.querySelectorAll('#body-gastos tr.fila-gasto').forEach(fila => cambioModo(fila.id));
-}
-
-function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', modoSel = 'general', monto = '', ufsSel = []) {
+function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', grupoSel = '', monto = '') {
     const tbody = document.getElementById('body-gastos');
     const consorcioId = getConsorcioActualId();
     const grupos = (consorcioId && window.gruposPorConsorcio && window.gruposPorConsorcio[consorcioId]) ? window.gruposPorConsorcio[consorcioId] : [];
     const subtipos = (consorcioId && window.subtiposPorConsorcio && window.subtiposPorConsorcio[consorcioId]) ? window.subtiposPorConsorcio[consorcioId] : [];
 
-    const modoActual = modoSel || 'general';
-    let opcionesGrupos = '';
-    (grupos.length ? grupos : [{val:'general',nombre:'General'},{val:'parcial',nombre:'Parcial'},{val:'particular',nombre:'Particular'}]).forEach(g => {
-        const selected = String(g.val) === String(modoActual) ? 'selected' : '';
+    let opcionesGrupos = '<option value="">-- Seleccionar --</option>';
+    grupos.forEach(g => {
+        const selected = String(g.val) === String(grupoSel) ? 'selected' : '';
         opcionesGrupos += `<option value="${g.val}" ${selected}>${g.nombre}</option>`;
     });
 
@@ -173,7 +121,7 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', mo
             </select>
         </td>
         <td>
-            <select name="gastos_grupo[]" class="gl-select select-grupo" onchange="cambioModo('${filaId}')" required>
+            <select name="gastos_grupo[]" class="gl-select select-grupo" required>
                 ${opcionesGrupos}
             </select>
         </td>
@@ -185,31 +133,13 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', mo
         </td>
     `;
     tbody.appendChild(tr);
-
-    const recTr = document.createElement('tr');
-    recTr.id = `${filaId}-rec`;
-    recTr.className = 'fila-rec';
-    recTr.style.display = 'none';
-    recTr.innerHTML = `
-        <td colspan="6" class="rec-cell">
-            <div class="rec-panel">
-                <div class="rec-title"></div>
-                <div class="rec-grid"></div>
-            </div>
-        </td>
-    `;
-    tbody.appendChild(recTr);
-
     contadorFilas++;
-    cambioModo(filaId, (ufsSel && ufsSel.length) ? ufsSel : null);
     sincronizarVistaPrevia();
 }
 
 function eliminarFila(id) {
     const fila = document.getElementById(id);
     if (fila) fila.remove();
-    const rec = document.getElementById(`${id}-rec`);
-    if (rec) rec.remove();
     sincronizarVistaPrevia();
 }
 

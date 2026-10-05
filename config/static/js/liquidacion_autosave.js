@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarListasGestion();
         document.getElementById('body-gastos').replaceChildren();
         (inicial.gastos || []).forEach(gasto => {
-            agregarFilaGasto('', gasto.tipo || 'ordinario', gasto.subtipo || '', gasto.modo || gasto.grupo || 'general', '', gasto.ufs || []);
+            agregarFilaGasto('', gasto.tipo || 'ordinario', gasto.subtipo || '', gasto.grupo || gasto.modo || '', '');
             const filas = document.querySelectorAll('#body-gastos tr.fila-gasto');
             const fila = filas[filas.length - 1];
             fila.querySelector('.input-concepto').value = gasto.concepto || '';
@@ -40,19 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function completarDatos() {
         const consorcio = document.getElementById('select-consorcio').value;
-        const gastos = [...document.querySelectorAll('#body-gastos tr.fila-gasto')].map(fila => {
-            const rec = document.getElementById(`${fila.id}-rec`);
-            const ufs = rec ? [...rec.querySelectorAll('.uf-check:checked')].map(ch => ch.dataset.uf) : [];
-            return {
-                fila: fila.id,
-                concepto: fila.querySelector('.input-concepto').value,
-                tipo: fila.querySelector('.select-tipo').value,
-                subtipo: fila.querySelector('.select-subtipo').value,
-                modo: fila.querySelector('.select-grupo').value,
-                ufs: ufs,
-                monto: fila.querySelector('.input-monto').value,
-            };
-        });
+        const gastos = [...document.querySelectorAll('#body-gastos tr.fila-gasto')].map(fila => ({
+            fila: fila.id,
+            concepto: fila.querySelector('.input-concepto').value,
+            tipo: fila.querySelector('.select-tipo').value,
+            subtipo: fila.querySelector('.select-subtipo').value,
+            grupo: fila.querySelector('.select-grupo').value,
+            monto: fila.querySelector('.input-monto').value,
+        }));
         document.getElementById('gastos-json').value = JSON.stringify(gastos);
         document.getElementById('grupos-nuevos-json').value = JSON.stringify([]);
         document.getElementById('subtipos-json').value = JSON.stringify(subtiposPorConsorcio[consorcio] || []);
