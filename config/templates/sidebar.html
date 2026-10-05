@@ -26,7 +26,7 @@
             <div class="sidebar-submenu">
                 {% if user.is_superuser or 'Administrador' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
-                        <span class="submenu-titulo">PANEL ADMIN</span>
+                        <span class="submenu-titulo">PANEL ADMINISTRADOR</span>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'listar_consorcios' %}active{% endif %}">
                             <a href="{% url 'listar_consorcios' %}" title="Consorcios">
                                 <span class="item-icono">
