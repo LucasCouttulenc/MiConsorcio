@@ -14,7 +14,10 @@
     {% for message in messages %}
         <div style="padding:10px 14px; margin-bottom:12px; border-radius:6px; background:#fff3cd; border:1px solid #e0c36a;">{{ message }}</div>
     {% endfor %}
-    <h2 class="gl-header-title">Generar Liquidación de Expensas</h2>
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+        <a href="{% url 'listar_liquidaciones' %}" class="gl-btn gl-btn-secondary gl-btn-sm">← Volver</a>
+        <h2 class="gl-header-title" style="margin:0;">Generar Liquidación de Expensas</h2>
+    </div>
 
     <form method="POST" action="{% url 'finalizar_liquidacion' %}" id="form-liquidacion" data-autosave-url="{% url 'autosave_liquidacion' %}">
         {% csrf_token %}
