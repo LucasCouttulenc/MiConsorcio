@@ -4,10 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Generar Liquidación de Expensas</title>
-    <!-- CSS Custom (Sin Bootstrap) -->
     <link rel="stylesheet" href="{% static 'css/_generar_liquidacion.css' %}">
 </head>
-
 <body>
 
 <div class="gl-wrapper">
@@ -23,8 +21,6 @@
         {% csrf_token %}
         <input type="hidden" name="liquidacion_id" id="liquidacion-id" value="{{ liquidacion.id|default:'' }}">
         <input type="hidden" name="gastos" id="gastos-json">
-        <input type="hidden" name="grupos_nuevos" id="grupos-nuevos-json">
-        <input type="hidden" name="subtipos" id="subtipos-json">
         <small id="estado-guardado" class="text-muted" aria-live="polite"></small>
 
         <div class="gl-grid">
@@ -148,31 +144,7 @@
                     </div>
                 </div>
 
-                <!-- 4. GESTOR DE SUBTIPOS Y COLUMNAS -->
-                <div class="gl-card">
-                    <div class="gl-card-body">
-                        <h4 class="gl-label" style="font-size: 0.95rem; margin-bottom: 1rem;">
-                            Configuración de Subtipos
-                        </h4>
-                        
-                        <div class="gl-config-grid">
-                            <!-- Gestor de Subtipos / Rubros -->
-                            <div>
-                                <label class="gl-label" style="font-size: 0.8rem;">Crear Nuevo Subtipo / Rubro</label>
-                                <div class="gl-input-group" style="margin-top: 0.25rem;">
-                                    <input type="text" id="input-nuevo-subtipo" class="gl-input gl-input-sm">
-                                    <button type="button" class="gl-btn gl-btn-primary gl-btn-sm" onclick="crearSubtipo()">
-                                        + Agregar
-                                    </button>
-                                </div>
-                                <div id="lista-subtipos-tags" class="gl-tags-container"></div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 5. MATRIZ DE GASTOS -->
+                <!-- 4. MATRIZ DE GASTOS -->
                 <div class="gl-card">
                     <div class="gl-card-header">
                         <span class="gl-card-header-title">Gastos Imputados</span>
@@ -185,10 +157,10 @@
                             <table class="gl-table" id="tabla-gastos">
                                 <thead>
                                     <tr>
-                                        <th style="width: 25%;">Concepto / Descripción</th>
-                                        <th style="width: 15%;">Tipo</th>
-                                        <th style="width: 25%;">Subtipo / Rubro</th>
-                                        <th style="width: 18%;">Columna / Grupo</th>
+                                        <th style="width: 28%;">Concepto / Descripción</th>
+                                        <th style="width: 12%;">Tipo</th>
+                                        <th style="width: 20%;">Rubro</th>
+                                        <th style="width: 18%;">Columna</th>
                                         <th style="width: 12%;">Monto ($)</th>
                                         <th style="width: 5%; text-align: center;">Acción</th>
                                     </tr>
@@ -201,8 +173,6 @@
                     </div>
                 </div>
 
-                
-
             </div>
 
             <!-- COLUMNA DERECHA: VISTA PREVIA EN TIEMPO REAL -->
@@ -210,10 +180,7 @@
                 <div class="gl-preview-sticky">
                     <div class="gl-preview-title">Vista Previa del Encabezado</div>
 
-                    <!-- TARJETA COMPROBANTE -->
                     <div class="gl-preview-card">
-
-                        <!-- BANNER SUPERIOR -->
                         <div class="banner-expensas">
                             <h3>EXPENSAS MICONSORCIO</h3>
                             <p>Liquidación: <span id="lbl-periodo"></span></p>
@@ -221,7 +188,6 @@
                             <p>Vencimiento: <span id="lbl-vencimiento"></span></p>
                         </div>
 
-                        <!-- DATOS ADMINISTRACIÓN Y CONSORCIO -->
                         <div class="cabecera-info">
                             <div class="cabecera-info-grid">
                                 <div class="cabecera-col cabecera-col-border">
@@ -247,30 +213,32 @@
                             </div>
                         </div>
 
-                        <!-- TABLA RESUMEN VISTA PREVIA -->
                         <div class="gl-preview-table-container">
                             <div class="gl-preview-table-title">Resumen de Gastos Cargados</div>
                             <div class="gl-table-wrapper">
-                                <!-- Contenedor dinámico para la matriz de tablas generadas por JS -->
                                 <div id="pv-tabla-gastos-matriz"></div>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
         </div>
-        <!-- BOTONES DE ACCIÓN -->
+
         <div class="d-flex justify-content-end gap-2 my-4">
             <a href="{% url 'listar_liquidaciones' %}" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary fw-bold px-4">Finalizar y calcular liquidación</button>
         </div>
     </form>
 </div>
-{{ datos_iniciales|json_script:"datos-iniciales" }}
 
-<!-- Inyección de variables Django a JavaScript -->
+{{ datos_iniciales|json_script:"datos-iniciales" }}
+{{ rubros_por_consorcio|json_script:"rubros-por-consorcio" }}
+{{ columnas_por_rubro|json_script:"columnas-por-rubro" }}
+
 <script>
+    window.rubrosPorConsorcio = JSON.parse(document.getElementById('rubros-por-consorcio').textContent);
+    window.columnasPorRubro = JSON.parse(document.getElementById('columnas-por-rubro').textContent);
+
     window.datosConsorcios = {
         {% for consorcio in consorcios %}
             "{{ consorcio.id }}": {
@@ -279,44 +247,15 @@
                 cuit: "{{ consorcio.cuit|default:'-'|escapejs }}",
                 suterh: "{{ consorcio.suterh|default:'-'|escapejs }}",
                 horario_atencion: "{{ consorcio.horario_atencion|default:'-'|escapejs }}",
-
-                {% if consorcio.administracion %}
-                    admin_razon: "{{ consorcio.administracion.razon_social|default:'-'|escapejs }}",
-                    admin_nombre: "{{ consorcio.administracion.nombre|default:'-'|escapejs }}",
-                    admin_domicilio: "{{ consorcio.administracion.domicilio|default:'-'|escapejs }}",
-                    admin_fiscal: "{{ consorcio.administracion.situacion_fiscal|default:'-'|escapejs }}",
-                    admin_cuit: "{{ consorcio.administracion.cuit|default:'-'|escapejs }}",
-                    admin_rpa: "{{ consorcio.administracion.rpa|default:'-'|escapejs }}",
-                    admin_telefono: "{{ consorcio.administracion.telefono|default:'-'|escapejs }}",
-                    admin_mail: "{{ consorcio.administracion.email|default:'-'|escapejs }}"
-                {% else %}
-                    admin_razon: "-", admin_nombre: "-", admin_domicilio: "-", admin_fiscal: "-",
-                    admin_cuit: "-", admin_rpa: "-", admin_telefono: "-", admin_mail: "-"
-                {% endif %}
+                admin_razon: "-", admin_nombre: "-", admin_domicilio: "-", admin_fiscal: "-",
+                admin_cuit: "-", admin_rpa: "-", admin_telefono: "-", admin_mail: "-"
             },
-        {% endfor %}
-    };
-
-    // Columnas configuradas de cada consorcio (Configurar columnas).
-    window.gruposPorConsorcio = {
-        {% for consorcio in consorcios %}
-            "{{ consorcio.id }}": [
-                {% for grupo in consorcio.grupos_prorrateo.all %}
-                    { val: "{{ grupo.id }}", nombre: "{{ grupo.nombre|escapejs }}" },
-                {% endfor %}
-            ],
-        {% endfor %}
-    };
-
-    window.subtiposPorConsorcio = {
-        {% for consorcio in consorcios %}
-            "{{ consorcio.id }}": ["REMUNERACIONES AL PERSONAL", "MANTENIMIENTO DE PARTES COMUNES", "SERVICIOS PUBLICOS"],
         {% endfor %}
     };
 </script>
 
-<!-- Carga de la lógica JavaScript existente -->
-<!-- Carga de scripts utilizando el tag estático de Django -->
 <script src="{% static 'js/liquidacion_gestion.js' %}"></script>
 <script src="{% static 'js/liquidacion_render.js' %}"></script>
 <script src="{% static 'js/liquidacion_autosave.js' %}"></script>
+</body>
+</html>

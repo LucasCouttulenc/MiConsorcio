@@ -54,6 +54,14 @@ PERMISOS_ADMINISTRADORES = [
     "change_gasto",
     "delete_gasto",
     "view_detalleliquidacionuf",
+    
+    
+    
+    # Rubros  
+    "add_rubro",
+    "view_rubro",
+    "change_rubro",
+    "delete_rubro",
 ]
 
 PERMISOS_PROPIETARIOS = [

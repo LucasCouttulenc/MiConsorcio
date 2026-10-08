@@ -29,77 +29,63 @@ function formatearFechaAR(fechaIso) {
 
 function calcularAnchosColumnas(numColumnas) {
     const totalCols = Math.max(1, numColumnas);
-    const pesoTotal = 2 + totalCols; 
-    
+    const pesoTotal = 2 + totalCols;
     const anchoConcepto = ((2 / pesoTotal) * 100).toFixed(2) + '%';
     const anchoColumna = ((1 / pesoTotal) * 100).toFixed(2) + '%';
-
     return { anchoConcepto, anchoColumna };
 }
 
 // ==========================================
-// CREACIÓN Y ELIMINACIÓN DE SUBTIPOS
+// RUBROS Y COLUMNAS
 // ==========================================
-function crearSubtipo() {
-    const consorcioId = getConsorcioActualId();
-    if (!consorcioId) {
-        alert("Por favor, seleccione primero un consorcio.");
-        return;
-    }
-
-    const input = document.getElementById('input-nuevo-subtipo');
-    const nombre = input ? input.value.trim().toUpperCase() : '';
-    if (!nombre) {
-        alert("Ingrese un nombre para el subtipo.");
-        return;
-    }
-
-    window.subtiposPorConsorcio = window.subtiposPorConsorcio || {};
-    if (!window.subtiposPorConsorcio[consorcioId]) {
-        window.subtiposPorConsorcio[consorcioId] = [];
-    }
-
-    if (window.subtiposPorConsorcio[consorcioId].includes(nombre)) {
-        alert(`El subtipo "${nombre}" ya existe.`);
-        return;
-    }
-
-    window.subtiposPorConsorcio[consorcioId].push(nombre);
-    input.value = '';
-
-    renderizarListasGestion();
-    sincronizarVistaPrevia();
+function getRubrosDelConsorcio() {
+    const cid = getConsorcioActualId();
+    return (cid && window.rubrosPorConsorcio && window.rubrosPorConsorcio[cid])
+        ? window.rubrosPorConsorcio[cid] : [];
 }
 
-function eliminarSubtipo(index) {
-    const consorcioId = getConsorcioActualId();
-    if (!consorcioId || !window.subtiposPorConsorcio || !window.subtiposPorConsorcio[consorcioId]) return;
+function getColumnasDelRubro(rubroId) {
+    return (rubroId && window.columnasPorRubro && window.columnasPorRubro[rubroId])
+        ? window.columnasPorRubro[rubroId] : [];
+}
 
-    window.subtiposPorConsorcio[consorcioId].splice(index, 1);
-    renderizarListasGestion();
+function opcionesRubrosHTML(rubroSeleccionado = '') {
+    let html = '<option value="">-- Seleccionar --</option>';
+    getRubrosDelConsorcio().forEach(r => {
+        const sel = String(r.val) === String(rubroSeleccionado) ? 'selected' : '';
+        html += `<option value="${r.val}" ${sel}>${r.nombre}</option>`;
+    });
+    return html;
+}
+
+function opcionesColumnasHTML(rubroId, columnaSeleccionada = '') {
+    let html = '<option value="">-- Seleccionar --</option>';
+    getColumnasDelRubro(rubroId).forEach(c => {
+        const sel = String(c.val) === String(columnaSeleccionada) ? 'selected' : '';
+        html += `<option value="${c.val}" ${sel}>${c.codigo} - ${c.nombre}</option>`;
+    });
+    return html;
+}
+
+function actualizarSelectoresRubros() {
+    document.querySelectorAll('.select-rubro').forEach(sel => {
+        const actual = sel.value;
+        sel.innerHTML = opcionesRubrosHTML(actual);
+    });
+}
+
+function onCambiarRubro(selectRubro) {
+    const fila = selectRubro.closest('tr');
+    const selectGrupo = fila.querySelector('.select-grupo');
+    selectGrupo.innerHTML = opcionesColumnasHTML(selectRubro.value);
     sincronizarVistaPrevia();
 }
 
 // ==========================================
 // CREACIÓN Y ELIMINACIÓN DE FILAS DE GASTO
 // ==========================================
-function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', grupoSel = '', monto = '') {
+function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grupoSel = '', monto = '') {
     const tbody = document.getElementById('body-gastos');
-    const consorcioId = getConsorcioActualId();
-    const grupos = (consorcioId && window.gruposPorConsorcio && window.gruposPorConsorcio[consorcioId]) ? window.gruposPorConsorcio[consorcioId] : [];
-    const subtipos = (consorcioId && window.subtiposPorConsorcio && window.subtiposPorConsorcio[consorcioId]) ? window.subtiposPorConsorcio[consorcioId] : [];
-
-    let opcionesGrupos = '<option value="">-- Seleccionar --</option>';
-    grupos.forEach(g => {
-        const selected = String(g.val) === String(grupoSel) ? 'selected' : '';
-        opcionesGrupos += `<option value="${g.val}" ${selected}>${g.nombre}</option>`;
-    });
-
-    let opcionesSubtipos = '<option value="">-- Seleccionar --</option>';
-    subtipos.forEach(st => {
-        const selected = String(st) === String(subtipoSel) ? 'selected' : '';
-        opcionesSubtipos += `<option value="${st}" ${selected}>${st}</option>`;
-    });
 
     const filaId = `gasto-${contadorFilas}`;
     const tr = document.createElement('tr');
@@ -116,13 +102,13 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', subtipoSel = '', gr
             </select>
         </td>
         <td>
-            <select name="gastos_subtipo[]" class="gl-select select-subtipo" required>
-                ${opcionesSubtipos}
+            <select name="gastos_rubro[]" class="gl-select select-rubro" onchange="onCambiarRubro(this)" required>
+                ${opcionesRubrosHTML(rubroSel)}
             </select>
         </td>
         <td>
             <select name="gastos_grupo[]" class="gl-select select-grupo" required>
-                ${opcionesGrupos}
+                ${opcionesColumnasHTML(rubroSel, grupoSel)}
             </select>
         </td>
         <td>
@@ -143,7 +129,6 @@ function eliminarFila(id) {
     sincronizarVistaPrevia();
 }
 
-
 // ==========================================
 // CÁLCULO DE FECHAS
 // ==========================================
@@ -158,11 +143,9 @@ function calcularFechasSugeridas() {
     const ultimoDia = new Date(anioInt, mesInt, 0).getDate();
     const mesStr = mesInt.toString().padStart(2, '0');
 
-    // Cierre: día 30 (o el último día del mes si tiene menos, como febrero)
     const diaCierre = Math.min(30, ultimoDia);
     document.getElementById('fecha_cierre').value = `${anioInt}-${mesStr}-${diaCierre.toString().padStart(2, '0')}`;
 
-    // Vencimiento: día 10 del mes siguiente
     let mesSig = mesInt + 1;
     let anioSig = anioInt;
     if (mesSig > 12) {

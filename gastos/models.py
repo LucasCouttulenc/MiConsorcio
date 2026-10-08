@@ -16,7 +16,6 @@ class Gasto(models.Model):
         default=TipoGasto.ORDINARIO, 
         verbose_name="Tipo de Gasto"
     )
-    subtipo = models.CharField(max_length=100, blank=True, default='', verbose_name="Subtipo / Rubro")
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.PROTECT, related_name='gastos', null=True, blank=True, verbose_name="Columna / Grupo de Prorrateo")
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM (ej: 2026-03)", verbose_name="Período Imputado")
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
@@ -30,6 +29,14 @@ class Gasto(models.Model):
 
     def __str__(self):
         return f"{self.concepto} - ${self.monto} [{self.get_tipo_display()} - {self.grupo.codigo if self.grupo else '-'}]"
+    
+    @property
+    def rubro(self):
+        """
+        El rubro viene dado por la columna (GrupoProrrateo) a la que
+        pertenece el gasto. Si el gasto no tiene columna, no tiene rubro.
+        """
+        return self.grupo.rubro if self.grupo_id else None
 
 
 class Liquidacion(models.Model):

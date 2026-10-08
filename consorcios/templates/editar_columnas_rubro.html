@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Columnas de {{ rubro.nombre }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/_columnas.css' %}">
+
+{% include "componentes/mensajes.html" %}
+
+<div class="cols-header">
+    <div>
+        <p class="cols-breadcrumb">
+            <a href="{% url 'configurar_columnas' %}?consorcio={{ consorcio.id }}">← Volver a contenido</a>
+        </p>
+        <h1 class="titulo">{{ rubro.nombre }}</h1>
+        <p class="cols-sub">
+            Columnas de prorrateo del rubro en <strong>{{ consorcio.nombre }}</strong>.
+        </p>
+    </div>
+</div>
+
+{% if not unidades %}
+    <div class="alerta alerta-warning">
+        Este consorcio no tiene unidades funcionales cargadas.
+        <a href="{% url 'crear_unidad_funcional' consorcio.id %}">Crear la primera UF</a>.
+    </div>
+{% endif %}
+
+<div class="cols-card">
+    <div class="cols-card-head">
+        <span>Columnas de {{ rubro.nombre }}</span>
+        <button type="button" class="boton-primario" onclick="nuevaColumna()">+ Nueva columna</button>
+    </div>
+
+    <div class="cols-tabla-wrap">
+        <table class="cols-tabla">
+            <thead>
+                <tr>
+                    <th class="col-codigo">Código</th>
+                    <th>Nombre</th>
+                    <th class="col-tipo">Tipo de reparto</th>
+                    <th>UF afectadas</th>
+                    <th class="col-acc">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in columnas %}
+                    <tr>
+                        <td class="col-codigo"><span class="chip-codigo">{{ col.codigo }}</span></td>
+                        <td class="col-nombre">{{ col.nombre }}</td>
+                        <td class="col-tipo">
+                            <span class="badge-tipo tipo-{{ col.tipo_reparto }}">{{ col.get_tipo_reparto_display }}</span>
+                        </td>
+                        <td class="col-ufs">
+                            {% if col.tipo_reparto == 'general' %}
+                                Todas las UF
+                            {% elif col.tipo_reparto == 'parcial' %}
+                                Exentas: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
+                            {% else %}
+                                Pagan: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
+                            {% endif %}
+                        </td>
+                        <td class="col-acc">
+                            <button type="button" class="cols-ic" title="Editar"
+                                onclick="editarColumna(this)"
+                                data-id="{{ col.id }}"
+                                data-nombre="{{ col.nombre }}"
+                                data-tipo="{{ col.tipo_reparto }}"
+                                data-ufs="{% for u in col.unidades.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}">✎</button>
+                            <form method="post" style="display:inline"
+                                  onsubmit="return confirm('¿Borrar la columna {{ col.nombre|escapejs }}?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" value="borrar">
+                                <input type="hidden" name="columna_id" value="{{ col.id }}">
+                                <button type="submit" class="cols-ic del" title="Borrar">✕</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="cols-vacio">Este rubro todavía no tiene columnas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Modal columna #}
+    <div class="cols-modal" id="col-modal" style="display:none">
+        <div class="cols-modal-content cols-modal-wide">
+            <h4 id="col-modal-title">Nueva columna</h4>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="crear" id="col-accion">
+                <input type="hidden" name="columna_id" value="" id="col-id">
+
+                <div class="cols-form-row">
+                    <div class="cols-fg cols-fg-grow">
+                        <label class="cols-label">Nombre de la columna</label>
+                        <input type="text" name="nombre" id="col-nombre" class="cols-input"
+                               placeholder="Ej: Columna A" required maxlength="100">
+                    </div>
+                    <div class="cols-fg">
+                        <label class="cols-label">Tipo de reparto</label>
+                        <select name="tipo_reparto" id="col-tipo" class="cols-input" onchange="toggleUFs()">
+                            {% for val, label in tipos %}
+                                <option value="{{ val }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="cols-ufwrap" id="col-ufwrap" style="display:none">
+                    <label class="cols-label" id="col-uflabel">¿Quiénes pagan?</label>
+                    <div class="cols-ufgrid">
+                        {% for u in unidades %}
+                            <label class="cols-uf">
+                                <input type="checkbox" name="unidades" value="{{ u.id }}" class="cols-ufchk">
+                                <span>{{ u.piso }}° {{ u.departamento|default:"" }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="cols-form-actions">
+                    <button type="submit" class="boton-primario">Guardar</button>
+                    <button type="button" class="boton-secundario" onclick="cerrarColumna()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleUFs() {
+    const tipo = document.getElementById('col-tipo').value;
+    const wrap = document.getElementById('col-ufwrap');
+    const lbl = document.getElementById('col-uflabel');
+    if (tipo === 'general') { wrap.style.display = 'none'; }
+    else {
+        wrap.style.display = '';
+        lbl.textContent = tipo === 'particular' ? '¿Quiénes pagan? (elegí las UF)' : '¿Quiénes quedan afuera? (exentas)';
+    }
+}
+
+function nuevaColumna() {
+    document.getElementById('col-accion').value = 'crear';
+    document.getElementById('col-id').value = '';
+    document.getElementById('col-modal-title').textContent = 'Nueva columna';
+    document.getElementById('col-nombre').value = '';
+    document.getElementById('col-tipo').value = 'general';
+    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = false);
+    toggleUFs();
+    document.getElementById('col-modal').style.display = 'flex';
+    document.getElementById('col-nombre').focus();
+}
+
+function editarColumna(btn) {
+    document.getElementById('col-accion').value = 'editar';
+    document.getElementById('col-id').value = btn.dataset.id;
+    document.getElementById('col-modal-title').textContent = 'Editar columna';
+    document.getElementById('col-nombre').value = btn.dataset.nombre;
+    document.getElementById('col-tipo').value = btn.dataset.tipo;
+    const ufs = (btn.dataset.ufs || '').split(',').filter(Boolean);
+    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = ufs.includes(ch.value));
+    toggleUFs();
+    document.getElementById('col-modal').style.display = 'flex';
+    document.getElementById('col-nombre').focus();
+}
+
+function cerrarColumna() { document.getElementById('col-modal').style.display = 'none'; }
+
+document.querySelectorAll('.cols-modal').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
+});
+</script>
+{% endblock %}

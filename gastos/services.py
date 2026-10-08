@@ -117,12 +117,15 @@ def generar_pdf_liquidacion(liquidacion):
     ):
         historia.append(Paragraph(escape(f'{etiqueta}: {valor or "-"}'), estilos['Normal']))
     historia.extend([Spacer(1, 16), Paragraph('Gastos', estilos['Heading2'])])
-    gastos = [['Concepto', 'Tipo', 'Rubro', 'Grupo', 'Monto']]
-    for gasto in liquidacion.gastos_cargados.select_related('grupo').order_by('posicion'):
+    gastos = [['Concepto', 'Tipo', 'Rubro', 'Columna', 'Monto']]
+    for gasto in liquidacion.gastos_cargados.select_related('grupo', 'grupo__rubro').order_by('posicion'):
         concepto = simpleSplit(gasto.concepto, 'Helvetica', 9, 190)
+        rubro_nombre = gasto.grupo.rubro.nombre if gasto.grupo and gasto.grupo.rubro else '-'
         gastos.append([Paragraph('<br/>'.join(escape(linea) for linea in concepto), estilos['Normal']),
-                       gasto.get_tipo_display(), Paragraph(escape(gasto.subtipo or '-'), estilos['Normal']),
-                       Paragraph(escape(gasto.grupo.nombre), estilos['Normal']), f'$ {gasto.monto:.2f}'])
+                       gasto.get_tipo_display(),
+                       Paragraph(escape(rubro_nombre), estilos['Normal']),
+                       Paragraph(escape(gasto.grupo.nombre if gasto.grupo else '-'), estilos['Normal']),
+                       f'$ {gasto.monto:.2f}'])
     tabla = Table(gastos, colWidths=[165, 75, 95, 95, 65], repeatRows=1)
     tabla.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1c3e7c')),

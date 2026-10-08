@@ -5,6 +5,7 @@
     position: relative;
     z-index: var(--zIndexSidebar);
     flex-shrink: 0;
+    color:black
 }
 
 .sidebar {
@@ -15,9 +16,9 @@
     position: fixed;
     top: 0;
     left: 0;
-    background-color: var(--colorFondoPagina);
+    background-color: #05193d;
     padding: 16px 8px;
-    color: var(--colorTextoInactivo);
+    color: black;
     box-shadow: var(--sombraSidebar);
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
@@ -34,14 +35,14 @@
     align-items: center;
     gap: 12px;
     padding-bottom: 16px;
-    border-bottom: 1px solid var(--colorFondoBlancoTransparente);
+    border-bottom: 1px solid var(--colorBordeSidebar);
     min-height: 48px;
 }
 
 .btn-toggle-sidebar {
     background: transparent;
     border: none;
-    color: var(--colorSecundario);
+    color: #f4f4f4;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -53,8 +54,8 @@
 }
 
 .btn-toggle-sidebar:hover {
-    background-color: var(--colorFondoBlancoTransparente);
-    color: var(--colorTextoBlanco);
+    background-color: var(--colorHoverSidebar);
+    color: var(--colorPrincipal);
 }
 
 .sidebar-empresa {
@@ -83,9 +84,10 @@
 .empresa-texto h2 {
     font-family: var(--fuenteTitulos);
     font-size: 17px;
-    color: var(--colorTextoBlanco);
+    color: var(--colorFondoPagina);
     font-weight: 700;
     line-height: 1.1;
+    color:white;
 }
 
 .empresa-texto span {
@@ -174,11 +176,10 @@
 
 /* ESTADOS HOVER Y ACTIVO: CAJA SUTIL Y CAMBIO A ÍCONO BLANCO */
 .submenu-item a:hover,
-.submenu-item.active a,
-.boton-logout-sidebar:hover {
+.submenu-item.active a {
     color: var(--colorTextoBlanco);
-    background-color: var(--colorFondoBlancoTransparente);
-    border-color: rgba(255, 255, 255, 0.12);
+    background-color: var(--colorPrincipal);   /* pastilla azul: el ícono blanco de hover se ve */
+    border-color: transparent;
 }
 
 /* Intercambiar íconos en Hover o Activo */
@@ -200,6 +201,7 @@
     margin-left: 12px;
     opacity: 0;
     transition: opacity 0.2s;
+    color:white;
 }
 
 .sidebar.open .item-texto {
@@ -209,7 +211,7 @@
 /* FOOTER Y CERRAR SESIÓN */
 .sidebar-footer {
     padding-top: 12px;
-    border-top: 1px solid var(--colorFondoBlancoTransparente);
+    border-top: 1px solid var(--colorBordeSidebar);
 }
 
 .form-logout {
@@ -218,12 +220,12 @@
 }
 
 .boton-logout-sidebar {
-    color: #f87171;
+    color: var(--colorErrorHover);
 }
 
 .boton-logout-sidebar:hover {
-    background-color: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.2);
+    background-color: var(--colorError);
+    border-color: transparent;
     color: var(--colorTextoBlanco);
 }
 

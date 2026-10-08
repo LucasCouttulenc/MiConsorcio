@@ -146,7 +146,7 @@
 /* Opciones individuales dentro del menú */
 .select2-results__option {
     padding: 8px 12px !important;
-    color: var(--colorTextoPrincipal) !important;
+    color: white!important;
     font-size: var(--textoChico) !important;
 }
 

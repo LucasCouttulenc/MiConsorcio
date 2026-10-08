@@ -44,6 +44,7 @@ urlpatterns = [
     path('consorcios/personal/<int:personal_id>/gestionar/', views_consorcios.gestionar_personal, name='gestionar_personal'),
     path('consorcios/<int:consorcio_id>/alicuotas/',views_consorcios.definir_alicuotas,name='definir_alicuotas'),
     path('consorcios/columnas/', views_consorcios.configurar_columnas, name='configurar_columnas'),
+    path('consorcios/columnas/rubro/<int:rubro_id>/', views_consorcios.editar_columnas_rubro, name='editar_columnas_rubro'),
     
     # Liquidaciones
     path('liquidaciones/', views_gastos.listar_liquidaciones, name='listar_liquidaciones'),

@@ -3,7 +3,7 @@
 .liquidaciones-filtro select { padding: 8px; min-width: 240px; border: 1px solid #dce3ed; border-radius: 6px; }
 .liquidaciones-subtitulo { font-size: 1.25rem; margin: 24px 0 12px; }
 .borradores-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding-right: 24px; }
-.borrador-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; border: 1px solid #e2e8f0; border-radius: 10px; background: white; color: #334155; box-shadow: 0 1px 3px #0001; }
+.borrador-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; border: 1px solid #cde2fd; border-radius: 10px; background: white; color: #334155; box-shadow: 0 1px 3px #0001; }
 .borrador-card:hover { border-color: #2563eb; }
 .borrador-card strong { font-size: 1.05rem; }
 .borrador-card small { color: #64748b; }
