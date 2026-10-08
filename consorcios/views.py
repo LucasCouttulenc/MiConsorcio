@@ -345,6 +345,10 @@ def _generar_codigo_columna(consorcio, nombre):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def configurar_columnas(request):
+    """
+    Pantalla principal: lista los rubros del consorcio. Solo permite
+    crear/editar/borrar rubros. Las columnas se editan en una vista aparte.
+    """
     if request.user.is_superuser:
         consorcios_disp = Consorcio.objects.all().order_by('nombre')
     else:
@@ -360,48 +364,133 @@ def configurar_columnas(request):
         accion = request.POST.get('accion', '')
         try:
             with transaction.atomic():
+                if accion == 'crear_rubro':
+                    nombre = request.POST.get('nombre_rubro', '').strip()[:100]
+                    if not nombre:
+                        raise ValueError("Poné un nombre para el rubro.")
+                    if Rubro.objects.filter(consorcio=consorcio, nombre__iexact=nombre).exists():
+                        raise ValueError(f"Ya existe un rubro '{nombre}' en este consorcio.")
+                    rubro = Rubro.objects.create(consorcio=consorcio, nombre=nombre)
+                    messages.success(request, f"Rubro '{rubro.nombre}' creado.")
+
+                elif accion == 'editar_rubro':
+                    rubro = get_object_or_404(Rubro, pk=request.POST.get('rubro_id', ''), consorcio=consorcio)
+                    nombre = request.POST.get('nombre_rubro', '').strip()[:100]
+                    if not nombre:
+                        raise ValueError("Poné un nombre para el rubro.")
+                    if Rubro.objects.filter(consorcio=consorcio, nombre__iexact=nombre).exclude(pk=rubro.pk).exists():
+                        raise ValueError(f"Ya existe otro rubro '{nombre}' en este consorcio.")
+                    rubro.nombre = nombre
+                    rubro.save(update_fields=['nombre'])
+                    messages.success(request, f"Rubro actualizado a '{nombre}'.")
+
+                elif accion == 'borrar_rubro':
+                    rubro = get_object_or_404(Rubro, pk=request.POST.get('rubro_id', ''), consorcio=consorcio)
+                    if rubro.columnas.exists():
+                        raise ValueError(
+                            f"No se puede borrar '{rubro.nombre}': tiene {rubro.columnas.count()} columna(s). "
+                            "Borrá primero las columnas."
+                        )
+                    nombre = rubro.nombre
+                    rubro.delete()
+                    messages.success(request, f"Rubro '{nombre}' eliminado.")
+
+        except ValueError as e:
+            messages.error(request, str(e))
+        return redirect(f"{reverse('configurar_columnas')}?consorcio={consorcio.id}")
+
+    rubros = []
+    if consorcio:
+        rubros = consorcio.rubros.prefetch_related('columnas').order_by('nombre')
+
+    return render(request, 'configurar_columnas.html', {
+        'consorcios': consorcios_disp,
+        'consorcio': consorcio,
+        'rubros': rubros,
+    })
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def editar_columnas_rubro(request, rubro_id):
+    """
+    Pantalla de edición de un rubro específico: sus columnas (crear, editar,
+    borrar) con tipo de reparto y UF afectadas.
+    """
+    rubro = get_object_or_404(Rubro.objects.select_related('consorcio'), pk=rubro_id)
+    consorcio = rubro.consorcio
+
+    # Permisos
+    if not request.user.is_superuser:
+        administrador = Administrador.objects.filter(usuario=request.user).first()
+        if not administrador or not administrador.administra(consorcio.id):
+            messages.error(request, "No tenés permisos para gestionar este consorcio.")
+            return redirect('listar_consorcios')
+
+    unidades = consorcio.unidades_funcionales.order_by('piso', 'departamento')
+
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '')
+        try:
+            with transaction.atomic():
                 if accion == 'borrar':
-                    columna = get_object_or_404(GrupoProrrateo, pk=request.POST.get('columna_id', ''), consorcio=consorcio)
+                    columna = get_object_or_404(
+                        GrupoProrrateo,
+                        pk=request.POST.get('columna_id', ''),
+                        consorcio=consorcio,
+                        rubro=rubro,
+                    )
                     nombre_col = columna.nombre
                     try:
                         columna.delete()
                         messages.success(request, f"Columna '{nombre_col}' eliminada.")
                     except ProtectedError:
                         messages.error(request, f"No se puede borrar '{nombre_col}': tiene gastos de liquidaciones asociados.")
-                else:
+
+                elif accion in ('crear', 'editar'):
                     nombre = request.POST.get('nombre', '').strip()[:100]
                     tipo = request.POST.get('tipo_reparto', '')
+
                     if not nombre:
                         raise ValueError("Poné un nombre para la columna.")
                     if tipo not in TipoReparto.values:
                         raise ValueError("Elegí un tipo de reparto válido.")
+
                     ufs_ids = request.POST.getlist('unidades')
                     ufs = list(consorcio.unidades_funcionales.filter(id__in=ufs_ids)) if ufs_ids else []
                     if tipo == TipoReparto.PARTICULAR and not ufs:
                         raise ValueError("En una columna Particular elegí al menos una UF que pague.")
+
                     if accion == 'editar':
-                        columna = get_object_or_404(GrupoProrrateo, pk=request.POST.get('columna_id', ''), consorcio=consorcio)
+                        columna = get_object_or_404(
+                            GrupoProrrateo,
+                            pk=request.POST.get('columna_id', ''),
+                            consorcio=consorcio,
+                            rubro=rubro,
+                        )
                         columna.nombre = nombre
                         columna.tipo_reparto = tipo
                         columna.save(update_fields=['nombre', 'tipo_reparto'])
                     else:
                         columna = GrupoProrrateo.objects.create(
-                            consorcio=consorcio, nombre=nombre, tipo_reparto=tipo,
-                            codigo=_generar_codigo_columna(consorcio, nombre))
+                            consorcio=consorcio,
+                            rubro=rubro,
+                            nombre=nombre,
+                            tipo_reparto=tipo,
+                            codigo=_generar_codigo_columna(consorcio, rubro, nombre),
+                        )
                     columna.unidades.set(ufs if tipo != TipoReparto.GENERAL else [])
                     messages.success(request, f"Columna '{nombre}' guardada.")
-        except ValueError as e:
+
+        except (ValueError, ProtectedError) as e:
             messages.error(request, str(e))
-        return redirect(f"{reverse('configurar_columnas')}?consorcio={consorcio.id}")
+        return redirect('editar_columnas_rubro', rubro_id=rubro.pk)
 
-    columnas, unidades = [], []
-    if consorcio:
-        columnas = consorcio.grupos_prorrateo.prefetch_related('unidades').order_by('nombre')
-        unidades = consorcio.unidades_funcionales.order_by('piso', 'departamento')
+    columnas = rubro.columnas.prefetch_related('unidades').order_by('codigo')
 
-    return render(request, 'configurar_columnas.html', {
-        'consorcios': consorcios_disp,
+    return render(request, 'editar_columnas_rubro.html', {
         'consorcio': consorcio,
+        'rubro': rubro,
         'columnas': columnas,
         'unidades': unidades,
         'tipos': TipoReparto.choices,

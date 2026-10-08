@@ -59,21 +59,42 @@ def listar_liquidaciones(request):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def generar_liquidacion(request, liquidacion_id=None):
-    consorcios = consorcios_permitidos(request.user).prefetch_related('grupos_prorrateo', 'unidades_funcionales').order_by('nombre')
+    consorcios = consorcios_permitidos(request.user).order_by('nombre')
+
+    # Precargamos rubros y columnas para JS
+    rubros_por_consorcio = {}
+    columnas_por_rubro = {}
+
+    for c in consorcios:
+        rubros = c.rubros.all().order_by('nombre')
+        rubros_por_consorcio[c.pk] = [
+            {'val': r.pk, 'nombre': r.nombre} for r in rubros
+        ]
+        for r in rubros:
+            columnas_por_rubro[r.pk] = [
+                {
+                    'val': col.pk,
+                    'codigo': col.codigo,
+                    'nombre': col.nombre,
+                    'tipo_reparto': col.tipo_reparto,
+                }
+                for col in r.columnas.all().order_by('codigo')
+            ]
+
     liquidacion = liquidacion_permitida(request, liquidacion_id) if liquidacion_id else None
     if liquidacion and liquidacion.cerrada:
         return redirect('detalle_liquidacion', liquidacion_id=liquidacion.pk)
     consorcio_id = request.GET.get('consorcio', '')
     if consorcio_id and (not consorcio_id.isdecimal() or not consorcios.filter(pk=consorcio_id).exists()):
         raise Http404('Consorcio no disponible')
-    
-    
-    
-    
+
     return render(request, 'generar_liquidacion.html', {
-        'consorcios': consorcios, 'liquidacion': liquidacion,
+        'consorcios': consorcios,
+        'liquidacion': liquidacion,
         'datos_iniciales': liquidacion.datos_borrador if liquidacion else {},
         'consorcio_inicial': liquidacion.consorcio_id if liquidacion else consorcio_id,
+        'rubros_por_consorcio': rubros_por_consorcio,
+        'columnas_por_rubro': columnas_por_rubro,
     })
 
 
@@ -94,11 +115,9 @@ def leer_datos(request, finalizar=False):
         raise ValueError('Completá el cierre y el vencimiento antes de finalizar.')
     try:
         gastos = json.loads(request.POST.get('gastos', '[]'))
-        grupos_nuevos = json.loads(request.POST.get('grupos_nuevos', '[]'))
-        subtipos = json.loads(request.POST.get('subtipos', '[]'))
     except json.JSONDecodeError as exc:
         raise ValueError('Los gastos enviados no tienen un formato válido.') from exc
-    if not all(isinstance(item, list) for item in (gastos, grupos_nuevos, subtipos)) or len(gastos) > 300:
+    if not isinstance(gastos, list) or len(gastos) > 300:
         raise ValueError('Los gastos enviados no tienen un formato válido.')
     filas = set()
     for gasto in gastos:
@@ -123,7 +142,6 @@ def leer_datos(request, finalizar=False):
         'consorcio': consorcio.pk, 'mes': f'{int(mes):02d}', 'anio': str(int(anio)),
         'fecha_cierre': cierre, 'fecha_vencimiento_1': vencimiento,
         'administracion': administracion, 'gastos': gastos,
-        'grupos_nuevos': grupos_nuevos, 'subtipos': subtipos,
     }
 
 
@@ -195,7 +213,7 @@ def finalizar_liquidacion(request):
                     liquidacion=liquidacion, consorcio=liquidacion.consorcio,
                     periodo=liquidacion.periodo, fecha_comprobante=date.today(),
                     posicion=posicion, concepto=str(gasto['concepto']).strip()[:200],
-                    tipo=gasto['tipo'], subtipo=str(gasto.get('subtipo', ''))[:100],
+                    tipo=gasto['tipo'],
                     grupo=columna, monto=Decimal(str(gasto['monto']).replace(',', '.')))
             procesar_liquidacion_periodo(liquidacion)
             liquidacion.documento = generar_pdf_liquidacion(liquidacion)

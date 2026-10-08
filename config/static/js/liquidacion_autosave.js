@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let guardadoEnCurso;
     let pendiente = false;
     let finalizando = false;
-    const gruposIniciales = new Map((inicial.grupos_nuevos || []).map(g => [g.id, g]));
 
     if (inicial.consorcio) {
         const consorcio = document.getElementById('select-consorcio');
@@ -23,15 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const campo = document.getElementById(id);
             if (campo) campo.value = valor;
         });
-        subtiposPorConsorcio[consorcio.value] = inicial.subtipos || subtiposPorConsorcio[consorcio.value];
-        renderizarListasGestion();
+
         document.getElementById('body-gastos').replaceChildren();
         (inicial.gastos || []).forEach(gasto => {
-            agregarFilaGasto('', gasto.tipo || 'ordinario', gasto.subtipo || '', gasto.grupo || gasto.modo || '', '');
-            const filas = document.querySelectorAll('#body-gastos tr.fila-gasto');
-            const fila = filas[filas.length - 1];
-            fila.querySelector('.input-concepto').value = gasto.concepto || '';
-            fila.querySelector('.input-monto').value = gasto.monto || '';
+            // Cada gasto guardado tiene: concepto, tipo, rubro, grupo, monto
+            agregarFilaGasto(
+                gasto.concepto || '',
+                gasto.tipo || 'ordinario',
+                gasto.rubro || '',
+                gasto.grupo || '',
+                gasto.monto || ''
+            );
         });
         if (!inicial.gastos?.length) agregarFilaGasto();
         sincronizarVistaPrevia();
@@ -39,18 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function completarDatos() {
-        const consorcio = document.getElementById('select-consorcio').value;
         const gastos = [...document.querySelectorAll('#body-gastos tr.fila-gasto')].map(fila => ({
             fila: fila.id,
             concepto: fila.querySelector('.input-concepto').value,
             tipo: fila.querySelector('.select-tipo').value,
-            subtipo: fila.querySelector('.select-subtipo').value,
+            rubro: fila.querySelector('.select-rubro').value,
             grupo: fila.querySelector('.select-grupo').value,
             monto: fila.querySelector('.input-monto').value,
         }));
         document.getElementById('gastos-json').value = JSON.stringify(gastos);
-        document.getElementById('grupos-nuevos-json').value = JSON.stringify([]);
-        document.getElementById('subtipos-json').value = JSON.stringify(subtiposPorConsorcio[consorcio] || []);
     }
 
     function periodoCompleto() {
@@ -70,7 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const resultado = await respuesta.json();
             if (respuesta.status === 409 && resultado.url) {
                 const enlace = document.createElement('a');
-                enlace.href = resultado.url; enlace.textContent = 'Abrir borrador existente';
+                enlace.href = resultado.url;
+                enlace.textContent = 'Abrir borrador existente';
                 estado.replaceChildren(document.createTextNode(`${resultado.error} `), enlace);
                 return;
             }

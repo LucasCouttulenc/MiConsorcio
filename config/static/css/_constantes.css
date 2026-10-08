@@ -1,54 +1,70 @@
 :root {
 
-    /* Colores Principales (Paleta Azul Oscuro / ConsorcioPro) */
-    --colorFondoPagina: #0b192c;
-    --colorFondoSecundario: #fcfdfd;
-    --colorTarjeta: #ffffff;
+    /* ==========================================================
+       Colores Principales (Sinergia Azul Marino / Slate)
+       ========================================================== */
+    --colorFondoPagina: #2a4164;
+    --colorFondoSecundario: #112240;
+    --colorTarjeta: #172A45;
 
-    /* Azul Principal y Variantes (Acciones y Resaltados) */
-    --colorPrincipal: #1d4ed8;
-    --colorPrincipalHover: #1e40af;
-    --colorPrincipalTransparente: rgba(29, 78, 216, 0.12);
-    
-    /* Azul Secundario / Acentos de Marca */
-    --colorSecundario: #38bdf8;
-    --colorSecundarioTransparente: rgba(56, 189, 248, 0.15);
+    /* ==========================================================
+       Azul Principal y Variantes (Acciones y Resaltados)
+       ========================================================== */
+    --colorPrincipal: #3B82F6;
+    --colorPrincipalHover: #60A5FA;
+    --colorPrincipalTransparente: rgba(59, 130, 246, 0.15);
 
-    /* Textos */
-    --colorTextoPrincipal: #0f172a;
-    --colorTextoSecundario: #64748b;
-    --colorTextoEtiqueta: #334155;
-    --colorTextoMuted: #475569;
-    --colorTextoBlanco: #ffffff;
-    --colorTextoInactivo: #94a3b8;
+    /* ==========================================================
+       Azul Secundario / Acentos de Marca
+       ========================================================== */
+    --colorSecundario: #0EA5E9;
+    --colorSecundarioTransparente: rgba(14, 165, 233, 0.15);
 
-    /* Bordes y Campos */
-    --colorBorde: #cbd5e1;
-    --colorBordeSuave: #e2e8f0;
-    --colorFondoCampo: #f8fafc;
-    --colorBordeCampoEnfoque: #1d4ed8;
-    --colorBordeBlancoTransparente: rgba(255, 255, 255, 0.1);
-    --colorFondoBlancoTransparente: rgba(255, 255, 255, 0.08);
+    /* ==========================================================
+       Textos
+       ========================================================== */
+    --colorTextoPrincipal: #E2E8F0;
+    --colorTextoSecundario: #94A3B8;
+    --colorTextoEtiqueta: #CBD5E1;
+    --colorTextoMuted: #fcfcfc;
+    --colorTextoBlanco: #e6efff;
+    --colorTextoInactivo: #142844;
 
-    /* Colores para Estados y Botones */
-    --colorExito: #0f6514;
-    --fondoColorExitoBackground: #b7d2ba;
-    --colorError: #660c0c;
-    --colorErrorHover: #660c0c;
-    --colorErrorTexto: #660c0c;
-    --fondoColorError: #DCCACB;
-    --fondoColorErrorSuave: #fef2f2;
-    --colorAviso: #ce8d00;
-    --fondoColorAviso: #fff1d4;
+    /* ==========================================================
+       Bordes y Campos
+       ========================================================== */
+    --colorBorde: #1E293B;
+    --colorBordeSuave: #0F172A;
+    --colorFondoCampo: #0B172A;
+    --colorBordeCampoEnfoque: #3B82F6;
+    --colorBordeBlancoTransparente: rgba(226, 232, 240, 0.1);
+    --colorFondoBlancoTransparente: rgba(226, 232, 240, 0.05);
 
-    /* Tipografía y Tamaños de Texto */
-    --textoMicro: 0.625rem;    /* 10px */
-    --textoChico: 0.75rem;     /* 12px */
-    --textoEstandar: 1rem;     /* 16px */
-    --textoMedio: 1.25rem;     /* 20px */
-    --textoGrande: 1.75rem;    /* 28px */
+    /* ==========================================================
+       Colores para Estados
+       ========================================================== */
+    --colorExito: #34D399;
+    --fondoColorExitoBackground: rgba(52, 211, 153, 0.12);
+    --colorError: #FB7185;
+    --colorErrorHover: #F43F5E;
+    --colorErrorTexto: #FECDD3;
+    --fondoColorError: rgba(251, 113, 133, 0.12);
+    --fondoColorErrorSuave: rgba(251, 113, 133, 0.08);
+    --colorAviso: #FBBF24;
+    --fondoColorAviso: rgba(251, 191, 36, 0.12);
 
-    /* Radios de Borde */
+    /* ==========================================================
+       Tipografía y Tamaños de Texto
+       ========================================================== */
+    --textoMicro: 0.625rem;
+    --textoChico: 0.75rem;
+    --textoEstandar: 1rem;
+    --textoMedio: 1.25rem;
+    --textoGrande: 1.75rem;
+
+    /* ==========================================================
+       Radios de Borde
+       ========================================================== */
     --radioBoton: 8px;
     --radioInput: 10px;
     --radioSutil: 1em;
@@ -56,16 +72,28 @@
     --radioContenedor: 20px;
     --radioEstandar: 3em;
 
-    /* Sombras y Elevación */
-    --sombraTarjeta: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
-    --sombraTarjetaFlotante: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-    --sombraSidebar: 4px 0 12px rgba(0, 0, 0, 0.15);
+    /* ==========================================================
+       Sombras y Elevación
+       ========================================================== */
+    --sombraTarjeta: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+    --sombraTarjetaFlotante: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    --sombraSidebar: 4px 0 12px rgba(0, 0, 0, 0.3);
 
-    /* Capas (Z-Index) */
+    /* ==========================================================
+       Capas (Z-Index)
+       ========================================================== */
     --zIndexSidebar: 1000;
     --zIndexModal: 9999;
 
-    /* Tipografías */
+    /* ==========================================================
+       Tipografías
+       ========================================================== */
     --fuenteTitulos: 'Exo 2', sans-serif;
     --fuenteCuerpo: 'Nunito', sans-serif;
+
+    /* ==========================================================
+       Sidebar claro
+       ========================================================== */
+    --colorBordeSidebar: rgba(10, 25, 47, 0.1);
+    --colorHoverSidebar: rgba(10, 25, 47, 0.06);
 }

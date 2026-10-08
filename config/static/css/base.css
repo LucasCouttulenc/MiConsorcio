@@ -3,6 +3,7 @@
 @import "_sidebar.css";
 @import "_tabla.css";
 @import "_componentes.css";
+@import "_liquidaciones.css";
 @import "_utilidades.css";
 
 @import "_login.css";
@@ -18,12 +19,14 @@
 body {
     font-family: var(--fuenteCuerpo);
     color: var(--colorTextoPrincipal);
+    background: linear-gradient(160deg, #0F2342 0%, var(--colorFondoPagina) 55%, #08142A 100%);
+    background-attachment: fixed;
 }
 
 .contenedor-principal {
     width: 100%;
     min-height: 100vh;
-    background-color: var(--colorFondoSecundario);
+    background-color: transparent;   /* deja ver el degradado del body */
     padding-left: 20px;
     padding-right: 20px;
 }

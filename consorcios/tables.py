@@ -159,6 +159,7 @@ class FiltroUnidadesFuncionales(django_filters.FilterSet):
     texto = django_filters.CharFilter(
         method="filtrar_por_texto",
         label="Buscar",
+        widget=TextInput(attrs={"placeholder": "Buscar propietario"}),
     )
 
     consorcio = django_filters.ModelChoiceFilter(

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Configurar columnas{% endblock %}
+{% block title %}Contenido de la liquidación{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/_columnas.css' %}">
@@ -10,8 +10,8 @@
 
 <div class="cols-header">
     <div>
-        <h1 class="titulo">Configurar columnas</h1>
-        <p class="cols-sub">Definí las columnas de prorrateo del consorcio y quién paga cada una.</p>
+        <h1 class="titulo">Prorrateo</h1>
+        <p class="cols-sub">Definí los rubros y sus columnas de prorrateo para el consorcio.</p>
     </div>
 </div>
 
@@ -33,126 +33,116 @@
         </div>
     {% endif %}
 
-    <div class="cols-card">
-        <div class="cols-card-head">
-            <span>Columnas de {{ consorcio.nombre }}</span>
-            <button type="button" class="boton-primario" onclick="nuevaColumna()">+ Nueva columna</button>
-        </div>
+    <div class="cols-actions-bar">
+        <button type="button" class="boton-primario" onclick="nuevoRubro()">+ Nuevo rubro</button>
+    </div>
 
-        <div class="cols-tabla-wrap">
-            <table class="cols-tabla">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th class="col-tipo">Tipo de reparto</th>
-                        <th>UF afectadas</th>
-                        <th class="col-acc">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for col in columnas %}
-                        <tr>
-                            <td class="col-nombre">{{ col.nombre }}</td>
-                            <td class="col-tipo"><span class="badge-tipo tipo-{{ col.tipo_reparto }}">{{ col.get_tipo_reparto_display }}</span></td>
-                            <td class="col-ufs">
-                                {% if col.tipo_reparto == 'general' %}
-                                    Todas las UF
-                                {% elif col.tipo_reparto == 'parcial' %}
-                                    Exentas: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
-                                {% else %}
-                                    Pagan: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
-                                {% endif %}
-                            </td>
-                            <td class="col-acc">
-                                <button type="button" class="cols-ic" title="Editar" onclick="editarColumna(this)"
-                                    data-id="{{ col.id }}" data-nombre="{{ col.nombre }}" data-tipo="{{ col.tipo_reparto }}"
-                                    data-ufs="{% for u in col.unidades.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}">✎</button>
-                                <form method="post" style="display:inline" onsubmit="return confirm('¿Borrar la columna {{ col.nombre|escapejs }}?');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
-                                    <input type="hidden" name="accion" value="borrar">
-                                    <input type="hidden" name="columna_id" value="{{ col.id }}">
-                                    <button type="submit" class="cols-ic del" title="Borrar">✕</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="4" class="cols-vacio">Todavía no hay columnas. Creá la primera con "+ Nueva columna".</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="rubros-grid">
+        {% for rubro in rubros %}
+            <div class="rubro-card">
+                <div class="rubro-head">
+                    <div class="rubro-title">
+                        <span class="rubro-icon">📁</span>
+                        <h3>{{ rubro.nombre }}</h3>
+                    </div>
+                    <div class="rubro-acciones">
+                        <button type="button" class="cols-ic" title="Editar rubro"
+                            onclick="editarRubro(this)"
+                            data-id="{{ rubro.id }}"
+                            data-nombre="{{ rubro.nombre }}">✎</button>
+                        <form method="post" style="display:inline"
+                              onsubmit="return confirm('¿Borrar el rubro {{ rubro.nombre|escapejs }}?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+                            <input type="hidden" name="accion" value="borrar_rubro">
+                            <input type="hidden" name="rubro_id" value="{{ rubro.id }}">
+                            <button type="submit" class="cols-ic del" title="Borrar rubro">✕</button>
+                        </form>
+                    </div>
+                </div>
 
-        <form method="post" class="cols-form" id="cols-form" style="display:none">
-            {% csrf_token %}
-            <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
-            <input type="hidden" name="accion" value="crear" id="cols-accion">
-            <input type="hidden" name="columna_id" value="" id="cols-col-id">
-            <h4 class="cols-form-title" id="cols-form-title">Nueva columna</h4>
-            <div class="cols-form-row">
+                <div class="rubro-body">
+                    <div class="rubro-stat">
+                        <span class="rubro-stat-num">{{ rubro.columnas.count }}</span>
+                        <span class="rubro-stat-lbl">columna{{ rubro.columnas.count|pluralize }}</span>
+                    </div>
+
+                    {% if rubro.columnas.all %}
+                        <ul class="rubro-columnas-preview">
+                            {% for col in rubro.columnas.all|slice:":4" %}
+                                <li>
+                                    <span class="chip-codigo">{{ col.codigo }}</span>
+                                    {{ col.nombre }}
+                                </li>
+                            {% endfor %}
+                            {% if rubro.columnas.count > 4 %}
+                                <li class="rubro-mas">+{{ rubro.columnas.count|add:"-4" }} más</li>
+                            {% endif %}
+                        </ul>
+                    {% else %}
+                        <p class="rubro-vacio">Sin columnas todavía.</p>
+                    {% endif %}
+                </div>
+
+                <div class="rubro-footer">
+                    <a href="{% url 'editar_columnas_rubro' rubro.id %}" class="boton-primario boton-chico">
+                        Editar columnas →
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="alerta alerta-info">
+                Este consorcio todavía no tiene rubros. Creá el primero con "+ Nuevo rubro".
+            </div>
+        {% endfor %}
+    </div>
+
+    {# Modal rubro #}
+    <div class="cols-modal" id="rubro-modal" style="display:none">
+        <div class="cols-modal-content">
+            <h4 id="rubro-modal-title">Nuevo rubro</h4>
+            <form method="post" id="rubro-form">
+                {% csrf_token %}
+                <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+                <input type="hidden" name="accion" value="crear_rubro" id="rubro-accion">
+                <input type="hidden" name="rubro_id" value="" id="rubro-id">
                 <div class="cols-fg">
-                    <label class="cols-label">Nombre de la columna</label>
-                    <input type="text" name="nombre" id="cols-nombre" class="cols-input" placeholder="Ej: Fondo de reserva" required>
+                    <label class="cols-label">Nombre del rubro</label>
+                    <input type="text" name="nombre_rubro" id="rubro-nombre" class="cols-input"
+                           placeholder="Ej: REMUNERACIONES AL PERSONAL" required maxlength="100">
                 </div>
-                <div class="cols-fg">
-                    <label class="cols-label">Tipo de reparto</label>
-                    <select name="tipo_reparto" id="cols-tipo" class="cols-input" onchange="toggleUFs()">
-                        {% for val, label in tipos %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
-                    </select>
+                <div class="cols-form-actions">
+                    <button type="submit" class="boton-primario">Guardar</button>
+                    <button type="button" class="boton-secundario" onclick="cerrarRubro()">Cancelar</button>
                 </div>
-            </div>
-            <div class="cols-ufwrap" id="cols-ufwrap" style="display:none">
-                <label class="cols-label" id="cols-uflabel">¿Quiénes pagan?</label>
-                <div class="cols-ufgrid">
-                    {% for u in unidades %}
-                        <label class="cols-uf"><input type="checkbox" name="unidades" value="{{ u.id }}" class="cols-ufchk"><span>{{ u.piso }}° {{ u.departamento|default:"" }}</span></label>
-                    {% endfor %}
-                </div>
-            </div>
-            <div class="cols-form-actions">
-                <button type="submit" class="boton-primario">Guardar columna</button>
-                <button type="button" class="boton-secundario" onclick="cancelarColumna()">Cancelar</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 {% else %}
-    <div class="alerta alerta-info">Elegí un consorcio para configurar sus columnas.</div>
+    <div class="alerta alerta-info">Elegí un consorcio para configurar el contenido.</div>
 {% endif %}
 
 <script>
-function toggleUFs() {
-    const tipo = document.getElementById('cols-tipo').value;
-    const wrap = document.getElementById('cols-ufwrap');
-    const lbl = document.getElementById('cols-uflabel');
-    if (tipo === 'general') { wrap.style.display = 'none'; }
-    else {
-        wrap.style.display = '';
-        lbl.textContent = tipo === 'particular' ? '¿Quiénes pagan? (elegí las UF)' : '¿Quiénes quedan afuera? (exentas)';
-    }
+function nuevoRubro() {
+    document.getElementById('rubro-accion').value = 'crear_rubro';
+    document.getElementById('rubro-id').value = '';
+    document.getElementById('rubro-modal-title').textContent = 'Nuevo rubro';
+    document.getElementById('rubro-nombre').value = '';
+    document.getElementById('rubro-modal').style.display = 'flex';
+    document.getElementById('rubro-nombre').focus();
 }
-function nuevaColumna() {
-    document.getElementById('cols-accion').value = 'crear';
-    document.getElementById('cols-col-id').value = '';
-    document.getElementById('cols-form-title').textContent = 'Nueva columna';
-    document.getElementById('cols-nombre').value = '';
-    document.getElementById('cols-tipo').value = 'general';
-    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = false);
-    toggleUFs();
-    document.getElementById('cols-form').style.display = '';
-    document.getElementById('cols-nombre').focus();
+function editarRubro(btn) {
+    document.getElementById('rubro-accion').value = 'editar_rubro';
+    document.getElementById('rubro-id').value = btn.dataset.id;
+    document.getElementById('rubro-modal-title').textContent = 'Editar rubro';
+    document.getElementById('rubro-nombre').value = btn.dataset.nombre;
+    document.getElementById('rubro-modal').style.display = 'flex';
+    document.getElementById('rubro-nombre').focus();
 }
-function editarColumna(btn) {
-    document.getElementById('cols-accion').value = 'editar';
-    document.getElementById('cols-col-id').value = btn.dataset.id;
-    document.getElementById('cols-form-title').textContent = 'Editar columna';
-    document.getElementById('cols-nombre').value = btn.dataset.nombre;
-    document.getElementById('cols-tipo').value = btn.dataset.tipo;
-    const ufs = (btn.dataset.ufs || '').split(',').filter(Boolean);
-    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = ufs.includes(ch.value));
-    toggleUFs();
-    document.getElementById('cols-form').style.display = '';
-    document.getElementById('cols-nombre').focus();
-}
-function cancelarColumna() { document.getElementById('cols-form').style.display = 'none'; }
+function cerrarRubro() { document.getElementById('rubro-modal').style.display = 'none'; }
+
+document.querySelectorAll('.cols-modal').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
+});
 </script>
 {% endblock %}

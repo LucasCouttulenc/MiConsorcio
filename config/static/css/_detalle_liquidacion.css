@@ -13,7 +13,7 @@
 
 .dl-subtitulo {
     margin: 0.25rem 0 0;
-    color: #666;
+    color: white;
     font-size: 0.9rem;
 }
 
@@ -121,8 +121,8 @@
 }
 
 .dl-tabla thead th {
-    background: #f4f6f8;
-    color: #333;
+    background: #e5effa;
+    color: #000000;
     font-weight: 600;
     padding: 0.65rem 0.75rem;
     text-align: left;
@@ -135,7 +135,7 @@
 
 .dl-tabla tbody td {
     padding: 0.55rem 0.75rem;
-    border-bottom: 1px solid #f0f2f5;
+    border-bottom: 1px solid #011a3f;
     vertical-align: middle;
 }
 
@@ -150,10 +150,10 @@
 }
 
 .col-uf      { width: 60px; text-align: center; font-weight: 600; color: #1f6feb; }
-.col-dpto    { width: 90px; white-space: nowrap; }
-.col-prop    { color: #333; }
-.col-tipo    { width: 120px; }
-.col-num     { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-dpto    { width: 90px; white-space: nowrap; color: black }
+.col-prop    { color: #000000; }
+.col-tipo    { width: 120px; color: black }
+.col-num     { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; color: black }
 .col-monto {width: 140px;text-align: center;font-variant-numeric: tabular-nums;white-space: nowrap;}
 .col-total   { font-weight: 700; color: #1f6feb; }
 .col-etiqueta { text-align: right; }
@@ -178,6 +178,7 @@
 .dl-tabla.dl-tabla-centrada tbody td,
 .dl-tabla.dl-tabla-centrada tfoot td {
     text-align: center;
+    color:black;
 }
 
 .dl-tabla.dl-tabla-centrada .col-tipo,

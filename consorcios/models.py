@@ -1,6 +1,11 @@
 from django.db import models
 from django.utils import timezone
 
+
+#####################################################################
+#                          CONSORCIO                               #
+#####################################################################
+
 class Consorcio(models.Model):
     class Meta:
         verbose_name = "Consorcio"
@@ -27,8 +32,38 @@ class Consorcio(models.Model):
         # Validar que la fecha de creación no sea futura
         if self.fecha_creacion > timezone.now().date():
             raise ValueError("La fecha de creación no puede ser futura.")
-        
+
         super().save(*args, **kwargs)
+
+
+#####################################################################
+#                            RUBRO                                  #
+#####################################################################
+
+class Rubro(models.Model):
+    """
+    Categoría contable del consorcio (ej: "REMUNERACIONES AL PERSONAL",
+    "SERVICIOS PÚBLICOS", "ARREGLO DE CAÑERÍAS").
+    Cada rubro agrupa columnas de prorrateo.
+    """
+    consorcio = models.ForeignKey(
+        Consorcio, on_delete=models.CASCADE, related_name='rubros'
+    )
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Rubro")
+
+    class Meta:
+        verbose_name = "Rubro"
+        verbose_name_plural = "Rubros"
+        unique_together = ('consorcio', 'nombre')
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f"{self.consorcio.nombre} - {self.nombre}"
+
+
+#####################################################################
+#                         TIPO DE REPARTO                           #
+#####################################################################
 
 class TipoReparto(models.TextChoices):
     GENERAL = 'general', 'General'
@@ -36,11 +71,17 @@ class TipoReparto(models.TextChoices):
     PARTICULAR = 'particular', 'Particular'
 
 
+#####################################################################
+#                         GRUPO PRORRATEO                           #
+#####################################################################
+
 class GrupoProrrateo(models.Model):
     """
-    Columna/Rubro de prorrateo dinámico (ej: "A - General", "B - Ascensores", "Fachada")
+    Columna de prorrateo que pertenece a un Rubro (ej: "A - General",
+    "B - Ascensores", "Fachada").
     """
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='grupos_prorrateo')
+    rubro = models.ForeignKey(Rubro, on_delete=models.CASCADE, related_name='columnas')
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Grupo/Columna")
     codigo = models.CharField(max_length=10, help_text="Ej: A, B, C, PISCINA", verbose_name="Código / Identificador")
     tipo_reparto = models.CharField(max_length=20, choices=TipoReparto.choices, default=TipoReparto.GENERAL, verbose_name="Tipo de reparto")
@@ -49,7 +90,7 @@ class GrupoProrrateo(models.Model):
     class Meta:
         verbose_name = "Grupo de Prorrateo"
         verbose_name_plural = "Grupos de Prorrateo"
-        unique_together = ('consorcio', 'codigo')
+        unique_together = ('consorcio', 'rubro', 'codigo')
 
     def __str__(self):
         return f"{self.consorcio.nombre} - Columna {self.codigo} ({self.nombre})"
@@ -84,8 +125,9 @@ class UnidadFuncional(models.Model):
             raise ValueError("Ya existe una unidad funcional con el mismo piso y departamento en este consorcio.")
         super().save(*args, **kwargs)
 
+
 #####################################################################
-#                             PERSONAL                               #
+#                             PERSONAL                              #
 #####################################################################
 
 class Personal(models.Model):
@@ -112,9 +154,14 @@ class Personal(models.Model):
         return f"{self.apellido}, {self.nombre} ({self.cargo})"
 
 
+#####################################################################
+#                          COEFICIENTE UF                           #
+#####################################################################
+
 class CoeficienteUF(models.Model):
     """
-    Porcentaje asignado a una Unidad Funcional para una Columna/Grupo específico
+    Legacy: se mantiene por compatibilidad de migraciones. No se usa en el
+    cálculo nuevo (que usa UnidadFuncional.alicuota).
     """
     unidad_funcional = models.ForeignKey(UnidadFuncional, on_delete=models.CASCADE, related_name='coeficientes')
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.CASCADE, related_name='coeficientes_uf')

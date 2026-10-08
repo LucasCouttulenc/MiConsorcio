@@ -12,23 +12,31 @@
     display: none;
 }
 
-.tabla__filtro input,
+/* Se repite el type para ganarle en especificidad a input[type="text"] de _componentes.css */
+.tabla__filtro input[type="text"],
+.tabla__filtro input[type="search"],
+.tabla__filtro input[type="number"],
+.tabla__filtro input[type="date"],
 .tabla__filtro select {
-    padding: 0.4em 0.8em;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    background-color: #ffffff;
-    color: #1e293b;
+    padding: 0.55rem 0.8rem;
+    border-radius: var(--radioInput);
+    border: 2px solid var(----colorBordeSuave);
+    background-color: #d7e7ff;
+    color: black;
     font-size: 13px;
     box-sizing: border-box;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.tabla__filtro input::placeholder {
+    color: var(--colorTextoInactivo);
+}
+
 .tabla__filtro input:focus,
 .tabla__filtro select:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--colorBordeCampoEnfoque);
+    box-shadow: 0 0 0 3px var(--colorPrincipalTransparente);
 }
 
 .tabla__filtro :first-child input {
@@ -46,10 +54,20 @@
     margin: 0.75em 0;
     width: 100%;
     overflow-x: auto;
-    border-radius: 10px;
-    border: 1px solid #f1f5f9;
-    background-color: #ffffff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    border-radius: var(--radioTarjeta);
+    border: 1px solid var(--colorBordeBlancoTransparente);
+    background: linear-gradient(145deg, #1B3858 0%, var(--colorTarjeta) 100%);
+    box-shadow: var(--sombraTarjeta);
+}
+
+/* Si queda un .contenedor-tabla dentro de otro, el de adentro no dibuja una segunda caja.
+   Lo ideal es sacar el wrapper repetido del template. */
+.contenedor-tabla .contenedor-tabla {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
 }
 
 /***************** TABLA *****************/
@@ -59,55 +77,56 @@
     border-collapse: collapse;
     font-family: inherit;
     font-size: 13px;
-    background-color: #ffffff;
+    background-color: transparent;
 }
 
 .tabla a {
-    color: #2563eb;
+    color: var(--colorPrincipal);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s;
 }
 
 .tabla a:hover {
-    color: #1d4ed8;
+    color: var(--colorPrincipalHover);
 }
 
 .tabla th a {
-    color: #94a3b8;
+    color: var(--colorTextoEtiqueta);
     text-decoration: none;
+    font-weight: inherit;   /* igual que los th sin link */
 }
 
 .tabla thead th {
-    background-color: #ffffff;
-    color: #94a3b8;
+    background-color: transparent;
+    color: white;
     text-align: center;
     padding: 0.75em 0.8em;
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--colorBordeBlancoTransparente);
 }
 
 .tabla th:first-child {
-    border-radius: 10px 0 0 0;
+    border-radius: var(--radioTarjeta) 0 0 0;
 }
 
 .tabla th:last-child {
-    border-radius: 0 10px 0 0;
+    border-radius: 0 var(--radioTarjeta) 0 0;
 }
 
 .tabla tbody td {
     text-align: center;
     padding: 0.7em 0.8em; /* Estilo compacto vertical */
-    color: #334155;
+    color: var(----colorBordeSuave);
     font-weight: 500;
     max-width: 18em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    border-bottom: 1px solid #f8fafc;
+    border-bottom: 1px solid var(--colorBordeBlancoTransparente);
 }
 
 .tabla tbody td:has(button),
@@ -116,11 +135,11 @@
 }
 
 .tabla tbody .even {
-    background-color: #ffffff;
+    background-color: transparent;
 }
 
 .tabla tbody .odd {
-    background-color: #ffffff;
+    background-color: transparent;
 }
 
 .tabla tbody tr {
@@ -128,7 +147,7 @@
 }
 
 .tabla tbody tr:hover {
-    background-color: #f8fafc;
+    background-color: var(--colorFondoBlancoTransparente);
 }
 
 .tabla tbody tr:last-child td {
@@ -138,24 +157,25 @@
 /***************** DETALLES / BOTÓN ACCIÓN *****************/
 
 .tabla .tabla__boton-accion-registro {
-    background-color: #eff6ff;
-    color: #2563eb;
+    background-color: var(--colorPrincipal);
+    color: black;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radioBoton);
     padding: 5px 12px;
     cursor: pointer;
-    white-space: nowrap;  
+    white-space: nowrap;
     min-width: 85px;
+    font-family: var(--fuenteCuerpo);
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 700;
     transition: all 0.2s ease;
     text-align: center;
     display: inline-block;
 }
 
 .tabla .tabla__boton-accion-registro:hover {
-    background-color: #dbeafe;
-    color: #1d4ed8;
+    background-color: var(--colorPrincipalHover);
+    color: var(--colorFondoPagina);
 }
 
 /***************** ACCION (ÍCONOS Y FORMS) *****************/
@@ -169,6 +189,7 @@
     border: none;
     margin: 0 0.2em;
     cursor: pointer;
+    color: var(--colorTextoEtiqueta);
     opacity: 0.7;
     transition: opacity 0.2s, transform 0.1s;
 }
@@ -202,44 +223,45 @@
     max-width: fit-content;
 }
 
-.paginacion li a, 
+.paginacion li a,
 .paginacion li button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
+    background-color: var(--colorTarjeta);
+    border: 1px solid var(--colorBordeBlancoTransparente);
     margin: 0 0.15em;
     padding: 0.3em 0.7em;
-    border-radius: 6px;
+    border-radius: var(--radioBoton);
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
-    color: #64748b;
+    color: var(--colorTextoSecundario);
     text-decoration: none;
+    font-family: var(--fuenteCuerpo);
     font-size: 12px;
     font-weight: 500;
 }
 
 .paginacion li.active a,
 .paginacion li.active button {
-    background-color: #2563eb;
-    border-color: #2563eb;
-    color: #ffffff;
+    background-color: var(--colorPrincipal);
+    border-color: var(--colorPrincipal);
+    color: var(--colorTextoBlanco);
     font-weight: 600;
 }
 
 .paginacion li:hover:not(.active):not(.disabled) a,
 .paginacion li:hover:not(.active):not(.disabled) button {
-    background-color: #f1f5f9;
-    color: #1e293b;
+    background-color: var(--colorPrincipalTransparente);
+    color: var(--colorTextoBlanco);
 }
 
 .paginacion li.disabled a,
 .paginacion li.disabled button {
-    background-color: #ffffff;
-    border-color: #f1f5f9;
-    color: #cbd5e1;
+    background-color: transparent;
+    border-color: var(--colorBordeBlancoTransparente);
+    color: var(--colorTextoInactivo);
     cursor: not-allowed;
 }
 
@@ -247,8 +269,8 @@
 
 .tabla__texto-sin-resultados {
     text-align: center;
-    background-color: #ffffff;
-    color: #94a3b8;
+    background-color: transparent;
+    color: var(--colorTextoSecundario);
     font-size: 13px;
     font-style: italic;
     padding: 2.5em;
@@ -267,21 +289,21 @@
 }
 
 .estado--borr {
-    background-color: #fef3c7;
-    color: #d97706; /* Estilo 'En Carga / Borrador' estilo píldora amarilla */
+    background-color: rgb(5 32 69 / 12%);
+    color: black; /* Estilo 'En Carga / Borrador' estilo píldora ámbar */
 }
 
 .estado--insc,
 .estado--eval,
 .estado--adjd,
 .estado--curs {
-    background-color: #eff6ff;
-    color: #2563eb;
+    background-color: var(--colorPrincipalTransparente);
+    color: var(--colorPrincipalHover);
 }
 
 .estado--fina {
-    background-color: #f0fdf4;
-    color: #16a34a;
+    background-color: var(--fondoColorExitoBackground);
+    color: var(--colorExito);
 }
 
 /***************** ORDENAMIENTO *****************/
@@ -289,14 +311,14 @@
 .boton-arriba, .boton-abajo {
     padding: 0.1em 0.3em;
     background-color: transparent;
-    color: #94a3b8;
+    color: var(--colorTextoSecundario);
     border: none;
     transition: color 0.2s;
     cursor: pointer;
 }
 
 .boton-arriba:hover, .boton-abajo:hover {
-    color: #2563eb;
+    color: var(--colorPrincipalHover);
 }
 
 .tabla__icono {
@@ -304,24 +326,36 @@
     height: 1.3em;
     padding: 0.2em;
     vertical-align: middle;
-    border-radius: 6px;
+    border-radius: var(--radioBoton);
     transition: all 0.2s ease;
 }
 
 .tabla__icono:hover {
-    background-color: #eff6ff;
-    color: #2563eb;
+    background-color: var(--colorPrincipalTransparente);
+    color: var(--colorPrincipalHover);
 }
+
+/***************** MENÚ DE OPCIONES *****************/
 
 .tabla tbody td:has(.tabla__menu-opciones) { overflow: visible; position: relative; }
 .contenedor-tabla:has(.tabla__menu-opciones) { overflow: visible; }
 .tabla__menu-opciones { position: relative; overflow: visible; }
-.tabla__menu-opciones summary { list-style: none; cursor: pointer; font-size: 20px; color: #334155; }
+.tabla__menu-opciones summary { list-style: none; cursor: pointer; font-size: 20px; color: var(--colorTextoEtiqueta); }
 .tabla__menu-opciones summary::-webkit-details-marker { display: none; }
 .tabla__menu-opciones a { display: block; padding: 9px 12px; white-space: nowrap; }
-.tabla__menu-opciones[open] a { position: absolute; top: 100%; right: 0; z-index: 5; background: white; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 4px 10px #0002; }
+.tabla__menu-opciones[open] a {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 5;
+    background: var(--colorFondoSecundario);
+    border: 1px solid var(--colorBordeBlancoTransparente);
+    border-radius: var(--radioBoton);
+    box-shadow: var(--sombraTarjetaFlotante);
+}
 
-/* Ajustes para Select2 dentro de los filtros de tabla */
+/***************** SELECT2 (filtros de tabla) *****************/
+
 .tabla__filtro .select2-container {
     font-size: 13px;
 }
@@ -329,19 +363,23 @@
 .tabla__filtro .select2-container--default .select2-selection--single {
     min-width: 250px;
     margin-left: 10px;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    background-color: #ffffff;
+    border: 2px solid var(----colorBordeSuave);
+    border-radius: var(--radioInput);
+    background-color: var(--colorFondoCampo);
     display: flex;
     align-items: center;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .tabla__filtro .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: #1e293b;
+    color: var(--colorTextoBlanco);
     line-height: normal;
     padding-left: 0.8em;
     padding-right: 2em;
+}
+
+.tabla__filtro .select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: var(--colorTextoInactivo);
 }
 
 .tabla__filtro .select2-container--default .select2-selection--single .select2-selection__arrow {
@@ -351,30 +389,46 @@
     align-items: center;
 }
 
+.tabla__filtro .select2-container--default .select2-selection--single .select2-selection__arrow b {
+    border-color: var(--colorTextoSecundario) transparent transparent transparent;
+}
+
 /* Estado de enfoque / Focus */
 .tabla__filtro .select2-container--default.select2-container--open .select2-selection--single,
 .tabla__filtro .select2-container--default.select2-container--focus .select2-selection--single {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--colorBordeCampoEnfoque);
+    box-shadow: 0 0 0 3px var(--colorPrincipalTransparente);
     outline: none;
 }
 
 /* Desplegable de opciones (Dropdown) */
 .select2-dropdown {
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background-color: var(--colorFondoSecundario);
+    border: 1px solid var(--colorBordeBlancoTransparente);
+    border-radius: var(--radioBoton);
+    box-shadow: var(--sombraTarjetaFlotante);
     font-size: 13px;
-    z-index: 9999;
+    z-index: var(--zIndexModal);
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: var(--colorFondoCampo);
+    border: 1px solid var(--colorBordeBlancoTransparente);
+    border-radius: var(--radioBoton);
+    color: var(--colorTextoBlanco);
+}
+
+.select2-container--default .select2-results__option {
+    color: white;
 }
 
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
-    background-color: #eff6ff;
-    color: #2563eb;
+    background-color: var(--colorPrincipalTransparente);
+    color: white;
 }
 
 .select2-container--default .select2-results__option[aria-selected="true"] {
-    background-color: #f1f5f9;
-    color: #0f172a;
+    background-color: var(--colorFondoBlancoTransparente);
+    color: var(--colorTextoBlanco);
     font-weight: 600;
 }
