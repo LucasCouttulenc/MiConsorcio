@@ -50,7 +50,7 @@ function getColumnasDelRubro(rubroId) {
 }
 
 function opcionesRubrosHTML(rubroSeleccionado = '') {
-    let html = '<option value="">-- Seleccionar --</option>';
+    let html = '<option value=""></option>';
     getRubrosDelConsorcio().forEach(r => {
         const sel = String(r.val) === String(rubroSeleccionado) ? 'selected' : '';
         html += `<option value="${r.val}" ${sel}>${r.nombre}</option>`;
@@ -59,10 +59,10 @@ function opcionesRubrosHTML(rubroSeleccionado = '') {
 }
 
 function opcionesColumnasHTML(rubroId, columnaSeleccionada = '') {
-    let html = '<option value="">-- Seleccionar --</option>';
+    let html = '<option value=""></option>';
     getColumnasDelRubro(rubroId).forEach(c => {
         const sel = String(c.val) === String(columnaSeleccionada) ? 'selected' : '';
-        html += `<option value="${c.val}" ${sel}>${c.codigo} - ${c.nombre}</option>`;
+        html += `<option value="${c.val}" ${sel}>${c.codigo}</option>`;
     });
     return html;
 }
@@ -88,6 +88,7 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grup
     const tbody = document.getElementById('body-gastos');
 
     const filaId = `gasto-${contadorFilas}`;
+    const esOrdinario = tipo !== 'extraordinario';
     const tr = document.createElement('tr');
     tr.id = filaId;
     tr.className = 'fila-gasto';
@@ -96,10 +97,18 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grup
             <input type="text" name="gastos_concepto[]" class="gl-input input-concepto" value="${concepto}" required>
         </td>
         <td>
-            <select name="gastos_tipo[]" class="gl-select select-tipo" required>
-                <option value="ordinario" ${tipo === 'ordinario' ? 'selected' : ''}>Ordinario</option>
-                <option value="extraordinario" ${tipo === 'extraordinario' ? 'selected' : ''}>Extraordinario</option>
-            </select>
+            <div class="tipo-toggle" data-tipo="${esOrdinario ? 'ordinario' : 'extraordinario'}">
+                <button type="button"
+                        class="tipo-pill tipo-ordinario ${esOrdinario ? 'activo' : ''}"
+                        data-tipo="ordinario"
+                        onclick="toggleTipoGasto(this)">ORD</button>
+                <button type="button"
+                        class="tipo-pill tipo-extraordinario ${!esOrdinario ? 'activo' : ''}"
+                        data-tipo="extraordinario"
+                        onclick="toggleTipoGasto(this)">EXTR</button>
+            </div>
+            <input type="hidden" name="gastos_tipo[]" class="input-tipo-hidden"
+                   value="${esOrdinario ? 'ordinario' : 'extraordinario'}">
         </td>
         <td>
             <select name="gastos_rubro[]" class="gl-select select-rubro" onchange="onCambiarRubro(this)" required>
@@ -159,4 +168,21 @@ function calcularFechasSugeridas() {
 function actualizarFechasYVista() {
     calcularFechasSugeridas();
     sincronizarVistaPrevia();
+}
+
+
+function toggleTipoGasto(btn) {
+    const contenedor = btn.closest('.tipo-toggle');
+    if (!contenedor) return;
+    const nuevoTipo = btn.dataset.tipo;
+
+    contenedor.dataset.tipo = nuevoTipo;
+    contenedor.querySelectorAll('.tipo-pill').forEach(b => {
+        b.classList.toggle('activo', b.dataset.tipo === nuevoTipo);
+    });
+
+    const hidden = contenedor.parentElement.querySelector('.input-tipo-hidden');
+    if (hidden) hidden.value = nuevoTipo;
+
+    if (typeof sincronizarVistaPrevia === 'function') sincronizarVistaPrevia();
 }

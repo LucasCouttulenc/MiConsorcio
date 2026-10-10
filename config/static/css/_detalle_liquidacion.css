@@ -60,8 +60,8 @@
 .dl-card-ordinario { border-left: 4px solid #1a7f37; }
 .dl-card-ordinario .dl-card-monto { color: #1a7f37; }
 
-.dl-card-extra { border-left: 4px solid #cf222e; }
-.dl-card-extra .dl-card-monto { color: #cf222e; }
+.dl-card-extra { border-left: 4px solid #cd4a11 }
+.dl-card-extra .dl-card-monto { color: #bb3c0a; }
 
 .dl-card-total {
     border-left: 4px solid #1f6feb;

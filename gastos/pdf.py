@@ -228,7 +228,7 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     nombres_grupos = {}
     for g in gastos:
         if g.grupo_id is not None:
-            nombres_grupos[g.grupo_id] = g.grupo.nombre
+            nombres_grupos[g.grupo_id] = g.grupo.codigo
 
     por_subtipo = OrderedDict()
     for g in gastos:

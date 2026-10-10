@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const gastos = [...document.querySelectorAll('#body-gastos tr.fila-gasto')].map(fila => ({
             fila: fila.id,
             concepto: fila.querySelector('.input-concepto').value,
-            tipo: fila.querySelector('.select-tipo').value,
+            tipo: fila.querySelector('.input-tipo-hidden').value,
             rubro: fila.querySelector('.select-rubro').value,
             grupo: fila.querySelector('.select-grupo').value,
             monto: fila.querySelector('.input-monto').value,

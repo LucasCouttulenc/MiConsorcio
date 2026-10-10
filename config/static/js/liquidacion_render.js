@@ -32,6 +32,8 @@ function sincronizarVistaPrevia() {
 
 function alSeleccionarConsorcio(consorcioId) {
     actualizarSelectoresRubros();
+    autoGenerarFilasPersonal(consorcioId);
+
 
     const info = window.datosConsorcios[consorcioId];
     if (info) {
@@ -157,7 +159,7 @@ function sincronizarTablaGastosVistaPrevia() {
 
         if (columnaIds.length > 0) {
             columnaIds.forEach(cid => {
-                const nombre = columnaLookup[cid]?.nombre || columnaLookup[cid]?.codigo || 'Columna';
+                const nombre = columnaLookup[cid]?.codigo || 'Col.';
                 html += `<th class="text-center" style="width: ${anchoColumna};">${nombre}</th>`;
             });
         } else {
@@ -273,3 +275,49 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('change', sincronizarVistaPrevia);
     });
 });
+
+
+
+function autoGenerarFilasPersonal(consorcioId) {
+    const tbody = document.getElementById('body-gastos');
+    if (!tbody) return false;
+
+    const nuevoId = String(consorcioId);
+
+    // --- 1. Si venimos de otro consorcio auto-generado, evaluar si hay que preguntar ---
+    if (window._autogenConsorcio && window._autogenConsorcio !== nuevoId) {
+        const filas = tbody.querySelectorAll('tr.fila-gasto');
+        const tieneDatos = Array.from(filas).some(f =>
+            (f.querySelector('.input-monto')?.value || '').trim() !== '' ||
+            (f.querySelector('.select-grupo')?.value || '') !== ''
+        );
+
+        if (tieneDatos) {
+            const ok = confirm(
+                'Vas a cambiar de consorcio y se van a perder los gastos que cargaste. ¿Continuar?'
+            );
+            if (!ok) {
+                // Revertimos el select al consorcio anterior
+                document.getElementById('select-consorcio').value = window._autogenConsorcio;
+                return false;
+            }
+        }
+
+        // El usuario aceptó o no había datos: borramos y seguimos
+        tbody.replaceChildren();
+        window._autogenConsorcio = null;
+    }
+
+    // --- 2. Ahora generamos las filas del nuevo consorcio ---
+    const data = (window.personalPorConsorcio || {})[nuevoId];
+    if (!data || !data.items || !data.items.length || !data.rubro_id) {
+        return false;
+    }
+
+    tbody.replaceChildren();
+    data.items.forEach(item => {
+        agregarFilaGasto(item.concepto, item.tipo, data.rubro_id, '', '');
+    });
+    window._autogenConsorcio = nuevoId;
+    return true;
+}

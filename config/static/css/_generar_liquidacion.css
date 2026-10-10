@@ -443,3 +443,59 @@
 .border-top { border-top: 1px solid var(--gl-border-color) !important; }
 .table-secondary { background-color: #edf2f7 !important; }
 .table-active { background-color: #e2e8f0 !important; }
+
+
+
+/* ==========================================================
+   Toggle: Ordinario / Extraordinario
+   ========================================================== */
+
+.tipo-toggle {
+    display: inline-flex;
+    background: var(--colorFondoCampo, #f8fafc);
+    border: 1px solid var(--colorBorde, #cbd5e1);
+    border-radius: 999px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.tipo-pill {
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--colorTextoSecundario, #64748b);
+    font-family: var(--fuenteCuerpo, inherit);
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+}
+
+.tipo-pill:hover {
+    color: var(--colorTextoPrincipal, #0f172a);
+}
+
+.tipo-pill.tipo-ordinario.activo {
+    background: #16a34a;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(22, 163, 74, 0.3);
+}
+
+.tipo-pill.tipo-extraordinario.activo {
+    background: #ea580c;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(234, 88, 12, 0.3);
+}
+
+.tipo-pill:active {
+    transform: scale(0.97);
+}
+
+/* Columna tipo: solo el ancho necesario */
+.gl-table td:nth-child(2) {
+    width: 110px;
+    text-align: center;
+}

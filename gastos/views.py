@@ -59,13 +59,23 @@ def listar_liquidaciones(request):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def generar_liquidacion(request, liquidacion_id=None):
+    from consorcios.models import Rubro  
+
     consorcios = consorcios_permitidos(request.user).order_by('nombre')
 
-    # Precargamos rubros y columnas para JS
+    # Inicializar los 3 diccionarios ANTES del for
     rubros_por_consorcio = {}
     columnas_por_rubro = {}
+    personal_por_consorcio = {} 
 
     for c in consorcios:
+        # 1. Garantizar rubro "REMUNERACIONES AL PERSONAL"
+        rubro_sueldos, _ = Rubro.objects.get_or_create(
+            consorcio=c,
+            nombre='REMUNERACIONES AL PERSONAL',
+        )
+
+        # 2. Rubros y columnas
         rubros = c.rubros.all().order_by('nombre')
         rubros_por_consorcio[c.pk] = [
             {'val': r.pk, 'nombre': r.nombre} for r in rubros
@@ -81,9 +91,29 @@ def generar_liquidacion(request, liquidacion_id=None):
                 for col in r.columnas.all().order_by('codigo')
             ]
 
+        # 3. Personal con concepto y rubro armados
+        personal_por_consorcio[c.pk] = {
+            'rubro_id': rubro_sueldos.pk,
+            'items': [
+                {
+                    'concepto': (
+                        f"Sueldo: {p.nombre} {p.apellido}"
+                        + (
+                            f" - {p.empresa_tercerizada}"
+                            if p.tipo_contratacion == 'tercerizado' and p.empresa_tercerizada
+                            else ''
+                        )
+                    ),
+                    'tipo': 'ordinario',
+                }
+                for p in c.personal.all().order_by('apellido', 'nombre')
+            ],
+        }
+
     liquidacion = liquidacion_permitida(request, liquidacion_id) if liquidacion_id else None
     if liquidacion and liquidacion.cerrada:
         return redirect('detalle_liquidacion', liquidacion_id=liquidacion.pk)
+
     consorcio_id = request.GET.get('consorcio', '')
     if consorcio_id and (not consorcio_id.isdecimal() or not consorcios.filter(pk=consorcio_id).exists()):
         raise Http404('Consorcio no disponible')
@@ -95,8 +125,8 @@ def generar_liquidacion(request, liquidacion_id=None):
         'consorcio_inicial': liquidacion.consorcio_id if liquidacion else consorcio_id,
         'rubros_por_consorcio': rubros_por_consorcio,
         'columnas_por_rubro': columnas_por_rubro,
+        'personal_por_consorcio': personal_por_consorcio,   
     })
-
 
 def leer_datos(request, finalizar=False):
     consorcio_id = request.POST.get('consorcio', '')

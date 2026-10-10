@@ -26,12 +26,7 @@
 </form>
 
 {% if consorcio %}
-    {% if not unidades %}
-        <div class="alerta alerta-warning">
-            Este consorcio no tiene unidades funcionales cargadas.
-            <a href="{% url 'crear_unidad_funcional' consorcio.id %}">Crear la primera UF</a>.
-        </div>
-    {% endif %}
+    
 
     <div class="cols-actions-bar">
         <button type="button" class="boton-primario" onclick="nuevoRubro()">+ Nuevo rubro</button>
