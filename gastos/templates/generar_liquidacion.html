@@ -234,10 +234,14 @@
 {{ datos_iniciales|json_script:"datos-iniciales" }}
 {{ rubros_por_consorcio|json_script:"rubros-por-consorcio" }}
 {{ columnas_por_rubro|json_script:"columnas-por-rubro" }}
+{{ personal_por_consorcio|json_script:"personal-por-consorcio" }}
+
 
 <script>
     window.rubrosPorConsorcio = JSON.parse(document.getElementById('rubros-por-consorcio').textContent);
     window.columnasPorRubro = JSON.parse(document.getElementById('columnas-por-rubro').textContent);
+    window.personalPorConsorcio = JSON.parse(document.getElementById('personal-por-consorcio').textContent);
+
 
     window.datosConsorcios = {
         {% for consorcio in consorcios %}
@@ -257,5 +261,6 @@
 <script src="{% static 'js/liquidacion_gestion.js' %}"></script>
 <script src="{% static 'js/liquidacion_render.js' %}"></script>
 <script src="{% static 'js/liquidacion_autosave.js' %}"></script>
+
 </body>
 </html>

@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('nombre', models.CharField(max_length=100, verbose_name='Nombre')),
                 ('apellido', models.CharField(max_length=100, verbose_name='Apellido')),
                 ('dni', models.CharField(max_length=20, verbose_name='DNI')),
-                ('cargo', models.CharField(help_text='Ej: Encargado, Portero, Limpieza', max_length=100, verbose_name='Cargo')),
+                ('cargo', models.CharField(help_text='Ej: Encargado, Portero, Limpieza', max_length=200, verbose_name='Cargo')),
                 ('tipo_contratacion', models.CharField(choices=[('directo', 'Relación de dependencia'), ('tercerizado', 'Tercerizado')], default='directo', max_length=20, verbose_name='Tipo de contratación')),
                 ('empresa_tercerizada', models.CharField(blank=True, default='', max_length=150, verbose_name='Empresa tercerizada')),
                 ('telefono', models.CharField(blank=True, default='', max_length=30, verbose_name='Teléfono')),
