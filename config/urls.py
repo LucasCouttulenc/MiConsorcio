@@ -60,6 +60,7 @@ urlpatterns = [
     path('liquidaciones/detalle/<int:detalle_id>/pagar/', views_gastos.registrar_pago, name='registrar_pago'),
     path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),
     path('pagos/<int:pago_id>/procesar/', views_gastos.procesar_pago, name='procesar_pago'),
+     path('liquidaciones/detalle-uf/<int:detalle_id>/resumen/',views_gastos.descargar_resumen_uf,name='descargar_resumen_uf'),
 ]
 
 if settings.DEBUG:

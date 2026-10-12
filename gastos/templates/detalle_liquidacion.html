@@ -57,7 +57,7 @@
                     <th class="col-uf">UF</th>
                     <th class="col-dpto">Dpto</th>
                     <th class="col-prop">Propietario</th>
-                    <th class="col-num">%UF</th>
+                    <th class="col-num">%UF general</th>
                     <th class="col-num">Ordinario</th>
                     <th class="col-num">Extraordinario</th>
                     <th class="col-num">Total</th>
@@ -69,14 +69,20 @@
                         <td class="col-uf">{{ detalle.unidad_funcional.pk|stringformat:"03d" }}</td>
                         <td class="col-dpto">{{ detalle.unidad_funcional.piso }}° {{ detalle.unidad_funcional.departamento|default:"" }}</td>
                         <td class="col-prop">{{ detalle.unidad_funcional.propietario.usuario.get_full_name|default:detalle.unidad_funcional.propietario.usuario.username }}</td>
-                        <td class="col-num">{{ detalle.alicuota }}</td>
+                        <td class="col-num">{{ detalle.alicuota|floatformat:0 }}%</td>
                         <td class="col-num">$ {{ detalle.monto_ordinario }}</td>
                         <td class="col-num">$ {{ detalle.monto_extraordinario }}</td>
                         <td class="col-num col-total">$ {{ detalle.monto_total }}</td>
+                        <td class="col-resumen">
+                            <a href="{% url 'descargar_resumen_uf' detalle.id %}"
+                            class="dl-btn-pdf" title="Descargar resumen de esta UF" target="_blank">
+                                resumen
+                            </a>
+                        </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" class="dl-vacio">No hay unidades funcionales registradas en este consorcio.</td>
+                        <td colspan="8" class="dl-vacio">No hay unidades funcionales registradas en este consorcio.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -88,6 +94,7 @@
                         <td class="col-num">$ {{ liquidacion.total_ordinario }}</td>
                         <td class="col-num">$ {{ liquidacion.total_extraordinario }}</td>
                         <td class="col-num col-total">$ {{ liquidacion.total }}</td>
+                        <td></td> 
                     </tr>
                 </tfoot>
             {% endif %}

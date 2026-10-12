@@ -16,7 +16,7 @@ from .forms import FormularioPago
 from consorcios.models import Consorcio, GrupoProrrateo
 from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleLiquidacionUF
 from .pdf import generar_pdf_liquidacion
-from .services import procesar_liquidacion_periodo
+from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
 
 class BorradorExistente(ValueError):
@@ -395,3 +395,25 @@ def procesar_pago(request, pago_id):
         
     pago.save()
     return redirect('pagos_pendientes')
+
+
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def descargar_resumen_uf(request, detalle_id):
+    detalle = get_object_or_404(
+        DetalleLiquidacionUF.objects.select_related(
+            'liquidacion__consorcio',
+            'unidad_funcional__propietario__usuario',
+        ),
+        pk=detalle_id,
+    )
+    liquidacion_permitida(request, detalle.liquidacion_id)
+    pdf = generar_resumen_uf_pdf(detalle)
+    respuesta = HttpResponse(pdf, content_type='application/pdf')
+    respuesta['Content-Disposition'] = content_disposition_header(
+        True,
+        f'resumen-{detalle.unidad_funcional.pk}-{detalle.liquidacion.periodo}.pdf',
+    )
+    return respuesta
