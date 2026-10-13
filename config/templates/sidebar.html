@@ -63,6 +63,15 @@
                                 <span class="item-texto">Prorrateo</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'servicios_recurrentes' %}active{% endif %}">
+                            <a href="{% url 'servicios_recurrentes' %}" title="Servicios recurrentes">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/servicios.svg' %}" class="svg-icono default-icon" alt="Servicios recurrentes">
+                                    <img src="{% static 'imagenes/servicios_blanco.svg' %}" class="svg-icono hover-icon" alt="Servicios recurrentes">
+                                </span>
+                                <span class="item-texto">Servicios recurrentes</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'pagos_pendientes' %}active{% endif %}">
                             <a href="{% url 'pagos_pendientes' %}" title="Pagos Pendientes">
                                 <span class="item-icono">

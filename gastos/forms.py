@@ -1,7 +1,11 @@
 # gastos/forms.py
+import re
+
 from django import forms
-from consorcios.models import Consorcio
-from .models import Pago
+from consorcios.models import Consorcio, GrupoProrrateo
+from .models import Pago, ServicioRecurrente
+
+PERIODO_RE = re.compile(r'(20\d\d|2100)-(0[1-9]|1[0-2])')
 
 class FormularioGenerarLiquidacion(forms.Form):
     consorcio = forms.ModelChoiceField(queryset=Consorcio.objects.all(), label="Consorcio")
@@ -15,3 +19,53 @@ class FormularioPago(forms.ModelForm):
         widgets = {
             'fecha_pago': forms.DateInput(attrs={'type': 'date'}),
         }
+
+class FormularioServicioRecurrente(forms.ModelForm):
+    class Meta:
+        model = ServicioRecurrente
+        fields = ['concepto', 'proveedor', 'columna', 'tipo', 'monto_sugerido',
+                  'frecuencia_meses', 'periodo_inicio', 'periodo_fin']
+        widgets = {
+            'periodo_inicio': forms.TextInput(attrs={'type': 'month'}),
+            'periodo_fin': forms.TextInput(attrs={'type': 'month'}),
+        }
+
+    def __init__(self, *args, consorcio, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.consorcio = consorcio
+        self.fields['columna'].queryset = GrupoProrrateo.objects.filter(
+            consorcio=consorcio).select_related('rubro').order_by('rubro__nombre', 'codigo')
+
+    def _validar_periodo(self, campo):
+        valor = (self.cleaned_data.get(campo) or '').strip()
+        if not valor:
+            return ''
+        if not PERIODO_RE.fullmatch(valor):
+            raise forms.ValidationError('Usá el formato AAAA-MM.')
+        return valor
+
+    def clean_periodo_inicio(self):
+        valor = self._validar_periodo('periodo_inicio')
+        if not valor:
+            raise forms.ValidationError('Indicá desde qué período se aplica.')
+        return valor
+
+    def clean_periodo_fin(self):
+        return self._validar_periodo('periodo_fin')
+
+    def clean_monto_sugerido(self):
+        monto = self.cleaned_data.get('monto_sugerido')
+        if monto is not None and monto <= 0:
+            raise forms.ValidationError('El monto tiene que ser positivo.')
+        return monto
+
+    def clean(self):
+        datos = super().clean()
+        inicio, fin = datos.get('periodo_inicio'), datos.get('periodo_fin')
+        if inicio and fin and fin < inicio:
+            self.add_error('periodo_fin', 'El último período no puede ser anterior al primero.')
+        return datos
+
+    def save(self, commit=True):
+        self.instance.consorcio = self.consorcio
+        return super().save(commit)

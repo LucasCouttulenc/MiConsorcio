@@ -22,6 +22,7 @@ class Gasto(models.Model):
     liquidacion = models.ForeignKey('Liquidacion', on_delete=models.CASCADE, related_name='gastos_cargados', null=True, blank=True)
     posicion = models.PositiveIntegerField(default=0)
     comprobante = models.FileField(upload_to='comprobantes/%Y/%m/', null=True, blank=True, verbose_name="Comprobante / Factura")
+    servicio = models.ForeignKey('ServicioRecurrente', on_delete=models.SET_NULL, related_name='gastos', null=True, blank=True, verbose_name="Servicio recurrente de origen")
 
     class Meta:
         verbose_name = "Gasto"
@@ -37,6 +38,72 @@ class Gasto(models.Model):
         pertenece el gasto. Si el gasto no tiene columna, no tiene rubro.
         """
         return self.grupo.rubro if self.grupo_id else None
+
+
+def periodo_a_meses(periodo):
+    """Convierte 'AAAA-MM' en un número de meses absoluto (para restar períodos)."""
+    anio, mes = periodo.split('-')
+    return int(anio) * 12 + int(mes) - 1
+
+
+class ServicioRecurrente(models.Model):
+    """
+    Servicio que se repite cada N meses (ej: fumigación trimestral). No genera
+    gastos solo: se propone como fila en Generar Liquidación en los períodos
+    que corresponde y el administrador la confirma, edita o descarta.
+    """
+    FRECUENCIAS = [
+        (1, 'Mensual'), (2, 'Bimestral'), (3, 'Trimestral'),
+        (4, 'Cuatrimestral'), (6, 'Semestral'), (12, 'Anual'),
+    ]
+
+    consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='servicios_recurrentes')
+    concepto = models.CharField(max_length=200, verbose_name="Concepto")
+    proveedor = models.CharField(max_length=150, blank=True, default='', verbose_name="Proveedor")
+    columna = models.ForeignKey(GrupoProrrateo, on_delete=models.PROTECT, related_name='servicios_recurrentes', verbose_name="Columna de prorrateo")
+    tipo = models.CharField(max_length=20, choices=TipoGasto.choices, default=TipoGasto.ORDINARIO, verbose_name="Tipo de gasto")
+    monto_sugerido = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Monto sugerido", help_text="Opcional: si queda vacío, el monto se completa al liquidar.")
+    frecuencia_meses = models.PositiveSmallIntegerField(choices=FRECUENCIAS, default=1, verbose_name="Frecuencia")
+    periodo_inicio = models.CharField(max_length=7, help_text="Formato AAAA-MM", verbose_name="Primer período")
+    periodo_fin = models.CharField(max_length=7, blank=True, default='', help_text="Formato AAAA-MM. Vacío = sin fin", verbose_name="Último período")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+
+    class Meta:
+        verbose_name = "Servicio recurrente"
+        verbose_name_plural = "Servicios recurrentes"
+        ordering = ['concepto']
+
+    def __str__(self):
+        return f"{self.concepto} ({self.get_frecuencia_meses_display()})"
+
+    @property
+    def rubro(self):
+        return self.columna.rubro if self.columna_id else None
+
+    def corresponde_en(self, periodo):
+        """True si el servicio se tiene que proponer en el período 'AAAA-MM'."""
+        if not self.activo:
+            return False
+        actual = periodo_a_meses(periodo)
+        inicio = periodo_a_meses(self.periodo_inicio)
+        if actual < inicio:
+            return False
+        if self.periodo_fin and actual > periodo_a_meses(self.periodo_fin):
+            return False
+        return (actual - inicio) % self.frecuencia_meses == 0
+
+    def proximo_periodo(self, desde):
+        """Primer período >= 'desde' en el que corresponde, o None si ya no vuelve."""
+        if not self.activo:
+            return None
+        actual = max(periodo_a_meses(desde), periodo_a_meses(self.periodo_inicio))
+        inicio = periodo_a_meses(self.periodo_inicio)
+        resto = (actual - inicio) % self.frecuencia_meses
+        if resto:
+            actual += self.frecuencia_meses - resto
+        if self.periodo_fin and actual > periodo_a_meses(self.periodo_fin):
+            return None
+        return f"{actual // 12:04d}-{actual % 12 + 1:02d}"
 
 
 class Liquidacion(models.Model):
