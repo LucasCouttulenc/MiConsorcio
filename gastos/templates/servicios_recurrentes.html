@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Servicios recurrentes{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/_columnas.css' %}">
+<style>
+    /* Formulario del modal: aire entre filas y campos del mismo alto */
+    #servicio-modal h4 { margin-bottom: 1.2rem; }
+    #servicio-modal .cols-form-row { align-items: flex-start; margin-bottom: 1.1rem; }
+    #servicio-modal .cols-fg { flex: 1 1 0; min-width: 0; }
+    #servicio-modal .cols-fg-grow { flex: 2 1 0; }
+    #servicio-modal .cols-form-row { flex-wrap: nowrap; }
+    @media (max-width: 640px) { #servicio-modal .cols-form-row { flex-wrap: wrap; } #servicio-modal .cols-fg { flex-basis: 100%; } }
+    #servicio-modal .cols-input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 2.6rem; }
+    #servicio-modal .errorlist { margin: 0.2rem 0 0; padding: 0; list-style: none; color: #fb7185; font-size: 0.8rem; }
+</style>
+
+{% include "componentes/mensajes.html" %}
+
+<div class="cols-header">
+    <div>
+        <h1 class="titulo">Servicios recurrentes</h1>
+        <p class="cols-sub">Programá los servicios que se repiten (ej: fumigación trimestral). Se proponen solos en Generar Liquidación cuando corresponde.</p>
+    </div>
+</div>
+
+<form method="get" class="cols-selector">
+    <label class="cols-label">Consorcio</label>
+    <select name="consorcio" class="cols-input" onchange="this.form.submit()">
+        <option value="">-- Elegí un consorcio --</option>
+        {% for c in consorcios %}
+            <option value="{{ c.id }}" {% if consorcio and c.id == consorcio.id %}selected{% endif %}>{{ c.nombre }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if consorcio %}
+    {% if not columnas %}
+        <div class="alerta alerta-warning">
+            Este consorcio no tiene columnas de prorrateo.
+            <a href="{% url 'configurar_columnas' %}?consorcio={{ consorcio.id }}">Configurá rubros y columnas</a> antes de cargar servicios.
+        </div>
+    {% endif %}
+
+    <div class="cols-card">
+        <div class="cols-card-head">
+            <span>Servicios de {{ consorcio.nombre }}</span>
+            {% if columnas %}
+                <button type="button" class="boton-primario" onclick="nuevoServicio()">+ Nuevo servicio</button>
+            {% endif %}
+        </div>
+
+        <div class="cols-tabla-wrap">
+            <table class="cols-tabla">
+                <thead>
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Rubro / Columna</th>
+                        <th>Frecuencia</th>
+                        <th>Monto sugerido</th>
+                        <th>Próximo período</th>
+                        <th class="col-acc">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in servicios %}
+                        <tr{% if not s.activo %} style="opacity:.55"{% endif %}>
+                            <td class="col-nombre">
+                                {{ s.concepto }}
+                                {% if s.proveedor %}<br><small>{{ s.proveedor }}</small>{% endif %}
+                            </td>
+                            <td>{{ s.columna.rubro.nombre }} <span class="chip-codigo">{{ s.columna.codigo }}</span></td>
+                            <td>
+                                <span class="badge-tipo tipo-general">{{ s.get_frecuencia_meses_display }}</span>
+                                {% if s.tipo == 'extraordinario' %}<span class="badge-tipo tipo-parcial">Extraordinario</span>{% endif %}
+                            </td>
+                            <td>{% if s.monto_sugerido %}$ {{ s.monto_sugerido }}{% else %}<em>A completar</em>{% endif %}</td>
+                            <td>
+                                {% if not s.activo %}Pausado{% elif s.proximo %}{{ s.proximo }}{% else %}Finalizado{% endif %}
+                            </td>
+                            <td class="col-acc">
+                                <button type="button" class="cols-ic" title="Editar"
+                                    onclick="editarServicio(this)"
+                                    data-id="{{ s.id }}"
+                                    data-concepto="{{ s.concepto }}"
+                                    data-proveedor="{{ s.proveedor }}"
+                                    data-columna="{{ s.columna_id }}"
+                                    data-tipo="{{ s.tipo }}"
+                                    data-monto="{{ s.monto_sugerido|default_if_none:''|stringformat:'s' }}"
+                                    data-frecuencia="{{ s.frecuencia_meses }}"
+                                    data-inicio="{{ s.periodo_inicio }}"
+                                    data-fin="{{ s.periodo_fin }}">✎</button>
+                                <form method="post" style="display:inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+                                    <input type="hidden" name="accion" value="pausar">
+                                    <input type="hidden" name="servicio_id" value="{{ s.id }}">
+                                    <button type="submit" class="cols-ic" title="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}">{% if s.activo %}⏸{% else %}▶{% endif %}</button>
+                                </form>
+                                <form method="post" style="display:inline"
+                                      onsubmit="return confirm('¿Borrar el servicio {{ s.concepto|escapejs }}? Los gastos ya liquidados no se borran.');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+                                    <input type="hidden" name="accion" value="borrar">
+                                    <input type="hidden" name="servicio_id" value="{{ s.id }}">
+                                    <button type="submit" class="cols-ic del" title="Borrar">✕</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="6" class="cols-vacio">Este consorcio todavía no tiene servicios recurrentes.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# Modal servicio #}
+    <div class="cols-modal" id="servicio-modal" style="display:{% if formulario.errors %}flex{% else %}none{% endif %}">
+        <div class="cols-modal-content cols-modal-wide">
+            <h4 id="servicio-modal-title">{% if formulario.instance.pk %}Editar servicio{% else %}Nuevo servicio{% endif %}</h4>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
+                <input type="hidden" name="accion" id="servicio-accion" value="{% if formulario.instance.pk %}editar{% else %}crear{% endif %}">
+                <input type="hidden" name="servicio_id" id="servicio-id" value="{{ formulario.instance.pk|default_if_none:'' }}">
+
+                {% if formulario.non_field_errors %}<div class="alerta alerta-warning">{{ formulario.non_field_errors|join:" " }}</div>{% endif %}
+
+                <div class="cols-form-row">
+                    <div class="cols-fg cols-fg-grow">
+                        <label class="cols-label">Concepto</label>
+                        <input type="text" name="concepto" id="servicio-concepto" class="cols-input" maxlength="200" required
+                               placeholder="Ej: Fumigación" value="{{ formulario.concepto.value|default_if_none:'' }}">
+                        {{ formulario.concepto.errors }}
+                    </div>
+                    <div class="cols-fg cols-fg-grow">
+                        <label class="cols-label">Proveedor (opcional)</label>
+                        <input type="text" name="proveedor" id="servicio-proveedor" class="cols-input" maxlength="150"
+                               value="{{ formulario.proveedor.value|default_if_none:'' }}">
+                    </div>
+                </div>
+
+                <div class="cols-form-row">
+                    <div class="cols-fg cols-fg-grow">
+                        <label class="cols-label">Rubro / Columna</label>
+                        <select name="columna" id="servicio-columna" class="cols-input sin-select2" required
+                                oninvalid="this.setCustomValidity('Elegí el rubro y la columna donde se imputa el servicio.')"
+                                onchange="this.setCustomValidity('')">
+                            <option value="">-- Elegí una columna --</option>
+                            {% regroup columnas by rubro as por_rubro %}
+                            {% for grupo in por_rubro %}
+                                <optgroup label="{{ grupo.grouper.nombre }}">
+                                    {% for col in grupo.list %}
+                                        <option value="{{ col.id }}" {% if formulario.columna.value|stringformat:'s' == col.id|stringformat:'s' %}selected{% endif %}>{{ col.codigo }} - {{ col.nombre }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                            {% endfor %}
+                        </select>
+                        {{ formulario.columna.errors }}
+                    </div>
+                    <div class="cols-fg">
+                        <label class="cols-label">Tipo</label>
+                        <select name="tipo" id="servicio-tipo" class="cols-input sin-select2">
+                            {% for valor, nombre in tipos %}
+                                <option value="{{ valor }}" {% if formulario.tipo.value == valor %}selected{% endif %}>{{ nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="cols-form-row">
+                    <div class="cols-fg">
+                        <label class="cols-label">Frecuencia</label>
+                        <select name="frecuencia_meses" id="servicio-frecuencia" class="cols-input sin-select2">
+                            {% for valor, nombre in frecuencias %}
+                                <option value="{{ valor }}" {% if formulario.frecuencia_meses.value|stringformat:'s' == valor|stringformat:'s' %}selected{% endif %}>{{ nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="cols-fg">
+                        <label class="cols-label">Desde</label>
+                        <input type="month" name="periodo_inicio" id="servicio-inicio" class="cols-input" required
+                               value="{{ formulario.periodo_inicio.value|default_if_none:'' }}">
+                        {{ formulario.periodo_inicio.errors }}
+                    </div>
+                    <div class="cols-fg">
+                        <label class="cols-label">Hasta (opcional)</label>
+                        <input type="month" name="periodo_fin" id="servicio-fin" class="cols-input"
+                               value="{{ formulario.periodo_fin.value|default_if_none:'' }}">
+                        {{ formulario.periodo_fin.errors }}
+                    </div>
+                </div>
+
+                <div class="cols-form-row">
+                    <div class="cols-fg" style="flex: 0 1 260px;">
+                        <label class="cols-label">Monto sugerido (opcional)</label>
+                        <input type="number" name="monto_sugerido" id="servicio-monto" class="cols-input" step="0.01" min="0.01"
+                               placeholder="Se completa al liquidar" value="{{ formulario.monto_sugerido.value|default_if_none:'' }}">
+                        {{ formulario.monto_sugerido.errors }}
+                    </div>
+                </div>
+
+                <div class="cols-form-actions">
+                    <button type="submit" class="boton-primario">Guardar</button>
+                    <button type="button" class="boton-secundario" onclick="cerrarServicio()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% else %}
+    <div class="alerta alerta-info">Elegí un consorcio para ver sus servicios recurrentes.</div>
+{% endif %}
+
+<script>
+const CAMPOS_SERVICIO = {
+    concepto: 'servicio-concepto', proveedor: 'servicio-proveedor', columna: 'servicio-columna',
+    tipo: 'servicio-tipo', monto: 'servicio-monto', frecuencia: 'servicio-frecuencia',
+    inicio: 'servicio-inicio', fin: 'servicio-fin',
+};
+function abrirServicio(titulo, accion, id, valores) {
+    document.getElementById('servicio-modal-title').textContent = titulo;
+    document.getElementById('servicio-accion').value = accion;
+    document.getElementById('servicio-id').value = id;
+    for (const [clave, elId] of Object.entries(CAMPOS_SERVICIO)) {
+        document.getElementById(elId).value = valores[clave] || '';
+    }
+    document.getElementById('servicio-modal').style.display = 'flex';
+    document.getElementById('servicio-concepto').focus();
+}
+function nuevoServicio() {
+    abrirServicio('Nuevo servicio', 'crear', '', {tipo: 'ordinario', frecuencia: '1'});
+}
+function editarServicio(btn) {
+    abrirServicio('Editar servicio', 'editar', btn.dataset.id, btn.dataset);
+}
+function cerrarServicio() { document.getElementById('servicio-modal').style.display = 'none'; }
+
+document.querySelectorAll('.cols-modal').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
+});
+</script>
+{% endblock %}

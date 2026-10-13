@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 gasto.tipo || 'ordinario',
                 gasto.rubro || '',
                 gasto.grupo || '',
-                gasto.monto || ''
+                gasto.monto || '',
+                gasto.servicio || ''
             );
         });
         if (!inicial.gastos?.length) agregarFilaGasto();
@@ -47,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
             rubro: fila.querySelector('.select-rubro').value,
             grupo: fila.querySelector('.select-grupo').value,
             monto: fila.querySelector('.input-monto').value,
+            servicio: fila.dataset.servicio || '',
         }));
         document.getElementById('gastos-json').value = JSON.stringify(gastos);
     }

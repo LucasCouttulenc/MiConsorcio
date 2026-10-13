@@ -33,6 +33,7 @@ function sincronizarVistaPrevia() {
 function alSeleccionarConsorcio(consorcioId) {
     actualizarSelectoresRubros();
     autoGenerarFilasPersonal(consorcioId);
+    sincronizarServiciosRecurrentes();
 
 
     const info = window.datosConsorcios[consorcioId];

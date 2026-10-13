@@ -499,3 +499,14 @@
     width: 110px;
     text-align: center;
 }
+/* Fila propuesta por un servicio recurrente */
+.badge-recurrente {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(56, 189, 248, 0.15);
+    color: #38BDF8;
+}

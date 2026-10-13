@@ -84,7 +84,7 @@ function onCambiarRubro(selectRubro) {
 // ==========================================
 // CREACIÓN Y ELIMINACIÓN DE FILAS DE GASTO
 // ==========================================
-function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grupoSel = '', monto = '') {
+function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grupoSel = '', monto = '', servicio = '') {
     const tbody = document.getElementById('body-gastos');
 
     const filaId = `gasto-${contadorFilas}`;
@@ -92,9 +92,11 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grup
     const tr = document.createElement('tr');
     tr.id = filaId;
     tr.className = 'fila-gasto';
+    if (servicio) tr.dataset.servicio = servicio;
     tr.innerHTML = `
         <td>
-            <input type="text" name="gastos_concepto[]" class="gl-input input-concepto" value="${concepto}" required>
+            <input type="text" name="gastos_concepto[]" class="gl-input input-concepto" required>
+            ${servicio ? '<span class="badge-recurrente" title="Propuesto por un servicio recurrente">Recurrente</span>' : ''}
         </td>
         <td>
             <div class="tipo-toggle" data-tipo="${esOrdinario ? 'ordinario' : 'extraordinario'}">
@@ -121,15 +123,19 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grup
             </select>
         </td>
         <td>
-            <input type="text" inputmode="decimal" min="0" name="gastos_monto[]" class="gl-input input-monto" placeholder="0.00" value="${monto}" required>
+            <input type="text" inputmode="decimal" min="0" name="gastos_monto[]" class="gl-input input-monto" placeholder="0.00" required>
         </td>
         <td class="text-center">
             <button type="button" class="gl-btn gl-btn-danger-outline gl-btn-sm" onclick="eliminarFila('${filaId}')">✕</button>
         </td>
     `;
+    // Se asignan por DOM para que comillas o < > en el concepto no rompan el HTML
+    tr.querySelector('.input-concepto').value = concepto;
+    tr.querySelector('.input-monto').value = monto;
     tbody.appendChild(tr);
     contadorFilas++;
     sincronizarVistaPrevia();
+    return tr;
 }
 
 function eliminarFila(id) {
@@ -167,6 +173,7 @@ function calcularFechasSugeridas() {
 
 function actualizarFechasYVista() {
     calcularFechasSugeridas();
+    sincronizarServiciosRecurrentes();
     sincronizarVistaPrevia();
 }
 

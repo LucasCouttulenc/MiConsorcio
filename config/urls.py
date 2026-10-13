@@ -48,6 +48,7 @@ urlpatterns = [
     
     # Liquidaciones
     path('liquidaciones/', views_gastos.listar_liquidaciones, name='listar_liquidaciones'),
+    path('servicios-recurrentes/', views_gastos.servicios_recurrentes, name='servicios_recurrentes'),
     path('liquidaciones/generar/', views_gastos.generar_liquidacion, name='generar_liquidacion'),
     path('liquidaciones/borradores/<int:liquidacion_id>/', views_gastos.generar_liquidacion, name='editar_liquidacion'),
     path('liquidaciones/autoguardar/', views_gastos.autosave_liquidacion, name='autosave_liquidacion'),
