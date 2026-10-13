@@ -4,10 +4,10 @@ from django.contrib.auth.models import Group, Permission, User
 from django.test import TestCase
 from django.urls import reverse
 
-from config.comun import GRUPO_ADMINISTRADORES, PERMISOS_ADMINISTRADORES
-from usuarios.models import Administrador
+from config.comun import GRUPO_ADMINISTRADORES, GRUPO_PROPIETARIOS, PERMISOS_ADMINISTRADORES, PERMISOS_PROPIETARIOS
+from usuarios.models import Administrador, Propietario
 
-from .models import Consorcio, Personal
+from .models import Consorcio, Personal, UnidadFuncional
 
 
 def crear_consorcio(nombre='Torre Uno', cuit='30712345678'):
@@ -94,3 +94,34 @@ class UsuarioSinRegistroDeAdministradorTests(TestCase):
         respuesta = self.client.get(reverse('listar_personal', args=[self.consorcio.pk]))
         self.assertEqual(respuesta.status_code, 200)
         self.assertNotContains(respuesta, 'Paz')
+
+
+class ListarUnidadesFuncionalesTests(TestCase):
+    def setUp(self):
+        self.consorcio = crear_consorcio()
+        self.otro = crear_consorcio('Torre Dos', '30798765432')
+        grupo, _ = Group.objects.get_or_create(name=GRUPO_PROPIETARIOS)
+        grupo.permissions.set(Permission.objects.filter(codename__in=PERMISOS_PROPIETARIOS))
+        self.propietario_usuario = User.objects.create_user('prop', password='clave')
+        self.propietario_usuario.groups.add(grupo)
+        propietario = Propietario.objects.create(usuario=self.propietario_usuario)
+        UnidadFuncional.objects.create(propietario=propietario, consorcio=self.consorcio, piso=1, departamento='A')
+        UnidadFuncional.objects.create(propietario=propietario, consorcio=self.otro, piso=9, departamento='Z')
+        vecino = Propietario.objects.create(usuario=User.objects.create_user('vecino', password='clave'))
+        UnidadFuncional.objects.create(propietario=vecino, consorcio=self.consorcio, piso=2, departamento='B')
+
+    def unidades_listadas(self):
+        respuesta = self.client.get(reverse('listar_unidades_funcionales'))
+        self.assertEqual(respuesta.status_code, 200)
+        return list(respuesta.context['table'].data)
+
+    def test_propietario_solo_ve_sus_unidades(self):
+        self.client.force_login(self.propietario_usuario)
+        unidades = self.unidades_listadas()
+        self.assertEqual(sorted(uf.departamento for uf in unidades), ['A', 'Z'])
+
+    def test_administrador_solo_ve_las_de_sus_consorcios(self):
+        usuario, administrador = crear_usuario_administrador('admin')
+        administrador.consorcios.add(self.consorcio)
+        self.client.force_login(usuario)
+        self.assertEqual({uf.consorcio for uf in self.unidades_listadas()}, {self.consorcio})

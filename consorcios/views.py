@@ -135,6 +135,8 @@ class ListarUnidadesFuncionales(Lista):
             consorcios = administrador.consorcios.all() if administrador else Consorcio.objects.none()
             return queryset.filter(consorcio__in=consorcios)
 
+        return queryset.filter(propietario__usuario=usuario)
+
     # def get_context_data(self, **kwargs):
     #     """
     #     Agrega el consorcio al contexto para poder mostrar su nombre en la plantilla.
