@@ -18,7 +18,7 @@ sudo docker compose exec web python manage.py iniciardb
 ```
 En Windows:
 ```
-docker compose exec web python manage.py migrar
+docker compose -f docker-compose.yaml -f docker-compose.local.yaml up --build -d
 ```
 
 Primero hace un flush de la base, así que si se quiere resetear también funciona.
