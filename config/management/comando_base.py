@@ -16,13 +16,13 @@ class ComandoBase(BaseCommand):
             raise e
 
     def _exito(self, message):
-        print(f"{Fore.GREEN}✅ {message} {Style.RESET_ALL}\n")
+        print(f"{Fore.GREEN}[OK] {message} {Style.RESET_ALL}\n")
 
     def _notificacion(self, message):
-        print(f"{Fore.YELLOW}🔔 {message} {Style.RESET_ALL}\n")
+        print(f"{Fore.YELLOW}[AVISO] {message} {Style.RESET_ALL}\n")
 
     def _error(self, message):
-        print(f"{Fore.RED}❌ {message} {Style.RESET_ALL}\n")
+        print(f"{Fore.RED}[ERROR] {message} {Style.RESET_ALL}\n")
 
     def _paso(self, message):
-        print(f"{Fore.CYAN}🚀 {message} {Style.RESET_ALL}")
+        print(f"{Fore.CYAN}[PASO] {message} {Style.RESET_ALL}")

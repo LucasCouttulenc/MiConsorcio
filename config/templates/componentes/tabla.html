@@ -10,8 +10,13 @@
         <div class="tabla__filtro flex left">
             <form action="" method="get" class="form form-inline flex left">
                 {{ filter.form }}
+                <button type="submit" name="filtrar" class="tabla__filtro-boton" aria-label="Filtrar" title="Filtrar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <circle cx="10.8" cy="10.8" r="6.8"></circle>
+                        <path d="m16 16 5 5"></path>
+                    </svg>
+                </button>
             </form>
-            <button name="filtrar" class="boton-primario" onclick="document.querySelector('.form').submit()">Filtrar</button>
         </div>
     {% endif %}
     <div class="tabla__acciones">
