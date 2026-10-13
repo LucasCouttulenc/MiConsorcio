@@ -13,13 +13,17 @@ from django.utils.http import content_disposition_header
 from django.views.decorators.http import require_POST
 
 from usuarios.models import Propietario
-from .forms import FormularioPago, FormularioServicioRecurrente
+from django.core.exceptions import ValidationError
+from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante
 from consorcios.models import Consorcio, GrupoProrrateo, UnidadFuncional
 from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente
 from .pdf import generar_pdf_liquidacion
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from .notificaciones import contexto_notificaciones_propietario
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
+
+MONTO_MAXIMO_GASTO = Decimal('10000000000')  # Gasto.monto: max_digits=12, decimal_places=2
+
 
 class BorradorExistente(ValueError):
     def __init__(self, liquidacion):
@@ -177,8 +181,11 @@ def leer_datos(request, finalizar=False):
                 monto = Decimal(str(gasto.get('monto', '')).replace(',', '.'))
             except InvalidOperation as exc:
                 raise ValueError('Todos los gastos deben tener un monto válido.') from exc
-            if monto <= 0 or monto.as_tuple().exponent < -2:
+            # NaN/Infinity se parsean bien pero rompen las comparaciones; el tope sale de max_digits=12 del modelo.
+            if not monto.is_finite() or monto <= 0 or monto.as_tuple().exponent < -2:
                 raise ValueError('Los montos deben ser positivos y tener hasta dos decimales.')
+            if monto >= MONTO_MAXIMO_GASTO:
+                raise ValueError('Hay un monto demasiado grande.')
             if not str(gasto.get('concepto', '')).strip() or gasto.get('tipo') not in TipoGasto.values or not gasto.get('grupo'):
                 raise ValueError('Completá concepto, tipo y columna en cada gasto.')
     if finalizar and not gastos:
@@ -323,12 +330,10 @@ def subir_comprobante(request, gasto_id):
     if not archivo:
         messages.error(request, 'No se selecciono ningun archivo.')
         return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
-    tipos_permitidos = {'application/pdf', 'image/jpeg', 'image/png'}
-    if archivo.content_type not in tipos_permitidos:
-        messages.error(request, 'El comprobante debe ser PDF, JPG o PNG.')
-        return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
-    if archivo.size > 5 * 1024 * 1024:
-        messages.error(request, 'El comprobante no puede superar los 5 MB.')
+    try:
+        validar_comprobante(archivo)
+    except ValidationError as exc:
+        messages.error(request, exc.messages[0])
         return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
     gasto.comprobante = archivo
     gasto.save(update_fields=['comprobante'])
@@ -537,15 +542,21 @@ def procesar_pago(request, pago_id):
     if pago.detalle_liquidacion.liquidacion.consorcio not in consorcios_permitidos(request.user):
         raise Http404('No tenés permisos para gestionar este pago.')
         
+    estados = {'validar': 'validado', 'rechazar': 'rechazado'}
     accion = request.POST.get('accion')
+    if accion not in estados:
+        messages.error(request, 'Acción inválida.')
+        return redirect('pagos_pendientes')
+
+    # Solo se procesa si sigue pendiente; el filtro por estado evita que dos requests lo procesen a la vez.
+    if not Pago.objects.filter(pk=pago.pk, estado='pendiente').update(estado=estados[accion]):
+        messages.error(request, 'Este pago ya fue procesado.')
+        return redirect('pagos_pendientes')
+
     if accion == 'validar':
-        pago.estado = 'validado'
         messages.success(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} validado.')
-    elif accion == 'rechazar':
-        pago.estado = 'rechazado'
+    else:
         messages.error(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} rechazado. La deuda vuelve a estar activa.')
-        
-    pago.save()
     return redirect('pagos_pendientes')
 
 
