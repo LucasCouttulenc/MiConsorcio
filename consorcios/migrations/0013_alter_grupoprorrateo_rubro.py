@@ -4,13 +4,31 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def asignar_rubro_por_defecto(apps, schema_editor):
+    """
+    Las columnas creadas antes de que existiera Rubro quedaron con rubro NULL.
+    Se les asigna un rubro "GENERAL" de su consorcio para poder hacer el campo obligatorio.
+    """
+    Rubro = apps.get_model('consorcios', 'Rubro')
+    GrupoProrrateo = apps.get_model('consorcios', 'GrupoProrrateo')
+    for grupo in GrupoProrrateo.objects.filter(rubro__isnull=True):
+        rubro, _ = Rubro.objects.get_or_create(consorcio_id=grupo.consorcio_id, nombre='GENERAL')
+        grupo.rubro = rubro
+        grupo.save(update_fields=['rubro'])
+
+
 class Migration(migrations.Migration):
+
+    # No atómica: en PostgreSQL no se puede actualizar filas y alterar la misma tabla
+    # en una sola transacción ("pending trigger events"). El RunPython corre en su propia transacción.
+    atomic = False
 
     dependencies = [
         ('consorcios', '0012_alter_grupoprorrateo_unique_together'),
     ]
 
     operations = [
+        migrations.RunPython(asignar_rubro_por_defecto, migrations.RunPython.noop, atomic=True),
         migrations.AlterField(
             model_name='grupoprorrateo',
             name='rubro',
