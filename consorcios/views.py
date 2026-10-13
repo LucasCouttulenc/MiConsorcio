@@ -477,7 +477,7 @@ def editar_columnas_rubro(request, rubro_id):
                             rubro=rubro,
                             nombre=nombre,
                             tipo_reparto=tipo,
-                            codigo=_generar_codigo_columna(consorcio, rubro, nombre),
+                            codigo=_generar_codigo_columna(consorcio, nombre),
                         )
                     columna.unidades.set(ufs if tipo != TipoReparto.GENERAL else [])
                     messages.success(request, f"Columna '{nombre}' guardada.")
