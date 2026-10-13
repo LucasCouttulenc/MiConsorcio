@@ -130,7 +130,10 @@
                         <td class="col-comprobante">
                             {% if gasto.comprobante %}
                                 <div class="dl-comp-box">
-                                    <span class="dl-comp-nombre" title="{{ gasto.comprobante.name|basename }}">📄 {{ gasto.comprobante.name|basename }}</span>
+                                    <span class="dl-comp-nombre" title="{{ gasto.comprobante.name|basename }}">
+                                        <svg class="dl-comp-file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.75h8l4.5 4.5v14H6z"/><path d="M14 2.75v5h4.5M9 13h6M9 16.5h6"/></svg>
+                                        {{ gasto.comprobante.name|basename }}
+                                    </span>
                                     <a class="dl-comp-ver" href="{{ gasto.comprobante.url }}" target="_blank" rel="noopener" title="Ver comprobante" aria-label="Ver">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
@@ -145,7 +148,8 @@
                                 <form method="post" action="{% url 'subir_comprobante' gasto.id %}" enctype="multipart/form-data" class="dl-comp-form">
                                     {% csrf_token %}
                                     <label class="dl-comp-adjuntar">
-                                        📎 Adjuntar
+                                        <svg class="dl-comp-clip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8.5 12.5 6.9-6.9a3.2 3.2 0 0 1 4.5 4.5l-9.1 9.1a5 5 0 0 1-7.1-7.1l9.2-9.2"/></svg>
+                                        Adjuntar
                                         <input type="file" name="comprobante" accept=".pdf,.jpg,.jpeg,.png" onchange="this.form.submit()" hidden>
                                     </label>
                                 </form>

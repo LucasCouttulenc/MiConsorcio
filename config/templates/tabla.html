@@ -79,14 +79,14 @@
             {% block pagination.previous %}
                 <li class="{% if not table.page.has_previous %}disabled{% endif %}">
                     {% if table.page.has_previous %}
-                    <a href="{% querystring table.prefixed_page_field=table.page.previous_page_number %}">
-                        <span aria-hidden="true">&laquo;</span>
-                        {% trans 'previous' %}
+                    <a href="{% querystring table.prefixed_page_field=table.page.previous_page_number %}" aria-label="Página anterior">
+                        <span class="paginacion__flecha" aria-hidden="true">&laquo;</span>
+                        <span>Anterior</span>
                     </a>
                     {% else %}
-                    <a href="#">
-                        <span aria-hidden="true">&laquo;</span>
-                        {%trans 'previous' %}
+                    <a href="#" aria-label="Página anterior">
+                        <span class="paginacion__flecha" aria-hidden="true">&laquo;</span>
+                        <span>Anterior</span>
                     </a>
                     {% endif %}
                 </li>
@@ -111,14 +111,14 @@
             {% block pagination.next %}
                 <li class="{% if not table.page.has_next %}disabled{% endif %}">
                     {% if table.page.has_next %}
-                    <a href="{% querystring table.prefixed_page_field=table.page.next_page_number %}">
-                        {% trans 'next' %}
-                        <span aria-hidden="true">&raquo;</span>
+                    <a href="{% querystring table.prefixed_page_field=table.page.next_page_number %}" aria-label="Página siguiente">
+                        <span>Siguiente</span>
+                        <span class="paginacion__flecha" aria-hidden="true">&raquo;</span>
                     </a>
                     {% else %}
-                    <a href="#">
-                        {% trans 'next' %}
-                        <span aria-hidden="true">&raquo;</span>
+                    <a href="#" aria-label="Página siguiente">
+                        <span>Siguiente</span>
+                        <span class="paginacion__flecha" aria-hidden="true">&raquo;</span>
                     </a>
                     {% endif %}
                 </li>

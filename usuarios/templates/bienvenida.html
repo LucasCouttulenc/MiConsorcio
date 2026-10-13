@@ -8,7 +8,7 @@
 
     <div class="tarjeta-bienvenida flex column center">
         <h1 class="tarjeta-bienvenida__titulo">
-            ¡Hola, {{ user.first_name|default:user.username }}! 👋
+            ¡Hola, {{ user.first_name|default:user.username }}!
         </h1>
 
         <p class="tarjeta-bienvenida__texto">
@@ -16,7 +16,9 @@
         </p>
 
         <div class="indicador-menu flex center">
-            <span class="indicador-menu__icono">👈</span>
+            <span class="indicador-menu__icono" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </span>
             <span>Accedé a tus opciones desde la barra lateral</span>
         </div>
     </div>

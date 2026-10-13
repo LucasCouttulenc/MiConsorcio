@@ -97,7 +97,9 @@
                                     <input type="hidden" name="consorcio" value="{{ consorcio.id }}">
                                     <input type="hidden" name="accion" value="pausar">
                                     <input type="hidden" name="servicio_id" value="{{ s.id }}">
-                                    <button type="submit" class="cols-ic" title="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}">{% if s.activo %}⏸{% else %}▶{% endif %}</button>
+                                    <button type="submit" class="cols-ic" title="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}" aria-label="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}">
+                                        {% if s.activo %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>{% else %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"/></svg>{% endif %}
+                                    </button>
                                 </form>
                                 <form method="post" style="display:inline"
                                       onsubmit="return confirm('¿Borrar el servicio {{ s.concepto|escapejs }}? Los gastos ya liquidados no se borran.');">
