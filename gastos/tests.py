@@ -1,16 +1,19 @@
 import json
-from datetime import date
+import shutil
+import tempfile
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from consorcios.models import Consorcio, GrupoProrrateo, Rubro, UnidadFuncional
 from usuarios.models import Propietario
 
-from .forms import FormularioServicioRecurrente
-from .models import Gasto, Liquidacion, ServicioRecurrente
+from .forms import FormularioPago, FormularioServicioRecurrente
+from .models import DetalleLiquidacionUF, Gasto, Liquidacion, Pago, ServicioRecurrente
 
 
 def crear_consorcio(nombre='Torre Uno', cuit='30712345678'):
@@ -183,3 +186,126 @@ class ServiciosEnLiquidacionTests(TestCase):
         self.assertEqual(fumigacion.servicio, self.servicio)
         self.assertIsNone(Gasto.objects.get(concepto='Limpieza').servicio)
         self.assertEqual(list(self.servicio.gastos.all()), [fumigacion])
+
+
+class FinalizarConMontosInvalidosTests(TestCase):
+    """Montos armados a mano (NaN, Infinity, enormes) no deben dar 500."""
+
+    def setUp(self):
+        self.consorcio, self.columna = crear_consorcio()
+        for depto in ('A', 'B'):
+            usuario = User.objects.create_user(f'prop{depto}', password='clave')
+            UnidadFuncional.objects.create(
+                propietario=Propietario.objects.create(usuario=usuario), consorcio=self.consorcio,
+                piso=1, departamento=depto, alicuota=Decimal('50'))
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+
+    def finalizar(self, monto):
+        gastos = [{'fila': 'gasto-0', 'concepto': 'Limpieza', 'tipo': 'ordinario',
+                   'grupo': self.columna.pk, 'monto': monto}]
+        return self.client.post(reverse('finalizar_liquidacion'), {
+            'consorcio': self.consorcio.pk, 'mes': '4', 'anio': '2026',
+            'fecha_cierre': '2026-04-30', 'fecha_vencimiento_1': '2026-05-10',
+            'gastos': json.dumps(gastos),
+        })
+
+    def test_montos_invalidos_se_rechazan_sin_error(self):
+        for monto in ('NaN', '-NaN', 'sNaN', 'Infinity', '-Infinity', '1E+20', '10000000000'):
+            with self.subTest(monto=monto):
+                respuesta = self.finalizar(monto)
+                self.assertRedirects(respuesta, reverse('generar_liquidacion'), fetch_redirect_response=False)
+        self.assertFalse(Gasto.objects.exists())
+
+    def test_monto_maximo_permitido(self):
+        self.finalizar('9999999999.99')
+        self.assertTrue(Liquidacion.objects.get().cerrada)
+
+
+def archivo(nombre='comprobante.pdf', tipo='application/pdf', contenido=b'%PDF-1.4'):
+    return SimpleUploadedFile(nombre, contenido, content_type=tipo)
+
+
+class FormularioPagoTests(TestCase):
+    def formulario(self, **cambios):
+        datos = {'fecha_pago': date.today().isoformat(), 'monto_pagado': '1000'}
+        archivos = {'comprobante': cambios.pop('comprobante', archivo())}
+        datos.update(cambios)
+        return FormularioPago(datos, archivos)
+
+    def test_pago_valido(self):
+        self.assertTrue(self.formulario().is_valid())
+
+    def test_acepta_imagenes(self):
+        self.assertTrue(self.formulario(comprobante=archivo('foto.JPG', 'image/jpeg')).is_valid())
+        self.assertTrue(self.formulario(comprobante=archivo('foto.png', 'image/png')).is_valid())
+
+    def test_monto_tiene_que_ser_positivo(self):
+        for monto in ('-500', '0'):
+            with self.subTest(monto=monto):
+                self.assertIn('monto_pagado', self.formulario(monto_pagado=monto).errors)
+
+    def test_fecha_no_puede_ser_futura(self):
+        manana = (date.today() + timedelta(days=1)).isoformat()
+        self.assertIn('fecha_pago', self.formulario(fecha_pago=manana).errors)
+
+    def test_rechaza_html_aunque_diga_ser_pdf(self):
+        formulario = self.formulario(comprobante=archivo('xss.html', 'application/pdf', b'<script>alert(1)</script>'))
+        self.assertIn('comprobante', formulario.errors)
+
+    def test_rechaza_tipo_no_permitido(self):
+        self.assertIn('comprobante', self.formulario(comprobante=archivo('xss.pdf', 'text/html')).errors)
+
+    def test_rechaza_archivos_grandes(self):
+        grande = archivo(contenido=b'0' * (5 * 1024 * 1024 + 1))
+        self.assertIn('comprobante', self.formulario(comprobante=grande).errors)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class ProcesarPagoTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        from django.conf import settings
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        usuario = User.objects.create_user('prop', password='clave')
+        uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=usuario), consorcio=self.consorcio,
+            piso=1, departamento='A', alicuota=Decimal('50'))
+        liquidacion = Liquidacion.objects.create(consorcio=self.consorcio, periodo='2026-04', cerrada=True)
+        detalle = DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=uf, monto_total=Decimal('1000'))
+        self.pago = Pago.objects.create(
+            detalle_liquidacion=detalle, fecha_pago=date.today(),
+            monto_pagado=Decimal('1000'), comprobante=archivo())
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+
+    def procesar(self, accion):
+        self.client.post(reverse('procesar_pago', args=[self.pago.pk]), {'accion': accion})
+        self.pago.refresh_from_db()
+        return self.pago.estado
+
+    def test_validar_pendiente(self):
+        self.assertEqual(self.procesar('validar'), 'validado')
+
+    def test_no_se_puede_validar_un_rechazado(self):
+        self.assertEqual(self.procesar('rechazar'), 'rechazado')
+        self.assertEqual(self.procesar('validar'), 'rechazado')
+
+    def test_no_se_puede_rechazar_un_validado(self):
+        self.assertEqual(self.procesar('validar'), 'validado')
+        self.assertEqual(self.procesar('rechazar'), 'validado')
+
+    def test_accion_invalida_no_cambia_el_estado(self):
+        self.assertEqual(self.procesar('cualquiera'), 'pendiente')
+
+    def test_subir_comprobante_de_gasto_rechaza_html(self):
+        gasto = Gasto.objects.create(
+            consorcio=self.consorcio, concepto='Luz', monto=Decimal('10'), periodo='2026-04',
+            fecha_comprobante=date.today(), liquidacion=self.pago.detalle_liquidacion.liquidacion)
+        self.client.post(reverse('subir_comprobante', args=[gasto.pk]),
+                         {'comprobante': archivo('xss.html', 'application/pdf', b'<script></script>')})
+        gasto.refresh_from_db()
+        self.assertFalse(gasto.comprobante)

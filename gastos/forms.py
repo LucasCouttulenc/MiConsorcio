@@ -1,11 +1,31 @@
 # gastos/forms.py
+import os
 import re
+from datetime import date
 
 from django import forms
 from consorcios.models import Consorcio, GrupoProrrateo
 from .models import Pago, ServicioRecurrente
 
 PERIODO_RE = re.compile(r'(20\d\d|2100)-(0[1-9]|1[0-2])')
+
+EXTENSIONES_COMPROBANTE = {'.pdf', '.jpg', '.jpeg', '.png'}
+TIPOS_COMPROBANTE = {'application/pdf', 'image/jpeg', 'image/png'}
+TAMANIO_MAXIMO_COMPROBANTE = 5 * 1024 * 1024
+
+
+def validar_comprobante(archivo):
+    """
+    Solo acepta PDF, JPG o PNG de hasta 5 MB. Se valida la extensión además del
+    content type (que lo manda el navegador y se puede falsificar), porque el
+    archivo se sirve desde /media/ según su extensión.
+    """
+    extension = os.path.splitext(archivo.name)[1].lower()
+    if extension not in EXTENSIONES_COMPROBANTE or getattr(archivo, 'content_type', None) not in TIPOS_COMPROBANTE:
+        raise forms.ValidationError('El comprobante debe ser PDF, JPG o PNG.')
+    if archivo.size > TAMANIO_MAXIMO_COMPROBANTE:
+        raise forms.ValidationError('El comprobante no puede superar los 5 MB.')
+    return archivo
 
 class FormularioGenerarLiquidacion(forms.Form):
     consorcio = forms.ModelChoiceField(queryset=Consorcio.objects.all(), label="Consorcio")
@@ -19,6 +39,21 @@ class FormularioPago(forms.ModelForm):
         widgets = {
             'fecha_pago': forms.DateInput(attrs={'type': 'date'}),
         }
+
+    def clean_monto_pagado(self):
+        monto = self.cleaned_data.get('monto_pagado')
+        if monto is not None and monto <= 0:
+            raise forms.ValidationError('El monto tiene que ser positivo.')
+        return monto
+
+    def clean_fecha_pago(self):
+        fecha = self.cleaned_data.get('fecha_pago')
+        if fecha and fecha > date.today():
+            raise forms.ValidationError('La fecha de pago no puede ser futura.')
+        return fecha
+
+    def clean_comprobante(self):
+        return validar_comprobante(self.cleaned_data['comprobante'])
 
 class FormularioServicioRecurrente(forms.ModelForm):
     class Meta:

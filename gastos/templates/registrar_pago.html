@@ -90,6 +90,11 @@
     .form-group input[type="file"]:hover {
         background: #e9ecef;
     }
+    .form-error {
+        margin: 6px 0 0 0;
+        color: #c62828;
+        font-size: 0.85rem;
+    }
     .pago-acciones {
         display: flex;
         align-items: center;
@@ -145,16 +150,19 @@
             <div class="form-group">
                 <label for="{{ form.fecha_pago.id_for_label }}">Fecha de la transferencia</label>
                 {{ form.fecha_pago }}
+                {% for error in form.fecha_pago.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </div>
-            
+
             <div class="form-group">
                 <label for="{{ form.monto_pagado.id_for_label }}">Monto transferido ($)</label>
                 {{ form.monto_pagado }}
+                {% for error in form.monto_pagado.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </div>
-            
+
             <div class="form-group">
-                <label for="{{ form.comprobante.id_for_label }}">Comprobante (PDF o Imagen)</label>
+                <label for="{{ form.comprobante.id_for_label }}">Comprobante (PDF, JPG o PNG, hasta 5 MB)</label>
                 {{ form.comprobante }}
+                {% for error in form.comprobante.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </div>
 
             <div class="pago-acciones">
