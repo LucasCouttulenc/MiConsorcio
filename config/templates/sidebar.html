@@ -1,9 +1,9 @@
 {% load static %}
 
-<nav class="sidebar" id="sidebar">
+<nav class="sidebar open" id="sidebar">
     <!-- Encabezado con Botón Hamburguesa -->
     <div class="sidebar-header">
-        <button class="btn-toggle-sidebar" id="toggleSidebarBtn" aria-label="Toggle Sidebar">
+        <button class="btn-toggle-sidebar" id="toggleSidebarBtn" type="button" aria-label="Alternar barra lateral" aria-controls="sidebar" aria-expanded="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="3" y1="12" x2="21" y2="12"></line>
                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -86,7 +86,7 @@
 
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
-                        <span class="submenu-titulo">PANEL CONSORCISTA</span>
+                        <span class="submenu-titulo">PANEL PROPIETARIO</span>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_expensas' %}active{% endif %}">
                             <a href="{% url 'mis_expensas' %}" title="Mis Expensas">
                                 <span class="item-icono">
@@ -94,6 +94,15 @@
                                     <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Mis Expensas">
                                 </span>
                                 <span class="item-texto">Mis Expensas</span>
+                            </a>
+                        </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'historial_pagos' %}active{% endif %}">
+                            <a href="{% url 'historial_pagos' %}" title="Historial de pagos">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Historial de pagos">
+                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Historial de pagos">
+                                </span>
+                                <span class="item-texto">Historial de pagos</span>
                             </a>
                         </div>
                     </div>
@@ -138,16 +147,24 @@
 
 <script>
 $(document).ready(function() {
+    const layout = document.getElementById('appLayout');
+    const sidebar = document.getElementById('sidebar');
+    const toggleButton = document.getElementById('toggleSidebarBtn');
+    const storageKey = 'miConsorcioSidebarExpandedV2';
+
+    function setSidebarExpanded(expanded) {
+        layout.classList.toggle('sidebar-expanded', expanded);
+        sidebar.classList.toggle('open', expanded);
+        toggleButton.setAttribute('aria-expanded', String(expanded));
+        localStorage.setItem(storageKey, String(expanded));
+    }
+
+    // La primera visita empieza expandida; solo se pliega si la persona lo eligió.
+    setSidebarExpanded(localStorage.getItem(storageKey) !== 'false');
+
     $('#toggleSidebarBtn').on('click', function(e) {
         e.stopPropagation();
-        $('#sidebar').toggleClass('open');
-    });
-
-    // Cierra el sidebar al hacer clic fuera de él cuando está abierto
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#sidebar').length && $('#sidebar').hasClass('open')) {
-            $('#sidebar').removeClass('open');
-        }
+        setSidebarExpanded(!layout.classList.contains('sidebar-expanded'));
     });
 });
 

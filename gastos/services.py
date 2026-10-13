@@ -15,7 +15,7 @@ from reportlab.lib.units import mm
 
 from consorcios.models import UnidadFuncional, TipoReparto
 
-from .models import DetalleLiquidacionUF, TipoGasto
+from .models import DetalleGastoUF, DetalleLiquidacionUF, TipoGasto
 
 
 def dinero(valor):
@@ -42,6 +42,7 @@ def procesar_liquidacion_periodo(liquidacion):
     acum = {uf.pk: {'ord': Decimal('0.00'), 'ext': Decimal('0.00')} for uf in ufs}
     total_ordinario = Decimal('0')
     total_extraordinario = Decimal('0')
+    distribuciones = []
 
     for gasto in liquidacion.gastos_cargados.select_related('grupo').prefetch_related('grupo__unidades'):
         monto = gasto.monto
@@ -81,6 +82,13 @@ def procesar_liquidacion_periodo(liquidacion):
                 asignado += parte
             else:
                 parte = monto - asignado  # el último absorbe el redondeo
+            porcentaje = (parte * Decimal('100') / monto).quantize(Decimal('0.0001')) if monto else Decimal('0')
+            distribuciones.append(DetalleGastoUF(
+                gasto=gasto,
+                unidad_funcional=uf,
+                porcentaje_aplicado=porcentaje,
+                monto_asignado=parte,
+            ))
             if es_ordinario:
                 acum[uf.pk]['ord'] += parte
             else:
@@ -91,6 +99,7 @@ def procesar_liquidacion_periodo(liquidacion):
     liquidacion.save(update_fields=['total_ordinario', 'total_extraordinario'])
 
     liquidacion.detalles_uf.all().delete()
+    DetalleGastoUF.objects.filter(gasto__liquidacion=liquidacion).delete()
     detalles = [
         DetalleLiquidacionUF(
             liquidacion=liquidacion,
@@ -103,6 +112,7 @@ def procesar_liquidacion_periodo(liquidacion):
         for uf in ufs
     ]
     DetalleLiquidacionUF.objects.bulk_create(detalles)
+    DetalleGastoUF.objects.bulk_create(distribuciones)
     return liquidacion
 
 

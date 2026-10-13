@@ -5,57 +5,103 @@
 
 {% block content %}
 {% include "componentes/mensajes.html" %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div>
+            <p class="portal-eyebrow">PANEL PROPIETARIO</p>
+            <h1>Mis Expensas</h1>
+            <p>Consultá tu liquidación, el estado de tu cuenta y el detalle de los gastos.</p>
+        </div>
+        {% if consorcios %}
+        <form method="get" class="portal-filtros">
+            <label for="consorcio">Consorcio</label>
+            <select name="consorcio" id="consorcio" class="sin-select2 portal-select" onchange="this.form.submit()">
+                {% for opcion in consorcios %}<option value="{{ opcion.pk }}" {% if opcion.pk == consorcio.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
+            </select>
+            {% if unidades|length > 1 %}
+            <label for="unidad">Unidad funcional</label>
+            <select name="unidad" id="unidad" class="sin-select2 portal-select" onchange="this.form.submit()">
+                {% for opcion in unidades %}<option value="{{ opcion.pk }}" {% if opcion.pk == unidad.pk %}selected{% endif %}>Piso {{ opcion.piso }}{% if opcion.departamento %} · Depto. {{ opcion.departamento }}{% endif %}</option>{% endfor %}
+            </select>
+            {% else %}<input type="hidden" name="unidad" value="{{ unidad.pk }}">{% endif %}
+            {% if periodo %}<input type="hidden" name="periodo" value="{{ periodo }}">{% endif %}
+        </form>
+        {% endif %}
+    </header>
 
-<div class="liquidaciones-cabecera">
-    <h1 class="titulo">Mis Expensas</h1>
-    <p>Acá podés ver el estado de tu cuenta y registrar tus comprobantes de pago.</p>
-</div>
+    {% if sin_unidades %}
+        <div class="portal-card portal-vacio"><h2>Todavía no tenés unidades asignadas</h2><p>Cuando la administración te vincule con una unidad funcional, vas a ver acá tus liquidaciones.</p></div>
+    {% else %}
+        <div class="portal-periodo">
+            <div>
+                <span>LIQUIDACIÓN</span>
+                <h2>{% if periodo %}{{ periodo_label }}{% else %}Sin período{% endif %}</h2>
+            </div>
+            <nav aria-label="Cambiar período">
+                {% if anterior %}<a href="?consorcio={{ consorcio.pk }}&unidad={{ unidad.pk }}&periodo={{ anterior }}" aria-label="Período anterior">‹ Anterior</a>{% else %}<span class="deshabilitado">‹ Anterior</span>{% endif %}
+                {% if siguiente %}<a href="?consorcio={{ consorcio.pk }}&unidad={{ unidad.pk }}&periodo={{ siguiente }}" aria-label="Período siguiente">Siguiente ›</a>{% else %}<span class="deshabilitado">Siguiente ›</span>{% endif %}
+            </nav>
+        </div>
 
-<div class="contenedor-tabla">
-    <table class="tabla" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-        <thead>
-            <tr style="background-color: #f5f5f5;">
-                <th style="padding: 10px; border: 1px solid #ddd;">Período</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Consorcio y UF</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Vencimiento</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Estado</th>
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Acción</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for detalle in detalles %}
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ detalle.liquidacion.periodo }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                    <strong>{{ detalle.liquidacion.consorcio.nombre }}</strong><br>
-                    Piso {{ detalle.unidad_funcional.piso }}° {{ detalle.unidad_funcional.departamento }}
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ detalle.liquidacion.fecha_vencimiento_1|date:"d/m/Y" }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                    {% if detalle.esta_pagado %}
-                        <span style="color: #2e7d32; font-weight: bold;">✔ Pagado</span>
-                    {% elif detalle.tiene_pago_pendiente %}
-                        <span style="color: #f57f17; font-weight: bold;">Pago en revisión</span>
-                    {% else %}
-                        <span style="color: #c62828; font-weight: bold;">Deuda: ${{ detalle.deuda_total_actualizada }}</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                    {% if detalle.esta_pagado %}
-                        <span style="color: #666; font-size: 0.9em;">Al día</span>
-                    {% elif detalle.tiene_pago_pendiente %}
-                        <span style="background: #fff3cd; color: #856404; padding: 5px 10px; border-radius: 4px; font-size: 0.85em; border: 1px solid #ffeeba;">⏳ Validando</span>
-                    {% else %}
-                        <a href="{% url 'registrar_pago' detalle.id %}" class="boton-primario" style="padding: 5px 10px; font-size: 0.85em; text-decoration: none; color: white">Pagar</a>
-                    {% endif %}
-                </td>
-            </tr>
-        {% empty %}
-            <tr>
-                <td colspan="5" style="padding: 15px; text-align: center;">No tenés expensas registradas.</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
+        {% if detalle %}
+        <div class="portal-info-periodo">
+            <div><strong>{{ consorcio.nombre }}</strong><span>Piso {{ unidad.piso }}{% if unidad.departamento %} · Departamento {{ unidad.departamento }}{% endif %}</span></div>
+            <div><strong>Alícuota aplicada</strong><span>{{ detalle.alicuota }}%</span></div>
+            <div><strong>Cierre de liquidación</strong><span>{{ detalle.liquidacion.fecha_cierre|date:"d/m/Y"|default:"Sin fecha informada" }}</span></div>
+            <div><strong>Vencimiento</strong><span>{{ detalle.liquidacion.fecha_vencimiento_1|date:"d/m/Y"|default:"Sin fecha informada" }}</span></div>
+        </div>
+
+        <section class="portal-pago-card">
+            <div class="portal-pago-principal">
+                <p>TOTAL A PAGAR · {{ periodo_label }}</p>
+                <strong>$ {{ detalle.deuda_total_actualizada|floatformat:2 }}</strong>
+                <div class="portal-desglose">
+                    <span>Ordinarias <b>$ {{ detalle.monto_ordinario|floatformat:2 }}</b></span>
+                    <span>Extraordinarias <b>$ {{ detalle.monto_extraordinario|floatformat:2 }}</b></span>
+                </div>
+            </div>
+            <div class="portal-pago-estado">
+                {% if detalle.esta_pagado %}
+                    <span class="portal-estado estado-pagado">Pagado</span>
+                    <p>Tu cuenta está al día para este período.</p>
+                {% elif pagos_pendientes %}
+                    <span class="portal-estado estado-revision">Comprobante en revisión</span>
+                    <p>La administración todavía tiene que validar el pago informado.</p>
+                {% else %}
+                    <span class="portal-estado estado-deuda">Pendiente de pago</span>
+                    <p>El importe se actualizará cuando se validen pagos parciales.</p>
+                    <a class="portal-boton portal-boton-acento" href="{% url 'registrar_pago' detalle.pk %}">Adjuntar comprobante de pago</a>
+                {% endif %}
+                {% if detalle.liquidacion.documento %}<a class="portal-boton portal-boton-secundario" href="{% url 'documento_liquidacion_propietario' detalle.liquidacion.pk %}">Descargar liquidación PDF</a>{% endif %}
+            </div>
+        </section>
+
+        <section class="portal-card">
+            <div class="portal-card-titulo"><div><h2>Resumen de gastos del edificio</h2><p>Distribución por rubro · {{ periodo }}</p></div></div>
+            {% if resumen_rubros %}
+            <div class="portal-resumen-rubros">
+                {% for rubro in resumen_rubros %}<div><span>{{ rubro.nombre }}</span><strong>$ {{ rubro.total_edificio|floatformat:2 }}</strong><small>Tu parte: $ {{ rubro.tu_parte|floatformat:2 }}</small></div>{% endfor %}
+                <div class="portal-resumen-total"><span>Total de gastos del edificio</span><strong>$ {{ detalle.liquidacion.total|floatformat:2 }}</strong></div>
+            </div>
+            {% else %}<p class="portal-mensaje-vacio">Esta liquidación no tiene gastos detallados.</p>{% endif %}
+        </section>
+
+        <section class="portal-card">
+            <div class="portal-card-titulo"><div><h2>Detalle de gastos</h2><p>Importe del consorcio y monto imputado a tu unidad.</p></div></div>
+            <div class="portal-tabla-wrap"><table class="portal-tabla">
+                <thead><tr><th>Concepto</th><th>Rubro / tipo</th><th>Edificio</th><th>Coef. UF</th><th>Tu parte</th></tr></thead>
+                <tbody>
+                {% for item in gastos %}
+                    <tr><td>{{ item.gasto.concepto }}</td><td>{{ item.rubro }} · {{ item.gasto.get_tipo_display }}</td><td>$ {{ item.gasto.monto|floatformat:2 }}</td><td>{{ detalle.alicuota|floatformat:2 }}%</td><td>$ {{ item.monto_asignado|floatformat:2 }}</td></tr>
+                {% empty %}<tr><td colspan="5" class="portal-mensaje-vacio">No hay gastos cargados para este período.</td></tr>{% endfor %}
+                </tbody>
+                <tfoot><tr><th colspan="4">Total correspondiente a tu unidad</th><th>$ {{ detalle.monto_total|floatformat:2 }}</th></tr></tfoot>
+            </table></div>
+        </section>
+        <p class="portal-link-historial"><a href="{% url 'historial_pagos' %}">Ver historial de pagos →</a></p>
+        {% else %}
+        <section class="portal-card portal-vacio"><h2>No hay una liquidación publicada para este período</h2><p>Cuando la administración cierre la liquidación, vas a poder consultar el importe, los gastos y descargar el documento.</p></section>
+        {% endif %}
+    {% endif %}
+</section>
 {% endblock %}

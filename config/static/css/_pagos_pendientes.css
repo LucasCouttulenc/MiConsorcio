@@ -1,0 +1,81 @@
+.pp-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.pp-btn {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    min-width: 84px;
+    min-height: 34px;
+    padding: 7px 11px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #fff;
+    font: 700 .78rem 'Nunito', sans-serif;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+}
+
+.pp-btn svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pp-btn-validar {
+    border-color: #23966b;
+    background: #197b59;
+}
+.pp-btn-validar:hover {
+    border-color: #36b184;
+    background: #126647;
+    box-shadow: 0 3px 10px rgba(25, 123, 89, .25);
+}
+
+.pp-btn-rechazar {
+    border-color: #d76876;
+    background: #a83d4b;
+}
+.pp-btn-rechazar:hover {
+    border-color: #ed8490;
+    background: #88303d;
+    box-shadow: 0 3px 10px rgba(168, 61, 75, .25);
+}
+
+.pp-btn:focus-visible,
+.pp-link-comprobante:focus-visible {
+    outline: 3px solid #75c9ff;
+    outline-offset: 2px;
+}
+.pp-btn:active { transform: translateY(1px); }
+
+.pp-link-comprobante {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #79baff;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.pp-link-comprobante:hover { color: #b2d9ff; }
+.pp-icono-archivo { width: 17px; height: 17px; flex: 0 0 auto; }
+.pp-sin-adjunto { color: #bac9dc; }
+
+.pp-vacio { color: #c4d2e3 !important; text-align: center !important; }
+
+@media (max-width: 700px) {
+    .pp-form { flex-wrap: wrap; }
+    .pp-btn { min-width: 76px; }
+}

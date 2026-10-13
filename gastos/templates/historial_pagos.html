@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Historial de pagos{% endblock %}
+{% block content %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div><p class="portal-eyebrow">PANEL PROPIETARIO</p><h1>Historial de pagos</h1><p>Revisá los pagos informados y el estado de validación de cada comprobante.</p></div>
+    </header>
+    <section class="portal-card">
+        <div class="portal-tabla-wrap"><table class="portal-tabla">
+            <thead><tr><th>Fecha de pago</th><th>Período</th><th>Consorcio y unidad</th><th>Importe</th><th>Estado</th><th>Comprobante</th></tr></thead>
+            <tbody>
+            {% for pago in pagos %}
+                <tr>
+                    <td>{{ pago.fecha_pago|date:"d/m/Y" }}</td>
+                    <td>{{ pago.detalle_liquidacion.liquidacion.periodo }}</td>
+                    <td>{{ pago.detalle_liquidacion.liquidacion.consorcio.nombre }}<small class="portal-celda-secundaria">Piso {{ pago.detalle_liquidacion.unidad_funcional.piso }}{% if pago.detalle_liquidacion.unidad_funcional.departamento %} · Depto. {{ pago.detalle_liquidacion.unidad_funcional.departamento }}{% endif %}</small></td>
+                    <td>$ {{ pago.monto_pagado|floatformat:2 }}</td>
+                    <td><span class="portal-estado estado-{{ pago.estado }}">{{ pago.get_estado_display }}</span>{% if pago.notas_admin %}<small class="portal-celda-secundaria">{{ pago.notas_admin }}</small>{% endif %}</td>
+                    <td><a class="portal-link" href="{{ pago.comprobante.url }}" target="_blank" rel="noopener">Ver archivo</a></td>
+                </tr>
+            {% empty %}<tr><td colspan="6" class="portal-mensaje-vacio">Todavía no informaste pagos.</td></tr>{% endfor %}
+            </tbody>
+        </table></div>
+    </section>
+</section>
+{% endblock %}

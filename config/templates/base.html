@@ -17,7 +17,7 @@
     </head>
     
     <body>
-        <div class="flex">
+        <div class="flex app-layout{% if user.is_authenticated %} sidebar-expanded{% endif %}" id="appLayout">
             {% if user.is_authenticated %}
                 <aside class="contenedor-sidebar">
                     {% include "sidebar.html" %}

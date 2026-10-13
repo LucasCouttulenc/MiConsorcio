@@ -1,0 +1,104 @@
+.portal-propietario {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 28px 10px 48px;
+    color: #eaf2ff;
+}
+
+.portal-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    margin-bottom: 22px;
+}
+
+.portal-cabecera h1 { color: #fff; font: 700 2rem 'Exo 2', sans-serif; margin: 2px 0 6px; }
+.portal-cabecera p { color: #c5d5ec; }
+.portal-eyebrow { color: #61b7ff !important; font-size: .75rem; font-weight: 800; letter-spacing: .12em; }
+.portal-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
+.portal-filtros label { color: #d5e4f8; font-size: .85rem; font-weight: 700; }
+.portal-select { min-width: 210px; padding: 10px 34px 10px 12px; border: 1px solid #52739e; border-radius: 8px; background: #142b4b; color: #fff; }
+.portal-select option { background: #142b4b; color: #fff; }
+
+.portal-periodo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 15px 20px;
+    margin-bottom: 14px;
+    border: 1px solid rgba(127, 169, 222, .35);
+    border-radius: 12px;
+    background: rgba(12, 31, 58, .7);
+}
+.portal-periodo span { color: #8eb5e9; font-size: .7rem; font-weight: 800; letter-spacing: .12em; }
+.portal-periodo h2 { color: #fff; font: 700 1.25rem 'Exo 2', sans-serif; margin-top: 3px; }
+.portal-periodo nav { display: flex; gap: 10px; }
+.portal-periodo nav a, .portal-periodo nav span { border: 1px solid #45668f; border-radius: 8px; padding: 8px 13px; color: #eaf2ff; }
+.portal-periodo nav a:hover { background: #2d73d9; border-color: #2d73d9; }
+.portal-periodo nav .deshabilitado { color: #8295ae; }
+
+.portal-info-periodo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-bottom: 14px; overflow: hidden; border: 1px solid #45668f; border-radius: 10px; background: #45668f; }
+.portal-info-periodo > div { display: flex; flex-direction: column; gap: 4px; padding: 12px 15px; background: #173252; }
+.portal-info-periodo strong { color: #91baf0; font-size: .75rem; }
+.portal-info-periodo span { color: #fff; font-size: .92rem; }
+
+.portal-pago-card { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 26px; margin-bottom: 16px; border: 1px solid #31598e; border-radius: 13px; background: linear-gradient(120deg, #193a68, #102746); box-shadow: 0 10px 24px rgba(0, 0, 0, .15); }
+.portal-pago-principal > p { color: #9fc9ff; font-size: .75rem; font-weight: 800; letter-spacing: .1em; }
+.portal-pago-principal > strong { display: block; margin: 4px 0 13px; color: #fff; font: 700 2.6rem 'Exo 2', sans-serif; }
+.portal-desglose { display: flex; flex-wrap: wrap; gap: 9px; }
+.portal-desglose span { padding: 6px 10px; border-radius: 6px; background: rgba(255, 255, 255, .12); color: #eaf2ff; font-size: .8rem; }
+.portal-desglose b { margin-left: 5px; color: #fff; }
+.portal-pago-estado { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; max-width: 330px; text-align: right; }
+.portal-pago-estado p { color: #c5d5ec; font-size: .85rem; }
+.portal-estado { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.estado-pagado, .estado-validado { background: #d9f6e9; color: #086744; }
+.estado-deuda, .estado-rechazado { background: #ffe2e2; color: #a52525; }
+.estado-revision, .estado-pendiente { background: #fff0cc; color: #815400; }
+.portal-boton { display: inline-flex; justify-content: center; align-items: center; min-height: 39px; padding: 9px 14px; border-radius: 8px; font-size: .85rem; font-weight: 800; }
+.portal-boton-acento { background: #f29b08; color: #fff; }
+.portal-boton-acento:hover { background: #d98500; }
+.portal-boton-secundario { border: 1px solid #6382aa; background: #24466f; color: #fff; }
+.portal-boton-secundario:hover { background: #315b8c; }
+
+.portal-card { margin: 15px 0; overflow: hidden; border: 1px solid #466588; border-radius: 12px; background: #d3deea; color: #142947; box-shadow: 0 8px 22px rgba(0, 0, 0, .16); }
+.portal-card-titulo { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #b6c6d8; background: #c5d3e2; }
+.portal-card-titulo h2, .portal-vacio h2 { color: #16365e; font: 700 1.1rem 'Exo 2', sans-serif; }
+.portal-card-titulo p, .portal-vacio p { margin-top: 3px; color: #455e7b; font-size: .85rem; }
+.portal-resumen-rubros { padding: 6px 20px 14px; }
+.portal-resumen-rubros > div { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid #b9c8d9; color: #244365; }
+.portal-resumen-rubros strong { color: #102e54; }
+.portal-resumen-rubros small { color: #455e7b; }
+.portal-resumen-rubros .portal-resumen-total { border: 0; color: #16365e; font-weight: 800; }
+.portal-resumen-total strong { font-size: 1.05rem; }
+.portal-tabla-wrap { overflow-x: auto; }
+.portal-tabla { width: 100%; border-collapse: collapse; color: #173354; }
+.portal-tabla th { padding: 12px 15px; background: #b9cadd; color: #173859; font-size: .72rem; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
+.portal-tabla td { padding: 12px 15px; border-top: 1px solid #bdcada; background: #dbe4ee; color: #233d5c; font-size: .9rem; }
+.portal-tabla tbody tr:nth-child(even) td { background: #d1dce8; }
+.portal-tabla tbody tr:hover td { background: #c7d5e4; }
+.portal-tabla td:nth-last-child(-n+2), .portal-tabla th:nth-last-child(-n+2) { text-align: right; }
+.portal-tabla tfoot th { border-top: 2px solid #aebfd2; background: #c5d3e2; color: #15365e; font-size: .83rem; }
+.portal-mensaje-vacio { padding: 24px !important; background: #d3deea !important; color: #425a75 !important; text-align: center !important; }
+.portal-link-historial { text-align: right; }
+.portal-link { color: #1c65bd; font-weight: 800; }
+.portal-link-historial a { color: #8ac2ff; font-weight: 800; }
+.portal-celda-secundaria { display: block; margin-top: 3px; color: #536a84; font-size: .78rem; }
+.portal-vacio { padding: 24px; }
+
+@media (max-width: 850px) {
+    .portal-cabecera { flex-direction: column; }
+    .portal-info-periodo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .portal-propietario { padding: 18px 2px 32px; }
+    .portal-pago-card { align-items: flex-start; flex-direction: column; padding: 19px; }
+    .portal-pago-estado { align-items: flex-start; text-align: left; }
+    .portal-info-periodo { grid-template-columns: 1fr 1fr; }
+    .portal-resumen-rubros > div { grid-template-columns: 1fr auto; gap: 6px; }
+    .portal-resumen-rubros small { grid-column: 1 / -1; }
+    .portal-tabla { min-width: 700px; }
+    .portal-periodo { padding: 12px; }
+    .portal-periodo nav { gap: 5px; }
+}
