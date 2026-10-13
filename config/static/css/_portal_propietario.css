@@ -20,6 +20,24 @@
 .portal-filtros label { color: #d5e4f8; font-size: .85rem; font-weight: 700; }
 .portal-select { min-width: 210px; padding: 10px 34px 10px 12px; border: 1px solid #52739e; border-radius: 8px; background: #142b4b; color: #fff; }
 .portal-select option { background: #142b4b; color: #fff; }
+.portal-notificaciones { position: relative; z-index: 20; }
+.portal-notificaciones-boton { position: relative; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid #52739e; border-radius: 10px; background: #173252; color: #cfe5ff; cursor: pointer; transition: background .15s, border-color .15s; }
+.portal-notificaciones-boton:hover, .portal-notificaciones-boton[aria-expanded="true"] { background: #24466f; border-color: #6eb9ff; }
+.portal-notificaciones-boton svg { width: 21px; height: 21px; }
+.portal-notificaciones-punto { position: absolute; top: 5px; right: 5px; width: 9px; height: 9px; border: 2px solid #173252; border-radius: 50%; background: #51c9ff; box-shadow: 0 0 0 1px rgba(81, 201, 255, .4); }
+.portal-notificaciones-panel { position: absolute; top: calc(100% + 9px); right: 0; width: min(350px, calc(100vw - 32px)); max-height: min(65vh, 520px); overflow-y: auto; border: 1px solid #45668f; border-radius: 11px; background: #102746; box-shadow: 0 14px 32px rgba(0, 0, 0, .35); }
+.portal-notificaciones-panel-flotante { position: fixed; z-index: 2000; top: 0; right: auto; }
+.portal-notificaciones-panel[hidden] { display: none; }
+.portal-notificaciones-cabecera { display: flex; justify-content: space-between; align-items: center; padding: 13px 15px; border-bottom: 1px solid #304f75; color: #f3f8ff; }
+.portal-notificaciones-cabecera span { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: #51c9ff; color: #082440; font-size: .75rem; font-weight: 800; }
+.portal-notificacion-item { display: flex; gap: 11px; padding: 13px 15px; border-bottom: 1px solid #263f60; color: #e8f2ff; text-decoration: none; }
+.portal-notificacion-item:hover { background: #19385d; }
+.portal-notificacion-item > span:last-child { display: grid; gap: 4px; }
+.portal-notificacion-item strong { color: #f5f9ff; font-size: .87rem; }
+.portal-notificacion-item small { color: #b7cbe3; font-size: .76rem; }
+.portal-notificacion-punto { flex: 0 0 8px; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: #51c9ff; }
+.portal-notificaciones-vacias { padding: 14px 15px; color: #b7cbe3; font-size: .82rem; }
+.portal-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .portal-periodo {
     display: flex;

@@ -208,3 +208,23 @@ class DetalleGastoUF(models.Model):
 
     def __str__(self):
         return f"{self.gasto.concepto} - {self.unidad_funcional}: ${self.monto_asignado}"
+
+
+class NotificacionLiquidacion(models.Model):
+    propietario = models.ForeignKey(
+        'usuarios.Propietario', on_delete=models.CASCADE, related_name='notificaciones_liquidacion'
+    )
+    detalle_liquidacion = models.ForeignKey(
+        DetalleLiquidacionUF, on_delete=models.CASCADE, related_name='notificaciones_propietario'
+    )
+    creada = models.DateTimeField(auto_now_add=True)
+    leida_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Notificación de liquidación'
+        verbose_name_plural = 'Notificaciones de liquidaciones'
+        unique_together = ('propietario', 'detalle_liquidacion')
+        ordering = ['-creada']
+
+    def __str__(self):
+        return f"Liquidación {self.detalle_liquidacion.liquidacion.periodo} para {self.propietario}"

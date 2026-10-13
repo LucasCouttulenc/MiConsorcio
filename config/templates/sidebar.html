@@ -86,6 +86,11 @@
 
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
+                        {% if mostrar_notificaciones_propietario %}
+                            <div class="submenu-notificaciones">
+                                {% include "componentes/notificaciones_propietario.html" %}
+                            </div>
+                        {% endif %}
                         <span class="submenu-titulo">PANEL PROPIETARIO</span>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_expensas' %}active{% endif %}">
                             <a href="{% url 'mis_expensas' %}" title="Mis Expensas">
