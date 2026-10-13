@@ -59,6 +59,7 @@ urlpatterns = [
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/quitar/', views_gastos.quitar_comprobante, name='quitar_comprobante'),
     path('mis-expensas/', views_gastos.mis_expensas, name='mis_expensas'),
     path('historial-pagos/', views_gastos.historial_pagos, name='historial_pagos'),
+    path('notificaciones/liquidacion/<int:notificacion_id>/', views_gastos.abrir_notificacion_liquidacion, name='abrir_notificacion_liquidacion'),
     path('mis-expensas/liquidacion/<int:liquidacion_id>/documento/', views_gastos.descargar_documento_propietario, name='documento_liquidacion_propietario'),
     path('liquidaciones/detalle/<int:detalle_id>/pagar/', views_gastos.registrar_pago, name='registrar_pago'),
     path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),

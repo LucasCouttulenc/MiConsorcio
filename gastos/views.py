@@ -8,15 +8,17 @@ from django.db import transaction
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import content_disposition_header
 from django.views.decorators.http import require_POST
 
 from usuarios.models import Propietario
 from .forms import FormularioPago, FormularioServicioRecurrente
 from consorcios.models import Consorcio, GrupoProrrateo, UnidadFuncional
-from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, ServicioRecurrente
+from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente
 from .pdf import generar_pdf_liquidacion
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
+from .notificaciones import contexto_notificaciones_propietario
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
 
 class BorradorExistente(ValueError):
@@ -267,6 +269,13 @@ def finalizar_liquidacion(request):
             liquidacion.documento = generar_pdf_liquidacion(liquidacion)
             liquidacion.cerrada = True
             liquidacion.save(update_fields=['documento', 'cerrada', 'actualizada'])
+            NotificacionLiquidacion.objects.bulk_create([
+                NotificacionLiquidacion(
+                    propietario=detalle.unidad_funcional.propietario,
+                    detalle_liquidacion=detalle,
+                )
+                for detalle in liquidacion.detalles_uf.select_related('unidad_funcional__propietario')
+            ], ignore_conflicts=True)
     except BorradorExistente as exc:
         messages.info(request, str(exc))
         return redirect(exc.url)
@@ -345,6 +354,7 @@ def quitar_comprobante(request, gasto_id):
 def mis_expensas(request):
     """Panel mensual del propietario para una de sus unidades funcionales."""
     propietario = get_object_or_404(Propietario, usuario=request.user)
+    contexto_notificaciones = contexto_notificaciones_propietario(propietario)
 
     consorcios = Consorcio.objects.filter(
         unidades_funcionales__propietario=propietario
@@ -352,7 +362,9 @@ def mis_expensas(request):
     consorcio = consorcios.filter(pk=request.GET.get('consorcio')).first() if request.GET.get('consorcio', '').isdecimal() else None
     consorcio = consorcio or consorcios.first()
     if not consorcio:
-        return render(request, 'mis_expensas.html', {'sin_unidades': True})
+        return render(request, 'mis_expensas.html', {
+            'sin_unidades': True, **contexto_notificaciones,
+        })
 
     unidades = UnidadFuncional.objects.filter(propietario=propietario, consorcio=consorcio).order_by('piso', 'departamento')
     unidad = unidades.filter(pk=request.GET.get('unidad')).first() if request.GET.get('unidad', '').isdecimal() else None
@@ -409,6 +421,7 @@ def mis_expensas(request):
         'periodo': periodo, 'periodo_label': periodo_label, 'periodos': periodos, 'anterior': anterior, 'siguiente': siguiente,
         'detalle': detalle, 'gastos': gastos, 'resumen_rubros': resumen_rubros,
         'pagos_pendientes': pagos_pendientes,
+        **contexto_notificaciones,
     })
 
 
@@ -421,7 +434,9 @@ def historial_pagos(request):
     ).select_related(
         'detalle_liquidacion__liquidacion__consorcio', 'detalle_liquidacion__unidad_funcional'
     ).order_by('-fecha_pago', '-fecha_registro')
-    return render(request, 'historial_pagos.html', {'pagos': pagos})
+    return render(request, 'historial_pagos.html', {
+        'pagos': pagos, **contexto_notificaciones_propietario(propietario),
+    })
 
 
 @login_required
@@ -438,6 +453,30 @@ def descargar_documento_propietario(request, liquidacion_id):
         True, f'liquidacion-{liquidacion.consorcio_id}-{liquidacion.periodo}.pdf'
     )
     return respuesta
+
+
+@login_required
+def abrir_notificacion_liquidacion(request, notificacion_id):
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    notificacion = get_object_or_404(
+        NotificacionLiquidacion.objects.select_related(
+            'detalle_liquidacion__liquidacion', 'detalle_liquidacion__unidad_funcional'
+        ),
+        pk=notificacion_id,
+        propietario=propietario,
+    )
+    if notificacion.leida_en is None:
+        notificacion.leida_en = timezone.now()
+        notificacion.save(update_fields=['leida_en'])
+
+    detalle = notificacion.detalle_liquidacion
+    destino = reverse('mis_expensas')
+    parametros = (
+        f'?consorcio={detalle.liquidacion.consorcio_id}'
+        f'&unidad={detalle.unidad_funcional_id}'
+        f'&periodo={detalle.liquidacion.periodo}'
+    )
+    return redirect(destino + parametros)
 
 @login_required
 def registrar_pago(request, detalle_id):

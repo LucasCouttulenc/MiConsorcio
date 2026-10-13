@@ -127,6 +127,29 @@
     opacity: 1;
 }
 
+.submenu-notificaciones {
+    position: relative;
+    width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+    margin: 0 0 8px;
+}
+
+.submenu-notificaciones .portal-notificaciones {
+    position: absolute;
+    top: 0;
+    right: 24px;
+    width: 42px;
+}
+
+.sidebar:not(.open) .submenu-notificaciones {
+    margin: 8px 0 10px;
+}
+
+.sidebar:not(.open) .submenu-notificaciones .portal-notificaciones {
+    right: calc(50% - 21px);
+}
+
 .submenu-item {
     width: 100%;
     margin: 4px 0;
