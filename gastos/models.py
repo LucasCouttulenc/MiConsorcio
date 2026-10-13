@@ -192,3 +192,19 @@ class Pago(models.Model):
 
     def __str__(self):
         return f"Pago de {self.detalle_liquidacion.unidad_funcional} - ${self.monto_pagado}"
+
+
+class DetalleGastoUF(models.Model):
+    """Importe de un gasto imputado a una unidad en una liquidación cerrada."""
+    gasto = models.ForeignKey(Gasto, on_delete=models.CASCADE, related_name='distribuciones_uf')
+    unidad_funcional = models.ForeignKey(UnidadFuncional, on_delete=models.CASCADE, related_name='distribuciones_gastos')
+    porcentaje_aplicado = models.DecimalField(max_digits=7, decimal_places=4, default=0)
+    monto_asignado = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Distribución de gasto por UF"
+        verbose_name_plural = "Distribuciones de gastos por UF"
+        unique_together = ('gasto', 'unidad_funcional')
+
+    def __str__(self):
+        return f"{self.gasto.concepto} - {self.unidad_funcional}: ${self.monto_asignado}"

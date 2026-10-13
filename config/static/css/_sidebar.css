@@ -1,32 +1,38 @@
-/* CONTENEDOR SIDEBAR Y POSICIONAMIENTO EN OVERLAY */
+/* La sidebar ocupa su espacio en el layout y queda fija durante el scroll. */
 .contenedor-sidebar {
     width: 64px;
     height: 100vh;
-    position: relative;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
     z-index: var(--zIndexSidebar);
-    flex-shrink: 0;
-    color:black
+    flex: 0 0 64px;
+    color: black;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), flex-basis 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-layout {
+    min-height: 100vh;
+    align-items: flex-start;
+}
+
+.app-layout.sidebar-expanded .contenedor-sidebar {
+    width: 260px;
+    flex-basis: 260px;
 }
 
 .sidebar {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    width: 64px;
-    position: fixed;
-    top: 0;
-    left: 0;
+    width: 100%;
+    position: relative;
     background-color: #05193d;
     padding: 16px 8px;
     color: black;
     box-shadow: var(--sombraSidebar);
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     white-space: nowrap;
-}
-
-.sidebar.open {
-    width: 260px;
 }
 
 /* ENCABEZADO Y LOGO */
