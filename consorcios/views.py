@@ -17,6 +17,17 @@ import re
 from .alicuotas import leer_alicuotas, guardar_alicuotas, suma_alicuotas, consorcio_tiene_alicuotas_validas
 
 
+def _administra(usuario, consorcio_id):
+    """
+    Indica si el usuario puede gestionar el consorcio: es superusuario o es su administrador.
+    Contempla usuarios con permisos pero sin registro de Administrador.
+    """
+    if usuario.is_superuser:
+        return True
+    administrador = Administrador.objects.filter(usuario=usuario).first()
+    return bool(administrador and administrador.administra(consorcio_id))
+
+
 @method_decorator(login_required, name='dispatch')
 @method_decorator(permission_required('consorcios.view_consorcio', raise_exception=True), name='dispatch')
 class ListarConsorcios(Lista):
@@ -55,8 +66,7 @@ def gestionar_consorcio(request, id):
     :param id: ID del consorcio a gestionar.
     :return: Renderiza la plantilla de gestión de consorcios.
     """
-    administrador = Administrador.objects.filter(usuario=request.user).first()
-    if not request.user.is_superuser and not administrador.administra(id):
+    if not _administra(request.user, id):
         messages.error(request, "No tenes permisos para gestionar este consorcio.")
         return redirect('listar_consorcios')
 
@@ -138,14 +148,19 @@ class ListarUnidadesFuncionales(Lista):
 
 @login_required
 @permission_required('consorcios.add_unidadfuncional', raise_exception=True)
-def crear_unidad_funcional(request):
+def crear_unidad_funcional(request, consorcio_id=None):
     """
-    Vista para crear una nueva unidad funcional dentro de un consorcio específico.
+    Vista para crear una nueva unidad funcional.
+    El consorcio se elige en el formulario entre los que administra el usuario.
 
     :param request: Objeto HttpRequest.
-    :param consorcio_id: ID del consorcio al que pertenece la unidad funcional.
+    :param consorcio_id: ID del consorcio desde el que se llegó (opcional, ej: desde Alícuotas o Columnas).
     :return: Renderiza la plantilla de creación de unidades funcionales.
     """
+
+    if consorcio_id is not None and not _administra(request.user, consorcio_id):
+        messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
+        return redirect('listar_consorcios')
 
     return crear_modelo(
         request=request,
@@ -167,10 +182,8 @@ def gestionar_unidad_funcional(request, unidad_id):
     :return: Renderiza la plantilla de gestión de unidades funcionales.
     """
 
-    unidad_funcional = UnidadFuncional.objects.filter(id=unidad_id).first()
-    consorcio_id = unidad_funcional.consorcio.id
-    administrador = Administrador.objects.filter(usuario=request.user).first()
-    if not request.user.is_superuser and not administrador.administra(consorcio_id):
+    unidad_funcional = get_object_or_404(UnidadFuncional, id=unidad_id)
+    if not _administra(request.user, unidad_funcional.consorcio_id):
         messages.error(request, "No tenes permisos para gestionar esta unidad funcional.")
         return redirect('listar_consorcios')
 
@@ -208,9 +221,7 @@ class ListarPersonal(Lista):
         consorcio_id = self.kwargs.get('consorcio_id')
         queryset = super().get_queryset()
 
-        # Si es administrador de este consorcio
-        administrador = Administrador.objects.filter(usuario=usuario).first()
-        if (administrador and administrador.administra(consorcio_id)) or usuario.is_superuser:
+        if _administra(usuario, consorcio_id):
             return queryset.filter(consorcio_id=consorcio_id)
 
         messages.error(self.request, "No tenes permisos para ver el personal de este consorcio.")
@@ -237,13 +248,10 @@ def crear_personal(request, consorcio_id):
     :param consorcio_id: ID del consorcio al que pertenece el personal.
     """
 
-    usuario = request.user
-    administrador = Administrador.objects.filter(usuario=usuario).first()
-    if not usuario.is_superuser and not administrador.administra(consorcio_id):
+    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
+    if not _administra(request.user, consorcio_id):
         messages.error(request, "No tenes permisos para agregar personal en este consorcio.")
         return redirect('listar_consorcios')
-
-    consorcio = Consorcio.objects.filter(id=consorcio_id).first()
 
     return crear_modelo(
         request=request,
@@ -265,10 +273,8 @@ def gestionar_personal(request, personal_id):
     :return: Renderiza la plantilla de gestión de personal.
     """
 
-    personal = Personal.objects.filter(id=personal_id).first()
-    consorcio_id = personal.consorcio.id
-    administrador = Administrador.objects.filter(usuario=request.user).first()
-    if not request.user.is_superuser and not administrador.administra(consorcio_id):
+    personal = get_object_or_404(Personal, id=personal_id)
+    if not _administra(request.user, personal.consorcio_id):
         messages.error(request, "No tenes permisos para gestionar este personal.")
         return redirect('listar_consorcios')
 
@@ -301,8 +307,7 @@ def definir_alicuotas(request, consorcio_id):
     consorcio = get_object_or_404(Consorcio, id=consorcio_id)
 
     # Permisos
-    administrador = Administrador.objects.filter(usuario=request.user).first()
-    if not request.user.is_superuser and not administrador.administra(consorcio_id):
+    if not _administra(request.user, consorcio_id):
         messages.error(request, "No tenés permisos para gestionar este consorcio.")
         return redirect('listar_consorcios')
 
@@ -355,7 +360,7 @@ def configurar_columnas(request):
         consorcios_disp = Consorcio.objects.filter(administradores__usuario=request.user).distinct().order_by('nombre')
 
     consorcio_id = request.POST.get('consorcio') or request.GET.get('consorcio', '')
-    consorcio = consorcios_disp.filter(id=consorcio_id).first() if consorcio_id else None
+    consorcio = consorcios_disp.filter(id=consorcio_id).first() if consorcio_id.isdecimal() else None
     if consorcio_id and not consorcio:
         messages.error(request, "No tenés acceso a ese consorcio.")
         return redirect('configurar_columnas')
