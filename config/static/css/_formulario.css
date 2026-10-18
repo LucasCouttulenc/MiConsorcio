@@ -24,10 +24,22 @@
     min-width: 250px;
 }
 
+/* EL DELINEADO: Encerramos el Label + Input en un recuadro */
 .contenedor-formulario-custom .form-group {
     display: flex;
     flex-direction: column;
     margin-bottom: 1rem;
+    border: 1px solid var(--colorBordeBlancoTransparente, rgba(255, 255, 255, 0.15));
+    border-radius: var(--radioBoton);
+    padding: 0.75rem 1rem;
+    background-color: rgba(255, 255, 255, 0.02); /* Fondito sutil */
+    transition: all 0.2s ease;
+}
+
+/* Cuando tocás el input de adentro, se ilumina todo el recuadro */
+.contenedor-formulario-custom .form-group:focus-within {
+    border-color: var(--colorPrincipal);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 /***************** LABELS *****************/
@@ -57,6 +69,7 @@
 
 /***************** INPUTS Y CONTROLES *****************/
 
+/* Inputs forzados a fondo blanco y letras oscuras */
 .contenedor-formulario-custom .form-control,
 .contenedor-formulario-custom input[type="text"],
 .contenedor-formulario-custom input[type="email"],
@@ -66,12 +79,12 @@
 .contenedor-formulario-custom select,
 .contenedor-formulario-custom textarea {
     width: 100%;
-    padding: 0.35rem 0.8rem;
+    padding: 0.45rem 0.8rem;
     font-family: var(--fuenteCuerpo);
     font-size: var(--textoChico);
-    color: var(--colorTextoPrincipal);
-    background-color: var(--colorTarjeta);
-    border: 1px solid var(--colorBorde);
+    background-color: #ffffff !important; 
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: var(--radioBoton);
     box-sizing: border-box;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -101,9 +114,9 @@
 
 /* Caja de selección (Input cerrado) */
 .contenedor-formulario-custom .select2-container--default .select2-selection--single {
-    height: 38px !important; /* Misma altura relativa a los inputs padding 0.55rem */
-    background-color: var(--colorTarjeta) !important;
-    border: 1px solid var(--colorBorde) !important;
+    height: 38px !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: var(--radioBoton) !important;
     display: flex !important;
     align-items: center !important;
@@ -112,7 +125,7 @@
 
 /* Texto interno del campo Select2 seleccionado */
 .contenedor-formulario-custom .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: var(--colorTextoPrincipal) !important;
+    color: #0f172a !important;
     font-size: var(--textoChico) !important;
     line-height: normal !important;
     padding-left: 0.8rem !important;
@@ -135,7 +148,8 @@
 
 /* Menú Desplegable (Dropdown flotante de opciones) */
 .select2-dropdown {
-    border: 1px solid var(--colorBorde) !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
     border-radius: var(--radioBoton) !important;
     box-shadow: var(--sombraTarjeta) !important;
     font-family: var(--fuenteCuerpo) !important;
@@ -143,17 +157,18 @@
     z-index: 9999 !important;
 }
 
-/* Opciones individuales dentro del menú */
+/* Opciones individuales dentro del menú: Letras NEGRAS */
 .select2-results__option {
     padding: 8px 12px !important;
-    color: white!important;
+    background-color: #ffffff !important;
+    color: #000000 !important; 
     font-size: var(--textoChico) !important;
 }
 
-/* Opción sobre la que se pasa el cursor / seleccionada */
+/* Opción sobre la que se pasa el cursor / seleccionada: Fondo Azul */
 .select2-container--default .select2-results__option--highlighted[aria-selected] {
     background-color: var(--colorPrincipal) !important;
-    color: var(--colorTextoBlanco) !important;
+    color: #ffffff !important; 
 }
 
 /***************** SOPORTE DE DISABLED PARA SELECT2 *****************/
