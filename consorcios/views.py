@@ -137,41 +137,63 @@ class ListarUnidadesFuncionales(Lista):
 
         return queryset.filter(propietario__usuario=usuario)
 
-    # def get_context_data(self, **kwargs):
-    #     """
-    #     Agrega el consorcio al contexto para poder mostrar su nombre en la plantilla.
-    #     """
-    #     context = super().get_context_data(**kwargs)
-    #     consorcio_id = self.kwargs.get('consorcio_id')
-    #     consorcio = Consorcio.objects.filter(id=consorcio_id).first()
-    #     context['consorcio'] = consorcio
-    #     context['elemento'] = consorcio
-    #     return context
+    def get_context_data(self, **kwargs):
+        """
+        Agrega el consorcio al contexto y bloquea los botones si no hay uno seleccionado.
+        """
+        context = super().get_context_data(**kwargs)
+        consorcio_id = self.request.GET.get('consorcio')
+        
+        if consorcio_id and consorcio_id.isdecimal():
+            consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+            context['consorcio'] = consorcio
+            context['elemento'] = consorcio
+            
+            # Botones habilitados
+            context['acciones'] = list(self.acciones) + [
+                { "nombre": "Cambiar porcentajes","label": "Cambiar porcentajes", "tipo": "link", "perm": "consorcios.change_unidadfuncional", "url": "definir_alicuotas" }
+            ]
+        else:
+            # Botones deshabilitados (bloqueados)
+            context['acciones'] = [
+                { "nombre": "Crear Unidad Funcional", "disabled": True },
+                { "nombre": "Cambiar porcentajes", "disabled": True },
+            ]
+            
+        return context
+    
 
 @login_required
 @permission_required('consorcios.add_unidadfuncional', raise_exception=True)
 def crear_unidad_funcional(request, consorcio_id=None):
     """
     Vista para crear una nueva unidad funcional.
-    El consorcio se elige en el formulario entre los que administra el usuario.
-
-    :param request: Objeto HttpRequest.
-    :param consorcio_id: ID del consorcio desde el que se llegó (opcional, ej: desde Alícuotas o Columnas).
-    :return: Renderiza la plantilla de creación de unidades funcionales.
     """
-
     if consorcio_id is not None and not _administra(request.user, consorcio_id):
         messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
         return redirect('listar_consorcios')
+
+    vista_exito = "listar_unidades_funcionales"
+    params_vista_exito = None
+    
+    # Si venimos desde un consorcio, forzamos la ida a alícuotas al terminar
+    consorcio_obj = None
+    if consorcio_id:
+        consorcio_obj = Consorcio.objects.filter(id=consorcio_id).first()
+        vista_exito = "definir_alicuotas"
+        params_vista_exito = {"consorcio_id": consorcio_id}
+
+    # Le pasamos el consorcio al formulario, o el usuario si es una creación general
+    modelo_sec = consorcio_obj if consorcio_obj else request.user
 
     return crear_modelo(
         request=request,
         formulario_modelo=FormularioUnidadFuncional,
         template="crear_unidad_funcional.html",
-        vista_exito="listar_unidades_funcionales",
-        modelo_secundario=request.user
+        vista_exito=vista_exito,
+        params_vista_exito=params_vista_exito,
+        modelo_secundario=modelo_sec
     )
-
 @login_required
 @permission_required('consorcios.change_unidadfuncional', raise_exception=True)
 def gestionar_unidad_funcional(request, unidad_id):

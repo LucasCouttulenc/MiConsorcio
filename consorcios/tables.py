@@ -145,8 +145,15 @@ class TablaUnidadesFuncionales(tables.Table):
 
     consorcio = tables.columns.Column(accessor='consorcio.nombre', verbose_name='Consorcio')
     
-    # Acciones
+    
+    alicuota = tables.columns.Column(verbose_name="Alícuota (%)")
 
+    def render_alicuota(self, value):
+        if value is not None:
+            return f"{value:.0f}%" # Convierte a entero (ej: 20.0000 -> 20)
+        return "-"
+
+    # Acciones
     gestionar = TemplateColumn(
         template_code='<a href="{% url "gestionar_unidad_funcional" record.id %}" class="tabla__boton-accion-registro">Gestionar</a>',
         verbose_name="Gestionar",
@@ -154,7 +161,8 @@ class TablaUnidadesFuncionales(tables.Table):
         exclude_from_export=True
     )
     """Botón que redirige a la vista de gestión de la unidad funcional."""
-
+    
+    
 class FiltroUnidadesFuncionales(django_filters.FilterSet):
     texto = django_filters.CharFilter(
         method="filtrar_por_texto",

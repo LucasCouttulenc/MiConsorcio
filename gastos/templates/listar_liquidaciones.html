@@ -20,16 +20,28 @@
 </form>
 
 <h2 class="liquidaciones-subtitulo">Borradores</h2>
+
 <div class="borradores-grid">
   {% for borrador in borradores %}
-    <a class="borrador-card" href="{% url 'editar_liquidacion' borrador.id %}">
-      <span class="estado estado--borr">Borrador</span>
-      <strong>{{ borrador.consorcio.nombre }}</strong>
-      <span>Período {{ borrador.periodo }}</span>
-      <span>{{ borrador.cantidad_gastos_borrador }} gastos cargados</span>
-      <small>Actualizado: {{ borrador.actualizada|date:'d/m/Y H:i' }}</small>
-      <span class="borrador-continuar">Continuar →</span>
-    </a>
+    <div class="borrador-wrapper">
+      
+      <!-- Tarjeta clickeable original -->
+      <a class="borrador-card" href="{% url 'editar_liquidacion' borrador.id %}">
+        <span class="estado estado--borr">Borrador</span>
+        <strong>{{ borrador.consorcio.nombre }}</strong>
+        <span>Período {{ borrador.periodo }}</span>
+        <span>{{ borrador.cantidad_gastos_borrador }} gastos cargados</span>
+        <small>Actualizado: {{ borrador.actualizada|date:'d/m/Y H:i' }}</small>
+        <span class="borrador-continuar">Continuar →</span>
+      </a>
+
+      <!-- Botón de borrar flotando -->
+      <form method="post" action="{% url 'eliminar_borrador' borrador.id %}" class="form-borrar-borrador" onsubmit="return confirm('¿Seguro que querés eliminar este borrador?');">
+        {% csrf_token %}
+        <button type="submit" title="Eliminar borrador">✕</button>
+      </form>
+
+    </div>
   {% empty %}
     <p class="liquidaciones-vacio">No hay borradores pendientes.</p>
   {% endfor %}

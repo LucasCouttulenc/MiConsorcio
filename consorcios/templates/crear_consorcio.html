@@ -8,8 +8,15 @@
 {% include "componentes/mensajes.html" %}
 
 <link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+<link rel="stylesheet" href="{% static 'css/_alicuotas.css' %}"> {# Asegura los estilos del botón volver #}
 
-<h1 class="titulo">Crear consorcio</h1>
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.5rem;">Crear consorcio</h1>
+    <a href="{% url 'listar_consorcios' %}" class="boton-secundario" style="display: inline-block;">
+        ← Volver a la lista
+    </a>
+</div>
+
 <div class="flex around">
     <div>
         {% include "formulario.html" with formulario=formulario %}

@@ -314,9 +314,9 @@
         {% for consorcio in consorcios %}
             "{{ consorcio.id }}": {
                 nombre: "{{ consorcio.nombre|default:'-'|escapejs }}",
-                localidad: "{{ consorcio.localidad|default:'Ciudad De Buenos Aires, C.A.B.A'|escapejs }}",
+                localidad: "{{ consorcio.localidad|default:'-'|escapejs }}", 
                 cuit: "{{ consorcio.cuit|default:'-'|escapejs }}",
-                suterh: "{{ consorcio.suterh|default:'-'|escapejs }}",
+                suterh: "{{ consorcio.clave_suterh|default:'-'|escapejs }}", 
                 horario_atencion: "{{ consorcio.horario_atencion|default:'-'|escapejs }}",
                 admin_razon: "-", admin_nombre: "-", admin_domicilio: "-", admin_fiscal: "-",
                 admin_cuit: "-", admin_rpa: "-", admin_telefono: "-", admin_mail: "-"

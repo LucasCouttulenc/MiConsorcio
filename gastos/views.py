@@ -250,6 +250,28 @@ def autosave_liquidacion(request):
     return JsonResponse({'id': liquidacion.pk, 'url': reverse('editar_liquidacion', args=[liquidacion.pk])})
 
 
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def eliminar_borrador(request, liquidacion_id):
+    liquidacion = get_object_or_404(Liquidacion, pk=liquidacion_id)
+    
+    # Verificamos que el usuario sea administrador del consorcio
+    if liquidacion.consorcio not in consorcios_permitidos(request.user):
+        messages.error(request, "No tenés permisos para eliminar este borrador.")
+        return redirect('listar_liquidaciones')
+        
+    # Nos aseguramos de que no esté cerrada (solo borramos borradores)
+    if liquidacion.cerrada:
+        messages.error(request, "No podés eliminar una liquidación ya finalizada.")
+        return redirect('listar_liquidaciones')
+        
+    liquidacion.delete()
+    messages.success(request, f"Borrador del período {liquidacion.periodo} eliminado correctamente.")
+    return redirect('listar_liquidaciones')
+
+
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 @require_POST

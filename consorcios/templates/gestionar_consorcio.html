@@ -10,7 +10,12 @@
 <link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
 <link rel="stylesheet" href="{% static 'css/_alicuotas.css' %}">
 
-<h1 class="titulo">Gestionar consorcio</h1>
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.5rem;">Gestionar consorcio</h1>
+    <a href="{% url 'listar_consorcios' %}" class="boton-secundario" style="display: inline-block;">
+        ← Volver a la lista
+    </a>
+</div>
 
 <div class="flex around">
     <div>
