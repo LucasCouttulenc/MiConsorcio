@@ -37,28 +37,30 @@
         <table class="cols-tabla">
             <thead>
                 <tr>
-                    <th>Nombre</th>
-                    <th class="col-tipo">Tipo de reparto</th>
-                    <th>UF afectadas</th>
-                    <th class="col-acc">Acciones</th>
+                    <th>Columna</th>
+                    <th>Reparto / UF afectadas</th>
+                    <th class="col-acc">Editar / Borrar</th>
                 </tr>
             </thead>
             <tbody>
                 {% for col in columnas %}
                     <tr>
-                        <td class="col-codigo"><span class="chip-codigo">{{ col.codigo }}</span></td>
-                        <td class="col-nombre">{{ col.nombre }}</td>
-                        <td class="col-tipo">
-                            <span class="badge-tipo tipo-{{ col.tipo_reparto }}">{{ col.get_tipo_reparto_display }}</span>
+                        <td class="col-nombre">
+                            <span class="chip-codigo" style="margin-right: 8px;">{{ col.nombre }}</span>
                         </td>
                         <td class="col-ufs">
-                            {% if col.tipo_reparto == 'general' %}
-                                Todas las UF
-                            {% elif col.tipo_reparto == 'parcial' %}
-                                Exentas: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
-                            {% else %}
-                                Pagan: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
-                            {% endif %}
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span class="badge-tipo tipo-{{ col.tipo_reparto }}">{{ col.get_tipo_reparto_display }}</span>
+                                <span>
+                                    {% if col.tipo_reparto == 'general' %}
+                                        Todas las UF
+                                    {% elif col.tipo_reparto == 'parcial' %}
+                                        Exentas: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
+                                    {% else %}
+                                        Pagan: {% for u in col.unidades.all %}{{ u.piso }}°{{ u.departamento }}{% if not forloop.last %}, {% endif %}{% empty %}(ninguna){% endfor %}
+                                    {% endif %}
+                                </span>
+                            </div>
                         </td>
                         <td class="col-acc">
                             <button type="button" class="cols-ic" title="Editar"
@@ -68,7 +70,7 @@
                                 data-tipo="{{ col.tipo_reparto }}"
                                 data-ufs="{% for u in col.unidades.all %}{{ u.id }}{% if not forloop.last %},{% endif %}{% endfor %}">✎</button>
                             <form method="post" style="display:inline"
-                                  onsubmit="return confirm('¿Borrar la columna {{ col.nombre|escapejs }}?');">
+                                onsubmit="return confirm('¿Borrar la columna {{ col.nombre|escapejs }}?');">
                                 {% csrf_token %}
                                 <input type="hidden" name="accion" value="borrar">
                                 <input type="hidden" name="columna_id" value="{{ col.id }}">
@@ -77,7 +79,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="5" class="cols-vacio">Este rubro todavía no tiene columnas.</td></tr>
+                    <tr><td colspan="3" class="cols-vacio">Este rubro todavía no tiene columnas.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -130,46 +132,95 @@
 </div>
 
 <script>
-function toggleUFs() {
-    const tipo = document.getElementById('col-tipo').value;
-    const wrap = document.getElementById('col-ufwrap');
-    const lbl = document.getElementById('col-uflabel');
-    if (tipo === 'general') { wrap.style.display = 'none'; }
-    else {
-        wrap.style.display = '';
-        lbl.textContent = tipo === 'particular' ? '¿Quiénes pagan? (elegí las UF)' : '¿Quiénes quedan afuera? (exentas)';
+    const TOTAL_UFS = {{ unidades|length }};
+
+    function toggleUFs() {
+        const tipo = document.getElementById('col-tipo').value;
+        const wrap = document.getElementById('col-ufwrap');
+        const lbl = document.getElementById('col-uflabel');
+        const checkboxes = document.querySelectorAll('.cols-ufchk');
+
+        if (tipo === 'general') {
+            wrap.style.display = 'none';
+            checkboxes.forEach(ch => ch.checked = false); // Limpiamos si elige general
+        } else {
+            wrap.style.display = '';
+            
+            if (tipo === 'particular') {
+                lbl.textContent = '¿Quién paga? (Elegí solo 1 UF)';
+                // Si cambia de parcial a particular y tenía varias tildadas, dejamos solo 1
+                let encontrado = false;
+                checkboxes.forEach(ch => {
+                    if (ch.checked && !encontrado) {
+                        encontrado = true;
+                    } else {
+                        ch.checked = false;
+                    }
+                });
+            } else {
+                lbl.textContent = '¿Quiénes quedan afuera? (No pueden ser todas)';
+            }
+        }
     }
-}
 
-function nuevaColumna() {
-    document.getElementById('col-accion').value = 'crear';
-    document.getElementById('col-id').value = '';
-    document.getElementById('col-modal-title').textContent = 'Nueva columna';
-    document.getElementById('col-nombre').value = '';
-    document.getElementById('col-tipo').value = 'general';
-    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = false);
-    toggleUFs();
-    document.getElementById('col-modal').style.display = 'flex';
-    document.getElementById('col-nombre').focus();
-}
+    // Validación en tiempo real al tildar checkboxes
+    document.addEventListener('DOMContentLoaded', () => {
+        const checkboxes = document.querySelectorAll('.cols-ufchk');
+        
+        checkboxes.forEach(ch => {
+            ch.addEventListener('change', function() {
+                const tipo = document.getElementById('col-tipo').value;
 
-function editarColumna(btn) {
-    document.getElementById('col-accion').value = 'editar';
-    document.getElementById('col-id').value = btn.dataset.id;
-    document.getElementById('col-modal-title').textContent = 'Editar columna';
-    document.getElementById('col-nombre').value = btn.dataset.nombre;
-    document.getElementById('col-tipo').value = btn.dataset.tipo;
-    const ufs = (btn.dataset.ufs || '').split(',').filter(Boolean);
-    document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = ufs.includes(ch.value));
-    toggleUFs();
-    document.getElementById('col-modal').style.display = 'flex';
-    document.getElementById('col-nombre').focus();
-}
+                // Regla 1: Particular -> Solo 1
+                if (tipo === 'particular' && this.checked) {
+                    checkboxes.forEach(otro => {
+                        if (otro !== this) otro.checked = false;
+                    });
+                }
 
-function cerrarColumna() { document.getElementById('col-modal').style.display = 'none'; }
+                // Regla 2: Parcial -> No puede excluir a todas
+                if (tipo === 'parcial' && this.checked) {
+                    const cantidadTildados = document.querySelectorAll('.cols-ufchk:checked').length;
+                    if (cantidadTildados === TOTAL_UFS) {
+                        this.checked = false; // Desmarcamos el último que intentó tildar
+                        alert("En una columna Parcial no podés excluir a TODAS las UF. Si querés que paguen todas, usá el tipo 'General'.");
+                    }
+                }
+            });
+        });
+    });
 
-document.querySelectorAll('.cols-modal').forEach(m => {
-    m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
-});
+    function nuevaColumna() {
+        document.getElementById('col-accion').value = 'crear';
+        document.getElementById('col-id').value = '';
+        document.getElementById('col-modal-title').textContent = 'Nueva columna';
+        document.getElementById('col-nombre').value = '';
+        document.getElementById('col-tipo').value = 'general';
+        document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = false);
+        toggleUFs();
+        document.getElementById('col-modal').style.display = 'flex';
+        document.getElementById('col-nombre').focus();
+    }
+
+    function editarColumna(btn) {
+        document.getElementById('col-accion').value = 'editar';
+        document.getElementById('col-id').value = btn.dataset.id;
+        document.getElementById('col-modal-title').textContent = 'Editar columna';
+        document.getElementById('col-nombre').value = btn.dataset.nombre;
+        document.getElementById('col-tipo').value = btn.dataset.tipo;
+        
+        const ufs = (btn.dataset.ufs || '').split(',').filter(Boolean);
+        document.querySelectorAll('.cols-ufchk').forEach(ch => ch.checked = ufs.includes(ch.value));
+        
+        toggleUFs();
+        document.getElementById('col-modal').style.display = 'flex';
+        document.getElementById('col-nombre').focus();
+    }
+
+    function cerrarColumna() { document.getElementById('col-modal').style.display = 'none'; }
+
+    document.querySelectorAll('.cols-modal').forEach(m => {
+        m.addEventListener('click', e => { if (e.target === m) m.style.display = 'none'; });
+    });
 </script>
 {% endblock %}

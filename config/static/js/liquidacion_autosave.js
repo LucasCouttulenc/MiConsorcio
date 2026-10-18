@@ -43,12 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function completarDatos() {
         const gastos = [...document.querySelectorAll('#body-gastos tr.fila-gasto')].map(fila => ({
             fila: fila.id,
-            concepto: fila.querySelector('.input-concepto').value,
+            concepto: fila.querySelector('.input-concepto-hidden').value,
             tipo: fila.querySelector('.input-tipo-hidden').value,
-            rubro: fila.querySelector('.select-rubro').value,
-            grupo: fila.querySelector('.select-grupo').value,
-            monto: fila.querySelector('.input-monto').value,
-            servicio: fila.dataset.servicio || '',
+            rubro: fila.querySelector('.input-rubro-hidden').value,
+            grupo: fila.querySelector('.input-grupo-hidden').value,
+            monto: fila.querySelector('.input-monto-hidden').value,
         }));
         document.getElementById('gastos-json').value = JSON.stringify(gastos);
     }

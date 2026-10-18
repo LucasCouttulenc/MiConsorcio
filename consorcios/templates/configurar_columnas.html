@@ -66,8 +66,7 @@
                         <ul class="rubro-columnas-preview">
                             {% for col in rubro.columnas.all|slice:":4" %}
                                 <li>
-                                    <span class="chip-codigo">{{ col.codigo }}</span>
-                                    {{ col.nombre }}
+                                    <span class="chip-codigo">{{ col.nombre }}</span>
                                 </li>
                             {% endfor %}
                             {% if rubro.columnas.count > 4 %}

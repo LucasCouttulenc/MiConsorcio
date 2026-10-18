@@ -71,7 +71,7 @@
                                 {{ s.concepto }}
                                 {% if s.proveedor %}<br><small>{{ s.proveedor }}</small>{% endif %}
                             </td>
-                            <td>{{ s.columna.rubro.nombre }} <span class="chip-codigo">{{ s.columna.codigo }}</span></td>
+                            <td>{{ s.columna.rubro.nombre }}</td>
                             <td>
                                 <span class="badge-tipo tipo-general">{{ s.get_frecuencia_meses_display }}</span>
                                 {% if s.tipo == 'extraordinario' %}<span class="badge-tipo tipo-parcial">Extraordinario</span>{% endif %}
@@ -156,8 +156,7 @@
                             {% for grupo in por_rubro %}
                                 <optgroup label="{{ grupo.grouper.nombre }}">
                                     {% for col in grupo.list %}
-                                        <option value="{{ col.id }}" {% if formulario.columna.value|stringformat:'s' == col.id|stringformat:'s' %}selected{% endif %}>{{ col.codigo }} - {{ col.nombre }}</option>
-                                    {% endfor %}
+                                        <option value="{{ col.id }}" {% if formulario.columna.value|stringformat:'s' == col.id|stringformat:'s' %}selected{% endif %}>{{ col.nombre }}</option>                                    {% endfor %}
                                 </optgroup>
                             {% endfor %}
                         </select>

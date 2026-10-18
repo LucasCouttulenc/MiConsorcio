@@ -49,7 +49,6 @@
                 <div class="gl-card">
                     <div class="gl-card-header gl-card-header-secondary">
                         <span class="gl-card-header-title">Datos de la Administración</span>
-                        <span class="gl-card-header-sub">Modifica cualquier dato para esta liquidación</span>
                     </div>
                     <div class="gl-card-body">
                         <div class="gl-form-row">
@@ -228,7 +227,73 @@
             <a href="{% url 'listar_liquidaciones' %}" class="btn btn-secondary">Cancelar</a>
             <button type="submit" class="btn btn-primary fw-bold px-4">Finalizar y calcular liquidación</button>
         </div>
-    </form>
+
+
+
+        <!-- MODAL RUBRO -->
+        <div class="gl-modal" id="modal-rubro" style="display:none">
+            <div class="gl-modal-content">
+                <div class="gl-modal-header">
+                        <h4>Seleccionar Rubro</h4>
+                        <button type="button" class="gl-modal-close" onclick="cerrarModal('modal-rubro')">✕</button>
+                </div>
+                <div class="gl-modal-list" id="modal-rubro-list">
+                        <!-- Opciones inyectadas por JS -->
+                </div>
+            </div>
+        </div>
+
+            <!-- MODAL MONTO -->
+        <div class="gl-modal" id="modal-monto" style="display:none">
+            <div class="gl-modal-content">
+                <div class="gl-modal-header">
+                    <h4>Ingresar Monto</h4>
+                    <button type="button" class="gl-modal-close" onclick="cerrarModal('modal-monto')">✕</button>
+                </div>
+                <div class="gl-modal-body">
+                    <div class="gl-input-group">
+                        <span class="gl-input-prefix">$</span>
+                        <input type="number" step="0.01" min="0" id="modal-monto-input" class="gl-input gl-input-lg" placeholder="0.00" onkeypress="if(event.key === 'Enter') guardarMontoModal()">
+                    </div>
+                </div>
+                    <div class="gl-modal-footer">
+                        <button type="button" class="gl-btn gl-btn-primary" onclick="guardarMontoModal()">Aceptar</button>
+                    </div>
+            </div>
+        </div>
+
+
+           <!-- MODAL CONCEPTO -->
+        <div class="gl-modal" id="modal-concepto" style="display:none">
+            <div class="gl-modal-content">
+                <div class="gl-modal-header">
+                    <h4>Descripción del Gasto</h4>
+                    <button type="button" class="gl-modal-close" onclick="cerrarModal('modal-concepto')">✕</button>
+                </div>
+                <div class="gl-modal-body">
+                    <textarea id="modal-concepto-input" class="gl-input" rows="3" placeholder="Ej: Sueldo: Juan Pérez - Limpieza S.A." style="resize: vertical; width: 100%;"></textarea>
+                </div>
+                <div class="gl-modal-footer">
+                    <button type="button" class="gl-btn gl-btn-primary" onclick="guardarConceptoModal()">Aceptar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL COLUMNA -->
+        <div class="gl-modal" id="modal-columna" style="display:none">
+            <div class="gl-modal-content">
+                <div class="gl-modal-header">
+                    <h4>Seleccionar Columna</h4>
+                    <button type="button" class="gl-modal-close" onclick="cerrarModal('modal-columna')">✕</button>
+                </div>
+                <div class="gl-modal-list" id="modal-columna-list">
+                    <!-- Opciones inyectadas por JS -->
+                </div>
+            </div>
+        </div>
+
+    </form> <!-- Fin del form existente -->
+
 </div>
 
 {{ datos_iniciales|json_script:"datos-iniciales" }}

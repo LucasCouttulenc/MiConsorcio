@@ -62,7 +62,7 @@
     transition: border-color 0.15s, box-shadow 0.15s;
 }
 .cols-selector .select2-container--default .select2-selection--single .select2-selection__rendered {
-    color: var(--colorTextoPrincipal);
+    color: white;
     line-height: 1.2;
     padding-left: 0.85rem;
     padding-right: 2rem;
