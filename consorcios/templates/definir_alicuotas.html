@@ -12,11 +12,11 @@
 <div class="alicuotas-header">
     <div>
         <h1 class="titulo">Definir alícuotas de UF</h1>
-        <p class="alicuotas-subtitulo">
+        <p class="alicuotas-subtitulo" style="margin-bottom: 0.8rem;">
             {{ consorcio.nombre }} · {{ consorcio.calle }} {{ consorcio.altura }}
         </p>
+        <a href="{% url 'gestionar_consorcio' consorcio.id %}" class="boton-secundario">← Volver al consorcio</a>
     </div>
-    <a href="{% url 'gestionar_consorcio' consorcio.id %}" class="boton-secundario">Volver</a>
 </div>
 
 {% if not unidades %}
@@ -60,10 +60,9 @@
                                            inputmode="decimal"
                                            name="alicuota_{{ uf.pk }}"
                                            data-uf="{{ uf.pk }}"
-                                           value="{{ uf.alicuota }}"
+                                           value="{{ uf.alicuota|floatformat:'-4' }}"
                                            class="input-alicuota"
                                            placeholder="0.0000">
-                                    <span class="input-sufijo">%</span>
                                 </div>
                             </td>
                         </tr>

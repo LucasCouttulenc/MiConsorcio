@@ -21,37 +21,21 @@
     {% endif %}
     <div class="tabla__acciones">
         {% for accion in acciones %}
-            {% if not accion.perm or accion.perm in perms %}
-                {% if accion.tipo == 'dropdown' %}
-                    <div class="dropdown">
-                        <button type="button" id="{{ accion.id }}" class="boton-primario dropdown__button" onclick="toggleDropdown('{{ accion.label|slugify }}')">
-                            {{ accion.label }}
-                        </button>
-                        <div class="dropdown__menu" id="{{ accion.label|slugify }}">
-                            {% for opcion in accion.opciones %}
-                                <a class="dropdown__item" href="{% url accion.url modelo.id opcion.param %}">
-                                    {{ opcion.label }}
-                                </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% elif accion.tipo == 'link' %}
-                    <a class="boton-primario"
-                        {% if accion.url and elemento %} href="{% url accion.url elemento.id %}" {% endif %} 
-                        {% if accion.url and not elemento %} href="{% url accion.url %}" {% endif %}
-                        {% if accion.tipo_de_archivo_a_exportar %} href="{% export_url accion.tipo_de_archivo_a_exportar %}" {% endif %}
-                        {% if accion.id %} id="{{accion.id}}" {% endif %}
-                        {% if accion.nombre %} name="{{accion.nombre}}" {% endif %}>
-                        {% if accion.label %} {{accion.label}} {% else %} {{ accion.nombre|capfirst }} {{table.Meta.model|obtener_nombre|capfirst}} {% endif %}
-                    </a>
-                {% elif accion.tipo == 'button' %}
-                    <button class="boton-primario" 
-                        {% if accion.on_click %} onclick="{{accion.on_click}}" {% endif %}
-                        {% if accion.id %} id="{{accion.id}}" {% endif %}
-                        {% if accion.nombre %} name="{{accion.nombre}}" {% endif %}>
-                        {% if accion.label %} {{accion.label}} {% else %} {{ accion.nombre|capfirst }} {{table.Meta.model|obtener_nombre|capfirst}} {% endif %}
-                    </button>
-                {% endif %}
+            {% if accion.disabled %}
+                {# BOTÓN BLOQUEADO #}
+                <button class="boton-primario boton-inactivo" disabled title="Primero seleccioná un consorcio">
+                    {{ accion.nombre }}
+                </button>
+            {% else %}
+                {# BOTÓN NORMAL / HABILITADO #}
+                <a class="boton-primario"
+                    {% if accion.url and elemento %} href="{% url accion.url elemento.id %}" {% endif %} 
+                    {% if accion.url and not elemento %} href="{% url accion.url %}" {% endif %}
+                    {% if accion.tipo_de_archivo_a_exportar %} href="{% export_url accion.tipo_de_archivo_a_exportar %}" {% endif %}
+                    {% if accion.id %} id="{{accion.id}}" {% endif %}
+                    {% if accion.nombre %} name="{{accion.nombre}}" {% endif %}>
+                    {% if accion.label %} {{accion.label}} {% else %} {{ accion.nombre|capfirst }} {{table.Meta.model|obtener_nombre|capfirst }} {% endif %}
+                </a>
             {% endif %}
         {% endfor %}
     </div>

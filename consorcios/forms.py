@@ -16,10 +16,13 @@ class FormularioConsorcio(forms.ModelForm):
         fields = [
             "nombre",
             "cuit",
+            "clave_suterh",
             "fecha_creacion",
             "calle",
             "altura",
-            "codigo_postal"
+            "codigo_postal",
+            "localidad",
+            "horario_atencion",
         ]
         widgets = {
             "fecha_creacion": DatePickerInput(),
@@ -30,22 +33,28 @@ class FormularioConsorcio(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.form_method = 'POST'
 
+        # Reorganizamos las columnas para que queden 3 por fila
         self.helper.layout = Layout(
             Row(
                 Column('nombre'),
                 Column('cuit'),
-                Column('fecha_creacion'),
+                Column('clave_suterh'),
                 css_class = 'row'
             ),
             Row(
+                Column('fecha_creacion'),
                 Column('calle'),
                 Column('altura'),
+                css_class = 'row'
+            ),
+            Row(
                 Column('codigo_postal'),
+                Column('localidad'),
+                Column('horario_atencion'),
                 css_class = 'row'
             ),
             Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')
         )
-
 class FormularioPersonal(forms.ModelForm):
     """
     Formulario para crear o editar personal de un consorcio.
@@ -106,36 +115,38 @@ class FormularioPersonal(forms.ModelForm):
         )
 
 class FormularioUnidadFuncional(forms.ModelForm):
-    """
-    Formulario para crear o editar una unidad funcional.
-    """
-
     class Meta:
         model = UnidadFuncional
-        fields = [
-            "propietario",
-            "consorcio",
-            "piso",
-            "departamento"
-        ]
+        fields = ["propietario", "consorcio", "piso", "departamento"]
         widgets = {
             "propietario": Select2Widget(attrs={'data-placeholder': 'Seleccione un propietario'}),
         }
 
     def __init__(self, *args, **kwargs):
-        usuario = kwargs.pop('user', None)  # debe estar en la primera línea
+        # Extraemos los argumentos que pueden venir
+        usuario = kwargs.pop('user', None)
+        consorcio = kwargs.pop('consorcio', None)
+        
         super().__init__(*args, **kwargs)
+        
         self.helper = FormHelper()
         self.helper.form_method = 'POST'
 
-        if usuario.is_superuser:
-            self.fields['consorcio'].queryset = Consorcio.objects.all()
-        else:
-            administrador = Administrador.objects.filter(usuario=usuario).first()
-            if administrador:
-                self.fields['consorcio'].queryset = administrador.consorcios.all()
+        if consorcio:
+            # SI VENIMOS DE UN CONSORCIO: lo bloqueamos
+            self.fields['consorcio'].queryset = Consorcio.objects.filter(id=consorcio.id)
+            self.fields['consorcio'].initial = consorcio
+            self.fields['consorcio'].disabled = True
+        elif usuario:
+            # SI VENIMOS DEL PANEL GENERAL: filtramos según el usuario
+            if usuario.is_superuser:
+                self.fields['consorcio'].queryset = Consorcio.objects.all()
             else:
-                self.fields['consorcio'].queryset = Consorcio.objects.none()
+                administrador = Administrador.objects.filter(usuario=usuario).first()
+                if administrador:
+                    self.fields['consorcio'].queryset = administrador.consorcios.all()
+                else:
+                    self.fields['consorcio'].queryset = Consorcio.objects.none()
 
         self.helper.layout = Layout(
             Row(

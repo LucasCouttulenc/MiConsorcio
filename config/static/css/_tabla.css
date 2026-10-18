@@ -450,7 +450,7 @@
 }
 
 .tabla__filtro .select2-container--default .select2-selection--single .select2-selection__placeholder {
-    color: var(--colorTextoInactivo);
+    color: #000000;
 }
 
 .tabla__filtro .select2-container--default .select2-selection--single .select2-selection__arrow {

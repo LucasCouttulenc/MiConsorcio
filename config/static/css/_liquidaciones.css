@@ -11,3 +11,70 @@
 .liquidaciones-vacio { grid-column: 1 / -1; color: #64748b; padding: 16px; }
 @media (max-width: 1200px) { .borradores-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .borradores-grid { grid-template-columns: 1fr; } .liquidaciones-cabecera, .liquidaciones-filtro { flex-wrap: wrap; } }
+
+
+/* ==========================================
+   TARJETAS DE BORRADORES
+   ========================================== */
+
+/* El wrapper es el item de la grilla: ancla del ✕ y estira la tarjeta al alto de la fila */
+.borrador-wrapper {
+    position: relative;
+    display: flex;
+}
+
+.borrador-wrapper .borrador-card {
+    flex: 1;
+    min-width: 0;
+    padding: 16px;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.borrador-wrapper .borrador-card:hover {
+    border-color: #2563eb;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.borrador-continuar {
+    margin-top: auto;      /* "Continuar" queda siempre abajo, aunque las tarjetas tengan distinto contenido */
+    padding-top: 4px;
+}
+
+/* Botón de borrar: flota en la esquina superior derecha de la tarjeta */
+.form-borrar-borrador {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    padding: 0;
+}
+
+.form-borrar-borrador button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    line-height: 1;
+    font-size: 12px;
+    font-weight: bold;
+    background: #f1f5f9;
+    color: #ef4444;
+    border: 1px solid #e2e8f0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-borrar-borrador button:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}

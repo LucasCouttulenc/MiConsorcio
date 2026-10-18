@@ -12,7 +12,7 @@
 }
 .alicuotas-subtitulo {
     margin: 0.25rem 0 0;
-    color: #666;
+    color:  #c2c2c2;
     font-size: 0.92rem;
 }
 
@@ -28,54 +28,107 @@
 .alerta-warning { background: #fff8e5; border-color: #f0d999; color: #7a5900; }
 .alerta-info    { background: #eaf3ff; border-color: #b6d4fe; color: #0a4a99; }
 
+/* 1. Limitamos el ancho y centramos la tabla en la pantalla */
 .alicuotas-tabla-wrapper {
     overflow-x: auto;
     border-radius: 8px;
-    border: 1px solid #e3e6ea;
-    background: #fff;
+    border: 1px solid #e6e6e6;
+    background: #daedff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    
+    max-width: 850px; /* Ancho máximo de la tabla */
+    margin: 0 auto;   /* Centra la tabla horizontalmente */
 }
+
 .tabla-alicuotas {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.92rem;
+    table-layout: fixed; /* Evita que las columnas se estiren raro */
 }
+
+/* 2. Centramos los títulos de las columnas */
 .tabla-alicuotas thead th {
-    background: #f4f6f8;
+    background: #8dc2f7;
     color: #333;
     font-weight: 600;
     padding: 0.75rem 0.85rem;
-    text-align: left;
+    text-align: center; /* <--- Centrado */
     border-bottom: 1px solid #e3e6ea;
     white-space: nowrap;
 }
+
 .tabla-alicuotas tbody td {
     padding: 0.55rem 0.85rem;
-    border-bottom: 1px solid #f0f2f5;
+    border-bottom: 1px solid #324b6f;
     vertical-align: middle;
+    text-align: center; /* <--- Centramos todo el texto de las filas */
 }
+
 .tabla-alicuotas tbody tr:hover { background: #fafbfc; }
 
-.col-uf { width: 90px; font-weight: 600; color: #333; }
+/* 3. Ajustamos las columnas */
+.col-uf { 
+    width: 15%; 
+    font-weight: 600; 
+    color: #333; 
+}
+
 .uf-piso { display: inline-block; }
 .uf-depto { display: inline-block; margin-left: 0.2rem; color: #666; font-weight: 400; }
-.col-prop { color: #444; }
-.col-alicuota { text-align: right; width: 160px; }
 
-.input-wrapper { position: relative; display: inline-block; }
+.col-prop { 
+    color: #000000; 
+    width: 45%; /* Le damos más espacio al nombre */
+}
+
+.col-alicuota { 
+    text-align: center; /* Centramos la columna del input */
+    width: 40%; 
+}
+
+.input-wrapper { position: relative; display: inline-block; width: 120px; /* Un poco más de ancho para que respire */}
+
+
 .input-alicuota {
-    width: 110px;
-    padding: 0.4rem 1.4rem 0.4rem 0.55rem;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    width: 100%;
+    padding: 0.5rem 1.8rem 0.5rem 0.8rem;
+    border: 2px solid #b0c4de;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 700;
     font-family: inherit;
     text-align: right;
-    background: #fff;
-    color: #222;
+    
+    /* ACÁ FORZAMOS EL FONDO BLANCO Y EL TEXTO OSCURO */
+    background: #ffffff !important; 
+    color: #1e293b !important; 
+    
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
     -moz-appearance: textfield;
-    transition: border-color 0.15s, box-shadow 0.15s;
 }
+
+
+/* Efecto al pasar el mouse */
+.input-alicuota:hover {
+    border-color: #8dc2f7;
+}
+
+
+/* Efecto al hacer clic (Focus) */
+.input-alicuota:focus {
+    outline: none;
+    border-color: #1d4ed8; /* Azul principal de la app */
+    box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.15); /* Halo azul */
+    background: #f8fafc;
+}
+
+/* Quitar flechitas nativas del navegador */
+.input-alicuota::-webkit-outer-spin-button,
+.input-alicuota::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+
 .input-alicuota::-webkit-outer-spin-button,
 .input-alicuota::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .input-alicuota:focus {
@@ -85,31 +138,37 @@
 }
 .input-sufijo {
     position: absolute;
-    right: 0.55rem;
+    right: 0.8rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #999;
-    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 700; /* Más fuerte para que se lea */
+    font-size: 0.9rem;
     pointer-events: none;
 }
 
 .tabla-alicuotas tfoot th {
     padding: 0.8rem 0.85rem;
-    background: #f4f6f8;
+    background: #95bbdf;
     border-top: 2px solid #e3e6ea;
     font-weight: 700;
     font-size: 0.95rem;
 }
 .pie-etiqueta { text-align: right !important; color: #444; }
-.pie-suma.suma-ok { color: #1a7f37; }
+.pie-suma.suma-ok { color: #1a7f37;}
 .pie-suma.suma-mal { color: #cf222e; }
 
 .acciones-form {
     display: flex;
     justify-content: flex-end;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    
+    /* Esto hace que el botón respete el mismo ancho que la tabla y quede centrado */
+    max-width: 850px; 
+    margin-left: auto;
+    margin-right: auto;
+    padding-right: 10px; /* Un pequeño respiro a la derecha */
 }
-
 .acciones-consorcio {
     margin-top: 2rem;
     display: flex;
