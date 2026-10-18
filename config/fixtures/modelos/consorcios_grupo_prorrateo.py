@@ -28,7 +28,7 @@ class FixtureDeGrupoProrrateo(Fixture):
                         'consorcio_id': cid,
                         'rubro_id': rubro_id,
                         'codigo': codigo,
-                        'nombre': f'Columna {codigo}',
+                        'nombre': f'{codigo}',
                         'tipo_reparto': 'general',
                     })
         return resultado

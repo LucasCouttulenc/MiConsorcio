@@ -463,10 +463,15 @@ def editar_columnas_rubro(request, rubro_id):
                     if tipo not in TipoReparto.values:
                         raise ValueError("Elegí un tipo de reparto válido.")
 
+                    total_ufs_consorcio = consorcio.unidades_funcionales.count()
+
                     ufs_ids = request.POST.getlist('unidades')
                     ufs = list(consorcio.unidades_funcionales.filter(id__in=ufs_ids)) if ufs_ids else []
-                    if tipo == TipoReparto.PARTICULAR and not ufs:
-                        raise ValueError("En una columna Particular elegí al menos una UF que pague.")
+                    if tipo == TipoReparto.PARTICULAR and len(ufs) != 1:
+                        raise ValueError("En una columna Particular tenés que elegir exactamente 1 UF que pague.")
+                    
+                    if tipo == TipoReparto.PARCIAL and len(ufs) == total_ufs_consorcio and total_ufs_consorcio > 0:
+                        raise ValueError("En una columna Parcial no podés excluir a todas las UF (para eso usá General).")
 
                     if accion == 'editar':
                         columna = get_object_or_404(

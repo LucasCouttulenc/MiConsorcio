@@ -31,7 +31,6 @@ function sincronizarVistaPrevia() {
 }
 
 function alSeleccionarConsorcio(consorcioId) {
-    actualizarSelectoresRubros();
     autoGenerarFilasPersonal(consorcioId);
     sincronizarServiciosRecurrentes();
 
@@ -97,14 +96,12 @@ function sincronizarTablaGastosVistaPrevia() {
     const columnasPorRubro = {}; // { rubroNombre: Set(columnaId) }
 
     filas.forEach(fila => {
-        const concepto = fila.querySelector('.input-concepto')?.value || '';
-        const rubroSelect = fila.querySelector('.select-rubro');
-        const rubroVal = rubroSelect?.value || '';
-        const rubroNombre = rubroSelect?.selectedOptions?.[0]?.textContent?.trim() || '';
-        const columnaSelect = fila.querySelector('.select-grupo');
-        const columnaVal = columnaSelect?.value || '';
-        const columnaNombre = columnaSelect?.selectedOptions?.[0]?.textContent?.trim() || '';
-        const montoRaw = fila.querySelector('.input-monto')?.value || '0';
+        const concepto = fila.querySelector('.input-concepto-hidden')?.value || '';
+        const rubroVal = fila.querySelector('.input-rubro-hidden')?.value || '';
+        const rubroNombre = fila.querySelector('.btn-rubro .btn-selector-text')?.textContent?.trim() || '';
+        const columnaVal = fila.querySelector('.input-grupo-hidden')?.value || '';
+        const columnaNombre = fila.querySelector('.btn-columna .btn-selector-text')?.textContent?.trim() || '';
+        const montoRaw = fila.querySelector('.input-monto-hidden')?.value || '0';
         const monto = parseFloat(montoRaw.replace(',', '.')) || 0;
 
         if ((concepto.trim() !== '' || monto > 0) && rubroVal) {
@@ -160,7 +157,7 @@ function sincronizarTablaGastosVistaPrevia() {
 
         if (columnaIds.length > 0) {
             columnaIds.forEach(cid => {
-                const nombre = columnaLookup[cid]?.codigo || 'Col.';
+                const nombre = columnaLookup[cid]?.nombre || 'Col.';
                 html += `<th class="text-center" style="width: ${anchoColumna};">${nombre}</th>`;
             });
         } else {

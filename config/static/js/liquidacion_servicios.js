@@ -41,10 +41,11 @@ function sincronizarServiciosRecurrentes() {
         // Si solo hay una fila vacía (la inicial), se reemplaza
         const filas = tbody.querySelectorAll('tr.fila-gasto');
         if (filas.length === 1 && !filas[0].dataset.servicio &&
-            !filas[0].querySelector('.input-concepto').value.trim() &&
-            !filas[0].querySelector('.input-monto').value.trim()) {
+            !filas[0].querySelector('.input-concepto-hidden').value.trim() &&
+            !filas[0].querySelector('.input-monto-hidden').value.trim()) {
             filas[0].remove();
         }
+
         agregarFilaGasto(s.concepto, s.tipo, s.rubro_id, s.columna_id, s.monto, String(s.id));
     });
 

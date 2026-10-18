@@ -472,34 +472,103 @@
     outline: none;
 }
 
-/* Desplegable de opciones (Dropdown) */
+/* ==========================================================
+   SELECT2 custom
+   ========================================================== */
+
+/* 1. La caja principal (cuando está cerrada) */
+.select2-container--default .select2-selection--single {
+    background-color: var(--colorFondoCampo, #f8fafc);
+    border: 1px solid var(--colorBorde, #cbd5e1);
+    border-radius: 8px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.select2-container--default .select2-selection--single:focus,
+.select2-container--default.select2-container--open .select2-selection--single {
+    border-color: var(--colorPrincipalHover, #1d4ed8);
+    box-shadow: 0 0 0 3px var(--colorPrincipalTransparente, rgba(29, 78, 216, 0.1));
+}
+
+/* Texto de la caja cerrada: NEGRO */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: white;
+    font-size: 14px;
+    padding-left: 12px;
+    font-weight: 500;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+    right: 8px;
+}
+
+/* 2. El desplegable (el contenedor) */
 .select2-dropdown {
-    background-color: var(--colorFondoSecundario);
-    border: 1px solid var(--colorBordeBlancoTransparente);
-    border-radius: var(--radioBoton);
-    box-shadow: var(--sombraTarjetaFlotante);
-    font-size: 13px;
-    z-index: var(--zIndexModal);
+    background-color: #ffffff;
+    border: 1px solid var(--colorBorde, #cbd5e1);
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    z-index: 9999;
+}
+
+/* 3. El buscador de adentro del desplegable */
+.select2-container--default .select2-search--dropdown {
+    padding: 8px;
+    background-color: var(--colorFondoSecundario, #f1f5f9);
+    border-bottom: 1px solid var(--colorBorde, #cbd5e1);
 }
 
 .select2-container--default .select2-search--dropdown .select2-search__field {
-    background-color: var(--colorFondoCampo);
-    border: 1px solid var(--colorBordeBlancoTransparente);
-    border-radius: var(--radioBoton);
-    color: var(--colorTextoBlanco);
+    background-color: #ffffff;
+    border: 1px solid var(--colorBorde, #cbd5e1);
+    border-radius: 6px;
+    color: #000000; /* Texto negro al buscar */
+    padding: 6px 10px;
+    font-size: 14px;
+    outline: none;
 }
 
+.select2-container--default .select2-search--dropdown .select2-search__field:focus {
+    border-color: var(--colorPrincipalHover, #1d4ed8);
+}
+
+/* 4. Las opciones del listado (Fondo azul de la app, letras negras) */
 .select2-container--default .select2-results__option {
-    color: white;
+    background-color: #ffffff !important; 
+    color: #000000 !important;            
+    font-size: 14px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
 }
 
-.select2-container--default .select2-results__option--highlighted[aria-selected] {
-    background-color: var(--colorPrincipalTransparente);
-    color: white;
+/* El texto interno por si Select2 le mete un span */
+.select2-container--default .select2-results__option span {
+    color: #000000 !important;
 }
 
+/* 5. La opción que está seleccionada previamente */
 .select2-container--default .select2-results__option[aria-selected="true"] {
-    background-color: var(--colorFondoBlancoTransparente);
-    color: var(--colorTextoBlanco);
+    background-color: #e2e8f0 !important; /* Gris azulado suave */
+    color: #000000 !important;
     font-weight: 600;
+}
+
+/* 6. La opción que estás pasando por arriba con el mouse */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--colorPrincipalHover, #1d4ed8) !important; /* Azul de la app */
+    color: #ffffff !important; /* Letras blancas solo cuando pasás el mouse */
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] span {
+    color: #ffffff !important;
+}
+
+/* 7. Para que no se vea el puntito de "seleccionado" */
+.select2-container--default .select2-results__option--selected::before {
+    display: none;
 }
