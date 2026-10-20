@@ -17,3 +17,8 @@ function agregarFlechasDeOrdenamiento() {
 
 // Ejecutar funcion al cargar la pagina
 agregarFlechasDeOrdenamiento();
+
+// Select2 emite el cambio mediante jQuery, por eso escuchamos con jQuery.
+$(document).on("change", ".tabla__filtro form select", function () {
+    if (this.form) this.form.requestSubmit();
+});

@@ -1,7 +1,7 @@
 import django_filters
 from django_tables2 import tables
 from django_tables2 import TemplateColumn
-from django.forms import TextInput
+from django.forms import Select, TextInput
 from django.db.models import Q
 
 from usuarios.models import Administrador
@@ -174,6 +174,10 @@ class FiltroUnidadesFuncionales(django_filters.FilterSet):
         queryset=Consorcio.objects.none(),
         label="Consorcio",
         empty_label="Todos",
+        widget=Select(attrs={
+            "class": "sin-select2",
+            "onchange": "this.form.submit()",
+        }),
     )
 
     class Meta:
@@ -188,7 +192,10 @@ class FiltroUnidadesFuncionales(django_filters.FilterSet):
             self.filters['consorcio'].queryset = Consorcio.objects.all()
         elif usuario.groups.filter(name=GRUPO_ADMINISTRADORES).exists():
             administrador = Administrador.objects.filter(usuario=usuario).first()
-            self.filters['consorcio'].queryset = administrador.consorcios.all()
+            self.filters['consorcio'].queryset = (
+                administrador.consorcios.all()
+                if administrador else Consorcio.objects.none()
+            )
         else:
             self.filters['consorcio'].queryset = Consorcio.objects.none()
 
