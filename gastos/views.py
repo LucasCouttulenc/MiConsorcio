@@ -19,7 +19,6 @@ from consorcios.models import Consorcio, GrupoProrrateo, UnidadFuncional
 from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente
 from .pdf import generar_pdf_liquidacion
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
-from .notificaciones import contexto_notificaciones_propietario
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
 
 MONTO_MAXIMO_GASTO = Decimal('10000000000')  # Gasto.monto: max_digits=12, decimal_places=2
@@ -381,7 +380,6 @@ def quitar_comprobante(request, gasto_id):
 def mis_expensas(request):
     """Panel mensual del propietario para una de sus unidades funcionales."""
     propietario = get_object_or_404(Propietario, usuario=request.user)
-    contexto_notificaciones = contexto_notificaciones_propietario(propietario)
 
     consorcios = Consorcio.objects.filter(
         unidades_funcionales__propietario=propietario
@@ -390,7 +388,7 @@ def mis_expensas(request):
     consorcio = consorcio or consorcios.first()
     if not consorcio:
         return render(request, 'mis_expensas.html', {
-            'sin_unidades': True, **contexto_notificaciones,
+            'sin_unidades': True,
         })
 
     unidades = UnidadFuncional.objects.filter(propietario=propietario, consorcio=consorcio).order_by('piso', 'departamento')
@@ -448,7 +446,6 @@ def mis_expensas(request):
         'periodo': periodo, 'periodo_label': periodo_label, 'periodos': periodos, 'anterior': anterior, 'siguiente': siguiente,
         'detalle': detalle, 'gastos': gastos, 'resumen_rubros': resumen_rubros,
         'pagos_pendientes': pagos_pendientes,
-        **contexto_notificaciones,
     })
 
 
@@ -462,7 +459,7 @@ def historial_pagos(request):
         'detalle_liquidacion__liquidacion__consorcio', 'detalle_liquidacion__unidad_funcional'
     ).order_by('-fecha_pago', '-fecha_registro')
     return render(request, 'historial_pagos.html', {
-        'pagos': pagos, **contexto_notificaciones_propietario(propietario),
+        'pagos': pagos,
     })
 
 

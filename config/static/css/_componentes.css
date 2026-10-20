@@ -94,27 +94,43 @@
 /* --------------------------------------------------------------------------
    MENSAJES DE ALERTA (toast flotante)
    -------------------------------------------------------------------------- */
-.alerta {
+#messages {
+    position: fixed;
+    top: 25px;
+    left: 50% !important;
+    right: auto !important;
+    width: max-content !important;
+    max-width: calc(100vw - 2rem);
+    transform: translateX(-50%);
+    z-index: var(--zIndexModal);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0 1rem;
+    pointer-events: none;
+}
+
+#messages .alerta {
     font-family: var(--fuenteCuerpo);
     font-weight: 600;
-    position: fixed;
-    width: fit-content;
-    min-width: 40vw;
-    max-width: 60vw;
+    position: relative !important;
+    inset: auto !important;
+    width: fit-content !important;
+    min-width: 0 !important;
+    max-width: min(60rem, calc(100vw - 2rem));
     text-align: center;
-    top: 25px;
-    right: 1em;
     padding: 0.9em 1.2em;
     border-radius: var(--radioEstandar);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     opacity: 0;
     animation: fadeIn 1s ease-in forwards;
-    z-index: var(--zIndexModal);
     font-size: 0.92rem;
     line-height: 1.4;
+    pointer-events: auto;
 }
 
-.alerta.exito {
+#messages .alerta.exito {
     animation: fadeIn 1s ease-in forwards, stayVisible 15s ease-out 1s forwards, fadeOut 1s ease-out 6s forwards;
     background-color: var(--fondoColorExitoBackground);
     color: var(--colorExito);
@@ -122,26 +138,26 @@
     backdrop-filter: blur(8px);
 }
 
-.alerta.error {
+#messages .alerta.error {
     background-color: var(--fondoColorError);
     color: var(--colorError);
     border: 1px solid rgba(248, 113, 113, 0.35);
     backdrop-filter: blur(8px);
 }
 
-.alerta.advertencia {
+#messages .alerta.advertencia {
     background-color: var(--fondoColorAviso);
     color: var(--colorAviso);
     border: 1px solid rgba(251, 191, 36, 0.35);
     backdrop-filter: blur(8px);
 }
 
-.error .alerta__texto,
-.advertencia .alerta__texto {
+#messages .alerta.error .alerta__texto,
+#messages .alerta.advertencia .alerta__texto {
     margin-right: 1.5em;
 }
 
-.alerta__cerrar {
+#messages .alerta__cerrar {
     background-color: transparent;
     border: none;
     color: currentColor;
@@ -162,7 +178,7 @@
     line-height: 1;
 }
 
-.alerta__cerrar:hover {
+#messages .alerta__cerrar:hover {
     transform: scale(1.15);
     opacity: 1;
 }
@@ -261,10 +277,14 @@ select option {
    RESPONSIVE
    -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-    .alerta {
-        min-width: 80vw;
-        max-width: 90vw;
-        right: 5vw;
+    #messages {
+        top: 1rem;
+        padding: 0 0.75rem;
+        max-width: calc(100vw - 1.5rem);
+    }
+
+    #messages .alerta {
+        max-width: calc(100vw - 1.5rem);
     }
 
     .boton-primario,
