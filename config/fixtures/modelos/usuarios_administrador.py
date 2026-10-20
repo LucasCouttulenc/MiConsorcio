@@ -14,7 +14,14 @@ class FixtureDeAdministrador(Fixture):
 
     def campos(self):
         grupo_administradores = self.administrador.obtener_id_segun_campo(Group, 'name', GRUPO_ADMINISTRADORES)
-        usuarios = self.administrador.obtener_ids_segun_campo(User, 'groups', [grupo_administradores])
+        # Un usuario puede pertenecer a más de un grupo (por ejemplo,
+        # administrador y propietario). Comparar la lista completa de grupos
+        # dejaba afuera a esos usuarios.
+        usuarios = [
+            registro['pk']
+            for registro in self.administrador._diccionario_fixtures.get(User, [])
+            if grupo_administradores in registro['fields'].get('groups', [])
+        ]
         consorcios = self.administrador.obtener_ids(Consorcio)
 
         return [
@@ -23,4 +30,4 @@ class FixtureDeAdministrador(Fixture):
                 'consorcios': consorcios[:random.randint(1, 5)]  # Asignar un número aleatorio de consorcios al administrador
             } for usuario in usuarios
         ]
-    
+

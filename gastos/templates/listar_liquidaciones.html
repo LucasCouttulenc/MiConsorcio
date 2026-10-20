@@ -10,7 +10,7 @@
 </div>
 <form method="get" class="liquidaciones-filtro">
   <label for="filtro-consorcio">Consorcio</label>
-  <select id="filtro-consorcio" name="consorcio" class="sin-select2">
+  <select id="filtro-consorcio" name="consorcio" class="sin-select2" onchange="this.form.requestSubmit()">
     <option value="">Todos los consorcios</option>
     {% for consorcio in consorcios %}
       <option value="{{ consorcio.id }}" {% if consorcio_id == consorcio.id|stringformat:'s' %}selected{% endif %}>{{ consorcio.nombre }}</option>
