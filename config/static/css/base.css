@@ -1,8 +1,8 @@
 @import "_constantes.css";
 @import "_footer.css";
-@import "_sidebar.css";
+@import "_sidebar.css?v=20261020-sidebar-width";
 @import "_tabla.css";
-@import "_componentes.css";
+@import "_componentes.css?v=20261020-toast-layout";
 @import "_liquidaciones.css";
 @import "_portal_propietario.css";
 @import "_pagos_pendientes.css";
