@@ -248,7 +248,7 @@
     align-items: center;
     gap: 0.35rem;
     font-size: var(--textoChico);
-    color: var(--colorTextoPrincipal);
+    color: black;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
