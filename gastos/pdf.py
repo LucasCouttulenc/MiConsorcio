@@ -232,7 +232,8 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
 
     por_subtipo = OrderedDict()
     for g in gastos:
-        clave = (getattr(g, "subtipo", "") or "").strip().upper() or "GASTOS GENERALES"
+        # Usamos el nombre del rubro real, o "GASTOS GENERALES" si no tiene
+        clave = (g.grupo.rubro.nombre if g.grupo and g.grupo.rubro else "GASTOS GENERALES").strip().upper()
         por_subtipo.setdefault(clave, []).append(g)
 
     story = [
