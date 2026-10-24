@@ -331,3 +331,26 @@ class NotificacionLiquidacion(models.Model):
 
     def __str__(self):
         return f"Liquidación {self.detalle_liquidacion.liquidacion.periodo} para {self.propietario}"
+
+
+
+
+class MovimientoCaja(models.Model):
+    TIPO_CHOICES = [('ordinario', 'Ordinario'), ('extraordinario', 'Extraordinario')]
+    MEDIO_CHOICES = [('efectivo', 'Efectivo'), ('transferencia', 'Transferencia')]
+
+    consorcio = models.ForeignKey('consorcios.Consorcio', on_delete=models.CASCADE, related_name='movimientos_caja')
+    fecha = models.DateField(verbose_name="Fecha")
+    concepto = models.CharField(max_length=200, verbose_name="Concepto")
+    # Positivo para ingresos, negativo para egresos
+    monto = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto") 
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='ordinario', verbose_name="Tipo")
+    medio_pago = models.CharField(max_length=20, choices=MEDIO_CHOICES, default='transferencia', verbose_name="Medio de Pago")
+
+    class Meta:
+        verbose_name = "Movimiento de Caja"
+        verbose_name_plural = "Movimientos de Caja"
+        ordering = ['-fecha', '-id']
+
+    def __str__(self):
+        return f"{self.fecha} - {self.concepto} ({self.monto})"

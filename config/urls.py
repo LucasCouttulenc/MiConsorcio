@@ -55,7 +55,7 @@ urlpatterns = [
     path('consorcios/columnas/', views_consorcios.configurar_columnas, name='configurar_columnas'),
     path('consorcios/columnas/rubro/<int:rubro_id>/', views_consorcios.editar_columnas_rubro, name='editar_columnas_rubro'),
     
-    # Liquidaciones
+    # Liquidaciones y gastos (TODO: separar las urls para que sea mas diferenciable)
     path('liquidaciones/', views_gastos.listar_liquidaciones, name='listar_liquidaciones'),
     path('servicios-recurrentes/', views_gastos.servicios_recurrentes, name='servicios_recurrentes'),
     path('liquidaciones/generar/', views_gastos.generar_liquidacion, name='generar_liquidacion'),
@@ -88,6 +88,8 @@ urlpatterns = [
     path('pagos/<int:pago_id>/procesar/', views_gastos.procesar_pago, name='procesar_pago'),
     path('liquidaciones/detalle-uf/<int:detalle_id>/resumen/',views_gastos.descargar_resumen_uf,name='descargar_resumen_uf'),
     path('liquidaciones/<int:liquidacion_id>/eliminar/', views_gastos.eliminar_borrador, name='eliminar_borrador'),
+    path('administracion/caja/', views_gastos.caja, name='caja'),
+
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,130 @@
+/* ==========================================================================
+   Módulo de Caja
+   ========================================================================== */
+
+/* Grilla de tarjetas de saldos */
+.caja-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+    gap: 1rem; 
+    margin-bottom: 2rem; 
+}
+
+.caja-card { 
+    background: #fff; 
+    padding: 1.2rem; 
+    border-radius: 10px; 
+    border: 1px solid #e2e8f0; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+}
+
+.caja-card span { 
+    display: block; 
+    font-size: 0.8rem; 
+    color: #64748b; 
+    text-transform: uppercase; 
+    font-weight: 600; 
+    margin-bottom: 0.5rem; 
+}
+
+.caja-card strong { 
+    font-size: 1.6rem; 
+    color: #1e293b; 
+}
+
+/* Botones de filtro */
+.caja-filtros { 
+    display: flex; 
+    gap: 0.5rem; 
+    flex-wrap: wrap; 
+    margin-bottom: 1rem; 
+}
+
+.btn-filtro { 
+    background: #e2e8f0; 
+    color: #475569; 
+    border: none; 
+    padding: 0.5rem 1rem; 
+    border-radius: 999px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.2s; 
+}
+
+.btn-filtro.activo { 
+    background: #1d4ed8; 
+    color: #fff; 
+    box-shadow: 0 2px 4px rgba(29,78,216,0.3); 
+}
+
+/* Colores para montos en la tabla */
+.mov-ingreso { 
+    color: #0f6514; 
+    font-weight: bold; 
+}
+
+.mov-egreso { 
+    color: #b91c1c; 
+    font-weight: bold; 
+}
+
+/* Formulario de nuevo movimiento */
+#form-nuevo-mov {
+    display: none; 
+    background: #d1e0ef;
+    padding: 1.5rem; 
+    border-radius: 10px; 
+    border: 1px solid #e2e8f0; 
+    margin-bottom: 1.5rem;
+}
+
+/* Inputs y Selects con el color azul solicitado */
+#form-nuevo-mov input,
+#form-nuevo-mov select {
+    background-color: #155ac6 !important;
+    color: #ffffff !important;
+    border: 1px solid #000000 !important;
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Texto de las opciones adentro del select */
+#form-nuevo-mov select option {
+    background-color: #0b2a5b;
+    color: #ffffff;
+}
+
+/* Efecto al hacer foco en un input */
+#form-nuevo-mov input:focus,
+#form-nuevo-mov select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.4);
+}
+
+/* Etiquetas de los campos del formulario */
+#form-nuevo-mov label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #334155;
+    margin-bottom: 0.2rem;
+    display: inline-block;
+}
+
+
+
+.btn-filtro { 
+    background: #475569; 
+    color: #ffff;
+    border: none; 
+    padding: 0.5rem 1rem; 
+    border-radius: 999px; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.2s; 
+}
+
+.btn-filtro.activo { 
+    background: #1d4ed8; 
+    color: #fff; 
+    box-shadow: 0 2px 4px rgba(29,78,216,0.3); 
+}

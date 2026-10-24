@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Sum, Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -18,7 +18,7 @@ from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
 from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
-from .models import imputar_pago, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente
+from .models import imputar_pago, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
@@ -838,3 +838,71 @@ def descargar_resumen_uf(request, detalle_id):
     )
     return respuesta
 
+
+
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def caja(request):
+    """Muestra la caja del consorcio activo con sus saldos y permite cargar movimientos."""
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
+
+    # Procesar nuevo movimiento
+    if request.method == 'POST':
+        try:
+            fecha = date.fromisoformat(request.POST.get('fecha'))
+            concepto = request.POST.get('concepto')
+            monto_raw = request.POST.get('monto').replace(',', '.')
+            tipo = request.POST.get('tipo')
+            medio = request.POST.get('medio_pago')
+            
+            monto = Decimal(monto_raw)
+            # Si es un egreso (ej: pago a proveedor), guardamos en negativo
+            if request.POST.get('accion_monto') == 'egreso':
+                monto = -abs(monto)
+            else:
+                monto = abs(monto)
+
+            MovimientoCaja.objects.create(
+                consorcio=consorcio, fecha=fecha, concepto=concepto,
+                monto=monto, tipo=tipo, medio_pago=medio
+            )
+            messages.success(request, "Movimiento registrado correctamente.")
+            return redirect('caja')
+        except Exception as e:
+            messages.error(request, f"Error al registrar movimiento: {e}")
+
+    movimientos = MovimientoCaja.objects.filter(consorcio=consorcio)
+
+    # Cálculos de saldos
+    total = movimientos.aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    ord = movimientos.filter(tipo='ordinario').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    ext = movimientos.filter(tipo='extraordinario').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    efvo = movimientos.filter(medio_pago='efectivo').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    trans = movimientos.filter(medio_pago='transferencia').aggregate(t=Sum('monto'))['t'] or Decimal('0')
+
+    # Saldo al cierre de la última liquidación
+    ultima_liq = Liquidacion.objects.filter(consorcio=consorcio, cerrada=True).order_by('-periodo').first()
+    saldo_cierre = None
+    fecha_cierre = None
+    if ultima_liq and ultima_liq.fecha_cierre:
+        fecha_cierre = ultima_liq.fecha_cierre
+        saldo_cierre = movimientos.filter(fecha__lte=fecha_cierre).aggregate(t=Sum('monto'))['t'] or Decimal('0')
+
+    return render(request, 'caja.html', {
+        'consorcio': consorcio,
+        'movimientos': movimientos,
+        'total': total,
+        'saldo_ord': ord,
+        'saldo_ext': ext,
+        'saldo_efvo': efvo,
+        'saldo_trans': trans,
+        'saldo_cierre': saldo_cierre,
+        'fecha_cierre': fecha_cierre,
+    })

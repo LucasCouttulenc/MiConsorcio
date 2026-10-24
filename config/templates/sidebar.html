@@ -76,6 +76,18 @@
                                 <span class="item-texto">Liquidaciones</span>
                             </a>
                         </div>
+
+
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'caja' %}active{% endif %}">
+                            <a href="{% url 'caja' %}" title="Caja">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/caja.svg' %}" class="svg-icono default-icon" alt="Caja">
+                                    <img src="{% static 'imagenes/caja_blanco.svg' %}" class="svg-icono hover-icon" alt="Caja">
+                                </span>
+                                <span class="item-texto">Caja</span>
+                            </a>
+                        </div>
+
                         <div class="submenu-item {% if request.resolver_match.url_name == 'configurar_columnas' %}active{% endif %}">
                             <a href="{% url 'configurar_columnas' %}" title="Configurar columnas">
                                 <span class="item-icono">

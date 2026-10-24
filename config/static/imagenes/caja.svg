@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <g fill="none" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Pantalla visor -->
+    <rect x="140" y="32" width="76" height="40" rx="6" />
+    <path d="M178 72 V96" />
+    
+    <!-- Ticket / Recibo -->
+    <path d="M72 96 V48 H112 V96" />
+    
+    <!-- Cuerpo de la caja -->
+    <path d="M40 180 L56 96 H200 L216 180 Z" />
+    
+    <!-- Botones -->
+    <path d="M76 124 H100 M116 124 H140 M156 124 H180" />
+    <path d="M76 152 H100 M116 152 H140 M156 152 H180" />
+    
+    <!-- Cajón inferior -->
+    <rect x="32" y="180" width="192" height="44" rx="8" />
+    <path d="M112 202 H144" />
+  </g>
+</svg>

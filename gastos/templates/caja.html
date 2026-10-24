@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% load static l10n %}
+
+{% block title %}Caja{% endblock %}
+
+{% block content %}
+{% include "componentes/mensajes.html" %}
+
+<link rel="stylesheet" href="{% static 'css/_caja.css' %}">
+
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">Caja</h1>
+    <p style="color: #64748b; font-size: 1.1rem; margin: 0;">{{ consorcio.nombre }}</p>
+</div>
+
+<div class="caja-grid">
+    <div class="caja-card" style="border-left: 4px solid #1d4ed8;">
+        <span>Saldo Actual Total</span>
+        <strong>$ {{ total|floatformat:"2g" }}</strong>
+    </div>
+    {% if saldo_cierre is not None %}
+    <div class="caja-card" style="border-left: 4px solid #64748b;">
+        <span>Saldo Cierre Anterior ({{ fecha_cierre|date:"d/m/Y" }})</span>
+        <strong>$ {{ saldo_cierre|floatformat:"2g" }}</strong>
+    </div>
+    {% endif %}
+    <div class="caja-card">
+        <span>Ordinario</span>
+        <strong>$ {{ saldo_ord|floatformat:"2g" }}</strong>
+    </div>
+    <div class="caja-card">
+        <span>Extraordinario</span>
+        <strong>$ {{ saldo_ext|floatformat:"2g" }}</strong>
+    </div>
+    <div class="caja-card">
+        <span>Efectivo</span>
+        <strong>$ {{ saldo_efvo|floatformat:"2g" }}</strong>
+    </div>
+    <div class="caja-card">
+        <span>Transferencia</span>
+        <strong>$ {{ saldo_trans|floatformat:"2g" }}</strong>
+    </div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+    <h2 style="margin: 0; font-size: 1.2rem; color: #adccff;">Historial de Movimientos</h2>
+    <button type="button" class="boton-primario" onclick="document.getElementById('form-nuevo-mov').style.display='block'">+ Nuevo Movimiento</button>
+</div>
+
+<!-- Formulario para agregar movimiento -->
+<div id="form-nuevo-mov">
+    <form method="post" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        {% csrf_token %}
+        
+        <div>
+            <label>Fecha</label><br>
+            <input type="date" name="fecha" required class="gl-input">
+        </div>
+        
+        <div style="flex: 1; min-width: 200px;">
+            <label>Concepto</label><br>
+            <input type="text" name="concepto" required class="gl-input" >
+        </div>
+        
+        <div>
+            <label>Monto</label><br>
+            <input type="number" step="0.01" name="monto" required class="gl-input" style="width: 120px;">
+        </div>
+        
+        <div>
+            <label>Acción</label><br>
+            <select name="accion_monto" class="gl-input sin-select2">
+                <option value="ingreso">Ingreso (+)</option>
+                <option value="egreso">Egreso (-)</option>
+            </select>
+        </div>
+        
+        <div>
+            <label>Tipo</label><br>
+            <select name="tipo" class="gl-input sin-select2">
+                <option value="ordinario">Ordinario</option>
+                <option value="extraordinario">Extraordinario</option>
+            </select>
+        </div>
+        
+        <div>
+            <label>Medio</label><br>
+            <select name="medio_pago" class="gl-input sin-select2">
+                <option value="efectivo">Efectivo</option>
+                <option value="transferencia">Transferencia</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="boton-primario" style="height: 38px;">Guardar</button>
+    </form>
+</div>
+
+<!-- Botones Filtro -->
+<div class="caja-filtros" id="filtros-caja">
+    <button class="btn-filtro activo" data-filtro="tipo" data-valor="ordinario" onclick="toggleFiltro(this)">Ordinario</button>
+    <button class="btn-filtro activo" data-filtro="tipo" data-valor="extraordinario" onclick="toggleFiltro(this)">Extraordinario</button>
+    <button class="btn-filtro activo" data-filtro="medio" data-valor="efectivo" onclick="toggleFiltro(this)">Efectivo</button>
+    <button class="btn-filtro activo" data-filtro="medio" data-valor="transferencia" onclick="toggleFiltro(this)">Transferencia</button>
+</div>
+
+<div class="contenedor-tabla">
+    <table class="tabla" id="tabla-movimientos">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Tipo</th>
+                <th>Medio</th>
+                <th class="col-num">Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in movimientos %}
+                <tr class="fila-mov" data-tipo="{{ mov.tipo }}" data-medio="{{ mov.medio_pago }}">
+                    <td>{{ mov.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ mov.concepto }}</td>
+                    <td>{{ mov.get_tipo_display }}</td>
+                    <td>{{ mov.get_medio_pago_display }}</td>
+                    <td class="col-num {% if mov.monto < 0 %}mov-egreso{% else %}mov-ingreso{% endif %}">
+                        $ {{ mov.monto|floatformat:"2g" }}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5" style="text-align: center; padding: 2rem;">No hay movimientos registrados.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function toggleFiltro(btn) {
+    btn.classList.toggle('activo');
+    aplicarFiltros();
+}
+
+function aplicarFiltros() {
+    const botones = document.querySelectorAll('.btn-filtro');
+    const activosTipo = Array.from(botones).filter(b => b.classList.contains('activo') && b.dataset.filtro === 'tipo').map(b => b.dataset.valor);
+    const activosMedio = Array.from(botones).filter(b => b.classList.contains('activo') && b.dataset.filtro === 'medio').map(b => b.dataset.valor);
+
+    const filas = document.querySelectorAll('.fila-mov');
+    
+    filas.forEach(fila => {
+        const tipo = fila.dataset.tipo;
+        const medio = fila.dataset.medio;
+        
+        const visible = activosTipo.includes(tipo) && activosMedio.includes(medio);
+        fila.style.display = visible ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}
