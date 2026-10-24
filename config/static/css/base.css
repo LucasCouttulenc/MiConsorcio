@@ -6,6 +6,7 @@
 @import "_liquidaciones.css";
 @import "_portal_propietario.css?v=20261023-particulares";
 @import "_pagos_pendientes.css";
+@import "_consultas.css?v=20261024-consultas-3";
 @import "_utilidades.css";
 
 @import "_login.css";

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Nueva consulta{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div><p class="portal-eyebrow">PANEL PROPIETARIO</p><h1>Nueva consulta</h1><p>La administración la recibe en la plataforma y te responde por acá.</p></div>
+    </header>
+    <form method="post" class="consulta-form">
+        {% csrf_token %}
+        {% for campo in formulario %}
+            <label class="consulta-campo">
+                <span>{{ campo.label }}</span>
+                {{ campo }}
+                {% for error in campo.errors %}<small class="consulta-error">{{ error }}</small>{% endfor %}
+            </label>
+        {% endfor %}
+        <div class="consulta-acciones">
+            <a class="portal-boton portal-boton-secundario" href="{% url 'mis_consultas' %}">Cancelar</a>
+            <button type="submit" class="portal-boton portal-boton-acento">Enviar consulta</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

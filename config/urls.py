@@ -22,6 +22,7 @@ from django.contrib.auth import views as auth_views
 from usuarios import views as views_usuarios
 from gastos import views as views_gastos
 from consorcios import views as views_consorcios
+from consultas import views as views_consultas
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -59,6 +60,11 @@ urlpatterns = [
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/quitar/', views_gastos.quitar_comprobante, name='quitar_comprobante'),
     path('liquidaciones/gastos/<int:gasto_id>/comprobante/visibilidad/', views_gastos.alternar_visibilidad_comprobante, name='visibilidad_comprobante'),
     path('inicio/', views_gastos.inicio_propietario, name='inicio_propietario'),
+    path('consultas/', views_consultas.mis_consultas, name='mis_consultas'),
+    path('consultas/nueva/', views_consultas.nueva_consulta, name='nueva_consulta'),
+    path('consultas/<int:consulta_id>/', views_consultas.ver_consulta, name='ver_consulta'),
+    path('administracion/consultas/', views_consultas.bandeja_consultas, name='bandeja_consultas'),
+    path('administracion/consultas/<int:consulta_id>/', views_consultas.gestionar_consulta, name='gestionar_consulta'),
     path('mis-expensas/', views_gastos.mis_expensas, name='mis_expensas'),
     path('historial-pagos/', views_gastos.historial_pagos, name='historial_pagos'),
     path('pagos/<int:pago_id>/recibo/', views_gastos.descargar_recibo_pago, name='recibo_pago'),

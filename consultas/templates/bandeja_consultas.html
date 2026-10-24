@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Consultas{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<div class="liquidaciones-cabecera">
+    <h1 class="titulo">Consultas de propietarios</h1>
+</div>
+<nav class="consultas-filtros" aria-label="Filtrar por estado">
+    <a href="?estado=abierta" class="{% if estado == 'abierta' %}activo{% endif %}">Abiertas <b>{{ totales.abiertas }}</b></a>
+    <a href="?estado=en_curso" class="{% if estado == 'en_curso' %}activo{% endif %}">En curso <b>{{ totales.en_curso }}</b></a>
+    <a href="?estado=cerrada" class="{% if estado == 'cerrada' %}activo{% endif %}">Cerradas <b>{{ totales.cerradas }}</b></a>
+    <a href="?estado=todas" class="{% if estado == 'todas' %}activo{% endif %}">Todas</a>
+</nav>
+<div class="contenedor-tabla">
+    <table class="tabla">
+        <thead><tr><th>N°</th><th>Asunto</th><th>Consorcio / UF</th><th>Propietario</th><th>Última actividad</th><th>Estado</th></tr></thead>
+        <tbody>
+        {% for consulta in consultas %}
+            <tr class="consultas-fila" onclick="location.href='{% url 'gestionar_consulta' consulta.pk %}'">
+                <td>#{{ consulta.pk }}</td>
+                <td><a href="{% url 'gestionar_consulta' consulta.pk %}"><strong>{{ consulta.asunto }}</strong></a><br><small>{{ consulta.cantidad_mensajes }} mensaje{{ consulta.cantidad_mensajes|pluralize }}</small></td>
+                <td><strong>{{ consulta.unidad_funcional.consorcio.nombre }}</strong><br><small>Piso {{ consulta.unidad_funcional.piso }}° {{ consulta.unidad_funcional.departamento }}</small></td>
+                <td>{{ consulta.unidad_funcional.propietario.usuario.get_full_name|default:consulta.unidad_funcional.propietario.usuario.username }}</td>
+                <td>{{ consulta.actualizada|date:"d/m/Y H:i" }}</td>
+                <td><span class="consulta-estado consulta-estado-{{ consulta.estado }}">{{ consulta.get_estado_display }}</span></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6">No hay consultas en este estado.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

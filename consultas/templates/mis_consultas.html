@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Consultas{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div><p class="portal-eyebrow">PANEL PROPIETARIO</p><h1>Consultas</h1><p>Tus consultas y reclamos a la administración.</p></div>
+        <a class="portal-boton portal-boton-acento" href="{% url 'nueva_consulta' %}">+ Nueva consulta</a>
+    </header>
+    <section class="portal-card">
+        <div class="portal-tabla-wrap"><table class="portal-tabla consultas-tabla">
+            <thead><tr><th>N°</th><th>Asunto</th><th>Unidad</th><th>Última actividad</th><th>Estado</th></tr></thead>
+            <tbody>
+            {% for consulta in consultas %}
+                <tr class="consultas-fila" onclick="location.href='{% url 'ver_consulta' consulta.pk %}'">
+                    <td>#{{ consulta.pk }}</td>
+                    <td><a class="portal-link" href="{% url 'ver_consulta' consulta.pk %}">{{ consulta.asunto }}</a><small class="portal-celda-secundaria">{{ consulta.cantidad_mensajes }} mensaje{{ consulta.cantidad_mensajes|pluralize }}</small></td>
+                    <td>{{ consulta.unidad_funcional.consorcio.nombre }}<small class="portal-celda-secundaria">Piso {{ consulta.unidad_funcional.piso }}{% if consulta.unidad_funcional.departamento %} · Depto. {{ consulta.unidad_funcional.departamento }}{% endif %}</small></td>
+                    <td>{{ consulta.actualizada|date:"d/m/Y H:i" }}</td>
+                    <td><span class="consulta-estado consulta-estado-{{ consulta.estado }}">{{ consulta.get_estado_display }}</span></td>
+                </tr>
+            {% empty %}<tr><td colspan="5" class="portal-mensaje-vacio">Todavía no hiciste consultas.</td></tr>{% endfor %}
+            </tbody>
+        </table></div>
+    </section>
+</section>
+{% endblock %}

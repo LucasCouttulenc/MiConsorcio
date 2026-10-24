@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Consulta #{{ consulta.pk }}{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div>
+            <p class="portal-eyebrow"><a href="{% url 'mis_consultas' %}">CONSULTAS</a> · #{{ consulta.pk }}</p>
+            <h1>{{ consulta.asunto }}</h1>
+            <p>{{ consulta.unidad_funcional.consorcio.nombre }} · Piso {{ consulta.unidad_funcional.piso }}{% if consulta.unidad_funcional.departamento %} · Depto. {{ consulta.unidad_funcional.departamento }}{% endif %}</p>
+        </div>
+        <span class="consulta-estado consulta-estado-{{ consulta.estado }}">{{ consulta.get_estado_display }}</span>
+    </header>
+    <div class="consulta-panel">
+        {% include "componentes/hilo_consulta.html" with vista_admin=False %}
+        {% if consulta.cerrada %}
+            <p class="consulta-cerrada">La administración cerró esta consulta. Si el problema sigue, <a href="{% url 'nueva_consulta' %}">abrí una nueva</a>.</p>
+        {% else %}
+            <form method="post" class="consulta-responder">
+                {% csrf_token %}
+                {{ formulario.texto }}
+                {% for error in formulario.texto.errors %}<small class="consulta-error">{{ error }}</small>{% endfor %}
+                <button type="submit" class="portal-boton portal-boton-acento">Enviar</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

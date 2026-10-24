@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'consorcios',
     'gastos',
     'usuarios',
+    'consultas',
     # Acá agregamos cualquier otra app que creemos
 ]
 

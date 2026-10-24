@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Consulta #{{ consulta.pk }}{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<div class="liquidaciones-cabecera consulta-admin-cabecera">
+    <div>
+        <a class="consulta-volver" href="{% url 'bandeja_consultas' %}">← Consultas</a>
+        <h1 class="titulo">#{{ consulta.pk }} · {{ consulta.asunto }}</h1>
+        <p class="consulta-admin-datos">
+            {{ consulta.unidad_funcional.consorcio.nombre }} · Piso {{ consulta.unidad_funcional.piso }}° {{ consulta.unidad_funcional.departamento }}
+            · {{ consulta.unidad_funcional.propietario.usuario.get_full_name|default:consulta.unidad_funcional.propietario.usuario.username }}
+        </p>
+    </div>
+    <span class="consulta-estado consulta-estado-{{ consulta.estado }}">{{ consulta.get_estado_display }}</span>
+</div>
+<div class="consulta-panel consulta-panel-admin">
+    {% include "componentes/hilo_consulta.html" with vista_admin=True %}
+    {% if consulta.cerrada %}
+        <p class="consulta-cerrada">Consulta cerrada.</p>
+    {% else %}
+        <form method="post" class="consulta-responder">
+            {% csrf_token %}
+            {{ formulario.texto }}
+            {% for error in formulario.texto.errors %}<small class="consulta-error">{{ error }}</small>{% endfor %}
+            <div class="consulta-acciones">
+                <button type="submit" name="accion" value="cerrar" class="pp-btn pp-btn-rechazar" formnovalidate onclick="return confirm('¿Cerrar la consulta? El propietario ya no va a poder responder.');">Cerrar consulta</button>
+                <button type="submit" name="accion" value="responder" class="pp-btn pp-btn-validar">Responder</button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

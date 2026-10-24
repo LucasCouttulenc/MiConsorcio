@@ -1,0 +1,12 @@
+{# Hilo de mensajes; `vista_admin` pone del lado derecho los mensajes de la administración. #}
+<div class="consulta-hilo">
+    {% for mensaje in mensajes_consulta %}
+        <div class="consulta-mensaje {% if mensaje.de_administracion %}consulta-mensaje-admin{% endif %} {% if mensaje.de_administracion == vista_admin %}consulta-mensaje-propio{% endif %}">
+            <div class="consulta-mensaje-cabecera">
+                <strong>{% if mensaje.de_administracion %}Administración{% else %}{{ mensaje.autor.get_full_name|default:mensaje.autor.username }}{% endif %}</strong>
+                <small>{{ mensaje.creado|date:"d/m/Y H:i" }}</small>
+            </div>
+            <p>{{ mensaje.texto|linebreaksbr }}</p>
+        </div>
+    {% endfor %}
+</div>

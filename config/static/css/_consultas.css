@@ -1,0 +1,46 @@
+/* Consultas (tickets) entre propietarios y administración */
+
+.consulta-estado { display: inline-flex; align-items: center; padding: 5px 11px; border-radius: 999px; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.consulta-estado-abierta { background: #dbeafe; color: #1d4ed8; }
+.consulta-estado-en_curso { background: #fff0cc; color: #815400; }
+.consulta-estado-cerrada { background: #e2e8f0; color: #475569; }
+
+.consultas-fila { cursor: pointer; }
+.portal-propietario .portal-eyebrow a { color: inherit; }
+
+.consulta-form, .consulta-panel { max-width: 860px; padding: 22px 24px; border: 1px solid #466588; border-radius: 12px; background: #d3deea; color: #142947; box-shadow: 0 8px 22px rgba(0, 0, 0, .16); }
+.consulta-panel-admin { margin-top: 16px; }
+.consulta-campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; color: #16365e; font-weight: 800; font-size: .85rem; }
+.consulta-campo input, .consulta-campo select, .consulta-campo textarea, .consulta-responder textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid #9fb3cb; border-radius: 8px; background: #fff; color: #142947; font: 400 .92rem 'Nunito', sans-serif;
+}
+.consulta-campo textarea, .consulta-responder textarea { resize: vertical; }
+.consulta-error { color: #a52525; font-weight: 700; }
+.consulta-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+
+.consulta-hilo { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.consulta-mensaje { max-width: 78%; padding: 10px 14px; border: 1px solid #b6c6d8; border-radius: 12px 12px 12px 3px; background: #fff; }
+.consulta-mensaje-propio { align-self: flex-end; border-radius: 12px 12px 3px 12px; background: #e3eefc; border-color: #a9c6ec; }
+.consulta-mensaje-admin .consulta-mensaje-cabecera strong { color: #1c65bd; }
+.consulta-mensaje-cabecera { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 4px; }
+.consulta-mensaje-cabecera strong { color: #16365e; font-size: .85rem; }
+.consulta-mensaje-cabecera small { color: #5b718c; font-size: .74rem; white-space: nowrap; }
+.consulta-mensaje p { color: #233d5c; font-size: .9rem; line-height: 1.4; }
+.consulta-responder { display: flex; flex-direction: column; gap: 8px; }
+.consulta-responder > .portal-boton { align-self: flex-end; }
+.consulta-cerrada { padding: 12px; border-radius: 8px; background: #e2e8f0; color: #475569; font-size: .88rem; text-align: center; }
+
+.consultas-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+.consultas-filtros a { padding: 6px 12px; border: 1px solid #9fb3cb; border-radius: 999px; color: inherit; font-size: .82rem; font-weight: 700; }
+.consultas-filtros a.activo { border-color: #1c65bd; background: #1c65bd; color: #fff; }
+.consultas-filtros b { margin-left: 4px; }
+
+.consulta-admin-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.consulta-volver { display: inline-block; margin: 6px 0 4px; color: #8ac2ff; font-size: .85rem; font-weight: 700; }
+.consulta-admin-datos { margin-top: 4px; font-size: .88rem; opacity: .8; }
+
+@media (max-width: 600px) {
+    .consulta-form, .consulta-panel { padding: 16px; }
+    .consulta-mensaje { max-width: 100%; }
+}
+.consulta-campo select { background: #fff !important; color: #142947 !important; border: 1px solid #9fb3cb !important; }
