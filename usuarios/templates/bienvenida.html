@@ -16,7 +16,7 @@
             <p class="tarjeta-bienvenida__texto">
                 Para comenzar a utilizar el sistema, primero necesitás crear un consorcio.
             </p>
-            <a href="{% url 'crear_consorcio' %}" class="boton-primario" style="margin-top: 1rem; padding: 10px 20px; text-decoration: none; font-size: 1rem;">
+            <a href="{% url 'crear_consorcio' %}" class="boton-primario" style="margin-top: 1rem;">
                 Crear mi primer consorcio
             </a>
         {% else %}
@@ -25,11 +25,12 @@
                 Te damos la bienvenida al sistema. Actualmente estás administrando:
             </p>
             
-            <h2 style="font-size: 1.6rem; color: #1e293b; margin: 1.5rem 0; font-weight: 700;">
+            <!-- ACÁ CAMBIAMOS EL COLOR A UN TONO CLARO -->
+            <h2 style="font-size: 1.8rem; color: var(--colorTextoPrincipal, #CCD6F6); margin: 1.5rem 0; font-weight: 700; text-align: center;">
                 {{ consorcio_activo.nombre }}
             </h2>
             
-            <a href="{% url 'gestionar_consorcio' %}" class="boton-primario" style="padding: 10px 20px; text-decoration: none; font-size: 1rem;">
+            <a href="{% url 'gestionar_consorcio' %}" class="boton-primario" style="margin-top: 0.5rem;">
                 Ir al panel del consorcio
             </a>
             
