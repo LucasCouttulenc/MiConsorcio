@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <g fill="none" stroke="#38BDF8" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Manija superior -->
+    <circle cx="128" cy="56" r="28" />
+    
+    <!-- Cuerpo de la pesa -->
+    <path d="M64 96 L32 216 H224 L192 96 Z" />
+    
+    <!-- Círculo con símbolo $ -->
+    <circle cx="128" cy="156" r="36" />
+    <path d="M128 132 V180" />
+    <path d="M138 140 H124 C118 140 118 150 128 152 C138 154 138 164 132 168 H118" />
+  </g>
+</svg>
