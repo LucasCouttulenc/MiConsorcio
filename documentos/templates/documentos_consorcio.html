@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Documentos{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<div class="liquidaciones-cabecera doc-admin-cabecera">
+    <h1 class="titulo">Documentos del consorcio</h1>
+    {% if consorcios %}
+    <form method="get">
+        <select name="consorcio" class="sin-select2 doc-select" onchange="this.form.submit()" aria-label="Consorcio">
+            {% for opcion in consorcios %}<option value="{{ opcion.pk }}" {% if opcion.pk == consorcio.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
+        </select>
+    </form>
+    {% endif %}
+</div>
+
+{% if consorcio %}
+<form method="post" enctype="multipart/form-data" class="doc-subir">
+    {% csrf_token %}
+    <input type="hidden" name="consorcio" value="{{ consorcio.pk }}">
+    {% for campo in formulario %}
+        <label class="doc-campo doc-campo-{{ campo.name }}">
+            <span>{{ campo.label }}</span>
+            {{ campo }}
+            {% for error in campo.errors %}<small class="consulta-error">{{ error }}</small>{% endfor %}
+        </label>
+    {% endfor %}
+    <button type="submit" class="pp-btn pp-btn-validar">Subir documento</button>
+</form>
+
+<div class="contenedor-tabla">
+    <table class="tabla">
+        <thead><tr><th>Documento</th><th>Tipo</th><th>Vigencia</th><th class="col-acciones">Acciones</th></tr></thead>
+        <tbody>
+        {% for documento in documentos %}
+            <tr>
+                <td><strong>{{ documento.titulo }}</strong><br><small>Subido el {{ documento.subido|date:"d/m/Y" }}</small></td>
+                <td>{{ documento.get_tipo_display }}</td>
+                <td>{% include "componentes/estado_documento.html" %}</td>
+                <td class="col-acciones">
+                    <div class="doc-acciones">
+                        <a class="pp-btn doc-btn-ver" href="{{ documento.archivo.url }}" target="_blank" rel="noopener">Ver</a>
+                        <form method="post" action="{% url 'borrar_documento' documento.pk %}" onsubmit="return confirm('¿Borrar «{{ documento.titulo|escapejs }}»? Los propietarios dejan de verlo.');">
+                            {% csrf_token %}
+                            <button type="submit" class="pp-btn pp-btn-rechazar">Borrar</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4">Este consorcio todavía no tiene documentos.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>No administrás ningún consorcio.</p>
+{% endif %}
+{% endblock %}

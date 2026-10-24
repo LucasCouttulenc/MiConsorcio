@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Documentos{% endblock %}
+{% block content %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div><p class="portal-eyebrow">PANEL PROPIETARIO</p><h1>Documentos</h1><p>Reglamento, pólizas y certificados de tu edificio.</p></div>
+    </header>
+    {% for consorcio in consorcios %}
+        <section class="portal-card">
+            <div class="portal-card-titulo"><div><h2>{{ consorcio.nombre }}</h2><p>{{ consorcio.calle }} {{ consorcio.altura }}</p></div></div>
+            <div class="portal-tabla-wrap"><table class="portal-tabla doc-tabla">
+                <thead><tr><th>Documento</th><th>Tipo</th><th>Vigencia</th><th></th></tr></thead>
+                <tbody>
+                {% for documento in consorcio.documentos.all %}
+                    <tr>
+                        <td><strong>{{ documento.titulo }}</strong></td>
+                        <td>{{ documento.get_tipo_display }}</td>
+                        <td>{% include "componentes/estado_documento.html" %}</td>
+                        <td><a class="portal-capsula portal-capsula-primaria" href="{{ documento.archivo.url }}" target="_blank" rel="noopener">Ver</a></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="portal-mensaje-vacio">La administración todavía no cargó documentos.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </section>
+    {% empty %}
+        <div class="portal-card portal-vacio"><h2>Todavía no tenés unidades asignadas</h2></div>
+    {% endfor %}
+</section>
+{% endblock %}

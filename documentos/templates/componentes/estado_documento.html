@@ -1,0 +1,4 @@
+{% if documento.estado_vencimiento == "vencido" %}<span class="doc-estado doc-estado-vencido">Vencido el {{ documento.vencimiento|date:"d/m/Y" }}</span>
+{% elif documento.estado_vencimiento == "por_vencer" %}<span class="doc-estado doc-estado-por-vencer">Vence el {{ documento.vencimiento|date:"d/m/Y" }}</span>
+{% elif documento.estado_vencimiento == "vigente" %}<span class="doc-estado doc-estado-vigente">Vigente hasta {{ documento.vencimiento|date:"d/m/Y" }}</span>
+{% else %}<span class="doc-estado doc-estado-sin">Sin vencimiento</span>{% endif %}

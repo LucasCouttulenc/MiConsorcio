@@ -1,0 +1,26 @@
+/* Documentos del consorcio */
+
+.doc-estado { display: inline-flex; padding: 4px 10px; border-radius: 999px; font-size: .76rem; font-weight: 800; white-space: nowrap; }
+.doc-estado-vigente { background: #d9f6e9; color: #086744; }
+.doc-estado-por-vencer { background: #fff0cc; color: #815400; }
+.doc-estado-vencido { background: #ffe2e2; color: #a52525; }
+.doc-estado-sin { background: #e2e8f0; color: #475569; }
+
+.doc-tabla td:last-child { text-align: right; }
+
+.doc-admin-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.doc-select { min-width: 240px; padding: 9px 12px; border: 1px solid #52739e; border-radius: 8px; background: #142b4b; color: #fff; }
+
+.doc-subir { display: grid; grid-template-columns: 1.2fr 1.5fr 1.5fr 1fr auto; align-items: end; gap: 12px; margin-bottom: 16px; padding: 16px 18px; border: 1px solid #466588; border-radius: 12px; background: #d3deea; color: #142947; }
+.doc-campo { display: flex; flex-direction: column; gap: 5px; color: #16365e; font-size: .8rem; font-weight: 800; }
+.doc-campo input, .doc-campo select { width: 100%; padding: 8px 10px; border: 1px solid #9fb3cb !important; border-radius: 8px; background: #fff !important; color: #142947 !important; font: 400 .88rem 'Nunito', sans-serif; }
+.doc-subir .pp-btn { min-height: 38px; }
+
+.doc-acciones { display: flex; justify-content: center; gap: 8px; }
+.doc-acciones form { margin: 0; }
+.doc-btn-ver, .doc-btn-ver:visited { border-color: #1c65bd; background: #1c65bd; color: #fff !important; }
+.doc-btn-ver:hover { background: #154f96; }
+
+@media (max-width: 1000px) {
+    .doc-subir { grid-template-columns: 1fr 1fr; }
+}

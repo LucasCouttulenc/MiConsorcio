@@ -84,6 +84,15 @@
                                 <span class="item-texto">Pagos Pendientes</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'documentos_consorcio' %}active{% endif %}">
+                            <a href="{% url 'documentos_consorcio' %}" title="Documentos">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/expensas.svg' %}" class="svg-icono default-icon" alt="Documentos">
+                                    <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Documentos">
+                                </span>
+                                <span class="item-texto">Documentos</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'bandeja_consultas' or request.resolver_match.url_name == 'gestionar_consulta' %}active{% endif %}">
                             <a href="{% url 'bandeja_consultas' %}" title="Consultas">
                                 <span class="item-icono">
@@ -124,6 +133,15 @@
                                     <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Historial de pagos">
                                 </span>
                                 <span class="item-texto">Historial de pagos</span>
+                            </a>
+                        </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'mis_documentos' %}active{% endif %}">
+                            <a href="{% url 'mis_documentos' %}" title="Documentos">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/expensas.svg' %}" class="svg-icono default-icon" alt="Documentos">
+                                    <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Documentos">
+                                </span>
+                                <span class="item-texto">Documentos</span>
                             </a>
                         </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_consultas' or request.resolver_match.url_name == 'nueva_consulta' or request.resolver_match.url_name == 'ver_consulta' %}active{% endif %}">

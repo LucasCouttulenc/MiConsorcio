@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'gastos',
     'usuarios',
     'consultas',
+    'documentos',
     # Acá agregamos cualquier otra app que creemos
 ]
 
