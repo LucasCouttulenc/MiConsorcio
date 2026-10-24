@@ -90,6 +90,15 @@
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL PROPIETARIO</span>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'inicio_propietario' %}active{% endif %}">
+                            <a href="{% url 'inicio_propietario' %}" title="Inicio">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/unidad_funcional.svg' %}" class="svg-icono default-icon" alt="Inicio">
+                                    <img src="{% static 'imagenes/unidad_funcional_blanco.svg' %}" class="svg-icono hover-icon" alt="Inicio">
+                                </span>
+                                <span class="item-texto">Inicio</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_expensas' %}active{% endif %}">
                             <a href="{% url 'mis_expensas' %}" title="Mis Expensas">
                                 <span class="item-icono">

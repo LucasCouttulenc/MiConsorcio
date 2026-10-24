@@ -32,7 +32,7 @@
                             {{ pago.detalle_liquidacion.unidad_funcional.departamento }}
                         </span>
                     </td>
-                    <td class="col-num pp-monto">$ {{ pago.monto_pagado }}</td>
+                    <td class="col-num pp-monto">$ {{ pago.monto_pagado|floatformat:"2g" }}</td>
                     <td>
                         {% if pago.comprobante %}
                             <a href="{{ pago.comprobante.url }}" target="_blank" rel="noopener" class="pp-link-comprobante" aria-label="Ver comprobante en una pestaña nueva">

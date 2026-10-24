@@ -13,7 +13,7 @@ from consorcios.models import Consorcio, GrupoProrrateo, Rubro, UnidadFuncional
 from usuarios.models import Propietario
 
 from .forms import FormularioPago, FormularioServicioRecurrente
-from .models import DetalleLiquidacionUF, Gasto, Liquidacion, Pago, ServicioRecurrente
+from .models import DetalleLiquidacionUF, Gasto, ImputacionPago, Liquidacion, Pago, ServicioRecurrente
 
 
 def crear_consorcio(nombre='Torre Uno', cuit='30712345678'):
@@ -309,3 +309,329 @@ class ProcesarPagoTests(TestCase):
                          {'comprobante': archivo('xss.html', 'application/pdf', b'<script></script>')})
         gasto.refresh_from_db()
         self.assertFalse(gasto.comprobante)
+
+
+class InicioPropietarioTests(TestCase):
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.propietario = Propietario.objects.create(usuario=self.usuario)
+        self.uf = UnidadFuncional.objects.create(
+            propietario=self.propietario, consorcio=self.consorcio,
+            piso=3, departamento='B', alicuota=Decimal('50'))
+        self.client.force_login(self.usuario)
+
+    def detalle(self, periodo, monto, vencimiento=None, uf=None):
+        liquidacion = Liquidacion.objects.create(
+            consorcio=self.consorcio, periodo=periodo, cerrada=True, fecha_vencimiento_1=vencimiento)
+        return DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=uf or self.uf, monto_total=Decimal(monto))
+
+    def pago(self, detalle, monto, estado='pendiente'):
+        return Pago.objects.create(detalle_liquidacion=detalle, fecha_pago=date.today(),
+                                   monto_pagado=Decimal(monto), estado=estado, comprobante='x.pdf')
+
+    def contexto(self, **parametros):
+        return self.client.get(reverse('inicio_propietario'), parametros).context
+
+    def test_suma_la_deuda_de_todos_los_periodos_impagos(self):
+        self.detalle('2026-08', '10000', date(2026, 8, 15))
+        septiembre = self.detalle('2026-09', '12000', date(2026, 9, 15))
+        contexto = self.contexto()
+        self.assertEqual(contexto['saldo'], Decimal('22000'))
+        self.assertEqual(contexto['periodos_impagos'], 2)
+        self.assertEqual(contexto['proximo_vencimiento'], date(2026, 8, 15))
+        self.assertEqual(contexto["ultima"], septiembre)
+        self.assertEqual(contexto['ultima_label'], 'Septiembre 2026')
+        self.assertEqual([v['fecha'] for v in contexto['vencimientos']], [date(2026, 8, 15), date(2026, 9, 15)])
+
+    def test_sin_deuda_esta_al_dia(self):
+        self.pago(self.detalle('2026-09', '12000'), '12000', 'validado')
+        contexto = self.contexto()
+        self.assertEqual(contexto['saldo'], Decimal('0'))
+        self.assertIsNone(contexto['a_pagar'])
+        self.assertEqual(contexto['vencimientos'], [])
+        self.assertContains(self.client.get(reverse('inicio_propietario')), 'Estás al día')
+
+    def test_pago_en_revision_no_descuenta_del_saldo(self):
+        detalle = self.detalle('2026-09', '12000')
+        self.pago(detalle, '12000')
+        contexto = self.contexto()
+        self.assertEqual(contexto['saldo'], Decimal('12000'))
+        self.assertEqual(contexto['pagos_en_revision'], 1)
+        self.assertIsNone(contexto['a_pagar'])
+
+    def test_informar_pago_apunta_al_periodo_impago_mas_viejo(self):
+        viejo = self.detalle('2026-08', '10000')
+        self.detalle('2026-09', '12000')
+        self.assertEqual(self.contexto()['a_pagar'], viejo)
+
+    def test_novedades_de_liquidaciones_y_pagos(self):
+        detalle = self.detalle('2026-09', '12000')
+        self.pago(detalle, '5000', 'rechazado')
+        titulos = [n['titulo'] for n in self.contexto()['novedades']]
+        self.assertIn('Nueva liquidación: Septiembre 2026', titulos)
+        self.assertIn('Pago rechazado', titulos)
+
+    def test_elige_la_unidad_por_parametro(self):
+        otra = UnidadFuncional.objects.create(
+            propietario=self.propietario, consorcio=self.consorcio,
+            piso=1, departamento='A', alicuota=Decimal('50'))
+        self.detalle('2026-09', '5000', uf=otra)
+        self.assertEqual(self.contexto()['unidad'], otra)
+        contexto = self.contexto(unidad=self.uf.pk)
+        self.assertEqual(contexto['unidad'], self.uf)
+        self.assertIsNone(contexto['ultima'])
+
+    def test_mis_expensas_mantiene_la_uf_elegida_en_inicio(self):
+        otro_consorcio, _ = crear_consorcio(nombre='Torre Dos', cuit='30712345679')
+        otra = UnidadFuncional.objects.create(
+            propietario=self.propietario, consorcio=otro_consorcio,
+            piso=7, departamento='C', alicuota=Decimal('50'))
+        self.client.get(reverse('inicio_propietario'), {'unidad': otra.pk})
+        contexto = self.client.get(reverse('mis_expensas')).context
+        self.assertEqual(contexto['consorcio'], otro_consorcio)
+        self.assertEqual(contexto['unidad'], otra)
+        self.client.get(reverse('mis_expensas'), {'consorcio': self.consorcio.pk})
+        self.assertEqual(self.contexto()['unidad'], self.uf)
+
+    def test_no_muestra_unidades_de_otro_propietario(self):
+        otro = Propietario.objects.create(usuario=User.objects.create_user('otro', password='clave'))
+        uf_ajena = UnidadFuncional.objects.create(
+            propietario=otro, consorcio=self.consorcio, piso=2, departamento='C', alicuota=Decimal('10'))
+        contexto = self.contexto(unidad=uf_ajena.pk)
+        self.assertEqual(contexto['unidad'], self.uf)
+        self.assertEqual(list(contexto['unidades']), [self.uf])
+
+    def test_login_del_propietario_va_al_inicio(self):
+        self.client.logout()
+        respuesta = self.client.post(reverse('login'), {'username': 'prop', 'password': 'clave'})
+        self.assertRedirects(respuesta, reverse('inicio_propietario'))
+
+
+class InteresPorMoraTests(TestCase):
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        self.consorcio.tasa_interes_mensual = Decimal('3')
+        self.consorcio.save()
+        usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=usuario), consorcio=self.consorcio,
+            piso=3, departamento='B', alicuota=Decimal('50'))
+        self.client.force_login(usuario)
+
+    def detalle(self, monto='50', vencimiento=date(2026, 1, 10), periodo='2026-01'):
+        liquidacion = Liquidacion.objects.create(
+            consorcio=self.consorcio, periodo=periodo, cerrada=True, fecha_vencimiento_1=vencimiento)
+        return DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=self.uf, monto_total=Decimal(monto))
+
+    def test_meses_de_atraso_cuenta_mes_o_fraccion(self):
+        detalle = self.detalle()
+        self.assertEqual(detalle.meses_de_atraso(date(2026, 1, 10)), 0)
+        self.assertEqual(detalle.meses_de_atraso(date(2026, 1, 11)), 1)
+        self.assertEqual(detalle.meses_de_atraso(date(2026, 2, 10)), 1)
+        self.assertEqual(detalle.meses_de_atraso(date(2026, 2, 11)), 2)
+
+    def test_ejemplo_del_mapping_50_al_3_por_ciento(self):
+        self.assertEqual(self.detalle().interes(date(2026, 2, 5)), Decimal('1.50'))
+
+    def test_interes_simple_por_varios_meses(self):
+        self.assertEqual(self.detalle().interes(date(2026, 4, 5)), Decimal('4.50'))
+
+    def test_sin_tasa_o_pagado_no_genera_interes(self):
+        detalle = self.detalle()
+        Pago.objects.create(detalle_liquidacion=detalle, fecha_pago=date.today(),
+                            monto_pagado=Decimal('50'), estado='validado', comprobante='x.pdf')
+        self.assertEqual(detalle.interes(date(2026, 3, 1)), Decimal('0'))
+        self.consorcio.tasa_interes_mensual = 0
+        self.consorcio.save()
+        otro = self.detalle(periodo='2026-02')
+        self.assertEqual(otro.interes(date(2026, 3, 1)), Decimal('0'))
+
+    def test_inicio_separa_capital_e_intereses(self):
+        detalle = self.detalle(monto='1000', vencimiento=date.today() - timedelta(days=1))
+        contexto = self.client.get(reverse('inicio_propietario')).context
+        self.assertEqual(contexto['capital'], Decimal('1000'))
+        self.assertEqual(contexto['intereses'], Decimal('30.00'))
+        self.assertEqual(contexto['saldo'], Decimal('1030.00'))
+        self.assertEqual(detalle.interes(), Decimal('30.00'))
+
+
+    def test_mis_expensas_suma_el_saldo_anterior_con_intereses(self):
+        hoy = date.today()
+        agosto = self.detalle(monto='1000', vencimiento=hoy - timedelta(days=40), periodo='2026-08')
+        self.detalle(monto='500', vencimiento=hoy + timedelta(days=5), periodo='2026-09')
+        contexto = self.client.get(reverse('mis_expensas'), {'periodo': '2026-09'}).context
+        interes_agosto = agosto.interes()
+        self.assertEqual([item['periodo'] for item in contexto['saldo_anterior']], ['Agosto 2026'])
+        self.assertEqual(contexto['total_saldo_anterior'], Decimal('1000') + interes_agosto)
+        self.assertEqual(contexto['interes'], Decimal('0'))
+        self.assertEqual(contexto['total_a_pagar'], Decimal('1500') + interes_agosto)
+        self.assertEqual(contexto['anterior'], '2026-08')
+
+    def test_mis_expensas_no_arrastra_periodos_pagados(self):
+        agosto = self.detalle(monto='1000', vencimiento=None, periodo='2026-08')
+        Pago.objects.create(detalle_liquidacion=agosto, fecha_pago=date.today(),
+                            monto_pagado=Decimal('1000'), estado='validado', comprobante='x.pdf')
+        self.detalle(monto='500', vencimiento=None, periodo='2026-09')
+        contexto = self.client.get(reverse('mis_expensas'), {'periodo': '2026-09'}).context
+        self.assertEqual(contexto['saldo_anterior'], [])
+        self.assertEqual(contexto['total_a_pagar'], Decimal('500'))
+
+
+class ImputacionPagoTests(TestCase):
+    """Story 5: el pago cancela primero el interés del mes más viejo, después su capital, y así."""
+
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        self.consorcio.tasa_interes_mensual = Decimal('3')
+        self.consorcio.save()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=self.usuario), consorcio=self.consorcio,
+            piso=3, departamento='B', alicuota=Decimal('50'))
+        self.enero = self.detalle('2026-01', date(2026, 1, 10))
+        self.febrero = self.detalle('2026-02', date(2026, 2, 10))
+
+    def detalle(self, periodo, vencimiento, monto='50'):
+        liquidacion = Liquidacion.objects.create(
+            consorcio=self.consorcio, periodo=periodo, cerrada=True, fecha_vencimiento_1=vencimiento)
+        return DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=self.uf, monto_total=Decimal(monto))
+
+    def pagar(self, monto, fecha, estado='validado'):
+        return Pago.objects.create(detalle_liquidacion=self.febrero, fecha_pago=fecha,
+                                   monto_pagado=Decimal(monto), estado=estado, comprobante='x.pdf')
+
+    def refrescar(self):
+        self.enero = DetalleLiquidacionUF.objects.get(pk=self.enero.pk)
+        self.febrero = DetalleLiquidacionUF.objects.get(pk=self.febrero.pk)
+
+    def test_ejemplo_del_mapping(self):
+        pago = self.pagar('70', date(2026, 2, 5))
+        self.assertEqual(
+            [(i.detalle_liquidacion, i.concepto, i.monto) for i in pago.imputaciones.all()],
+            [(self.enero, 'interes', Decimal('1.50')), (self.enero, 'capital', Decimal('50')),
+             (self.febrero, 'capital', Decimal('18.50'))],
+        )
+        self.refrescar()
+        self.assertTrue(self.enero.esta_pagado)
+        self.assertEqual(self.febrero.deuda_total_actualizada, Decimal('31.50'))
+
+    def test_el_resto_sigue_generando_interes(self):
+        self.pagar('70', date(2026, 2, 5))
+        self.refrescar()
+        self.assertEqual(self.enero.interes(date(2026, 4, 1)), Decimal('0'))
+        self.assertEqual(self.febrero.interes(date(2026, 3, 1)), Decimal('0.95'))  # 3% de 31,50
+
+    def test_pago_parcial_reduce_el_interes_de_los_meses_siguientes(self):
+        self.pagar('26.50', date(2026, 2, 5))  # 1,50 de interés + 25 de capital de enero
+        self.refrescar()
+        # Mes 1 sobre 50 (ya pagado) + mes 2 sobre 25 = 0,75 pendiente
+        self.assertEqual(self.enero.interes(date(2026, 3, 1)), Decimal('0.75'))
+
+    def test_lo_que_sobra_queda_como_saldo_a_favor(self):
+        pago = self.pagar('200', date(2026, 2, 5))
+        excedente = pago.imputaciones.get(concepto='excedente')
+        self.assertEqual(excedente.monto, Decimal('200') - Decimal('101.50'))
+        self.assertIsNone(excedente.detalle_liquidacion)
+
+    def test_pago_pendiente_o_rechazado_no_se_imputa(self):
+        self.pagar('70', date(2026, 2, 5), estado='pendiente')
+        self.pagar('70', date(2026, 2, 5), estado='rechazado')
+        self.assertFalse(ImputacionPago.objects.exists())
+
+    def test_validar_desde_pagos_pendientes_imputa(self):
+        pago = self.pagar('70', date(2026, 2, 5), estado='pendiente')
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        self.client.post(reverse('procesar_pago', args=[pago.pk]), {'accion': 'validar'})
+        self.assertEqual(pago.imputaciones.count(), 3)
+
+    def test_historial_muestra_la_imputacion(self):
+        self.pagar('70', date(2026, 2, 5))
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse('historial_pagos'))
+        self.assertContains(respuesta, 'Interés 2026-01')
+        self.assertContains(respuesta, 'Capital 2026-02')
+
+
+    def test_recibo_de_pago_validado(self):
+        pago = self.pagar('70', date(2026, 2, 5))
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse('recibo_pago', args=[pago.pk]))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta['Content-Type'], 'application/pdf')
+        self.assertTrue(respuesta.content.startswith(b'%PDF'))
+        self.assertContains(self.client.get(reverse('historial_pagos')), reverse('recibo_pago', args=[pago.pk]))
+
+    def test_sin_recibo_si_no_esta_validado_o_es_de_otro(self):
+        pendiente = self.pagar('70', date(2026, 2, 5), estado='pendiente')
+        validado = self.pagar('10', date(2026, 2, 6))
+        self.client.force_login(self.usuario)
+        self.assertEqual(self.client.get(reverse('recibo_pago', args=[pendiente.pk])).status_code, 404)
+        otro = User.objects.create_user('otro', password='clave')
+        Propietario.objects.create(usuario=otro)
+        self.client.force_login(otro)
+        self.assertEqual(self.client.get(reverse('recibo_pago', args=[validado.pk])).status_code, 404)
+
+    def test_el_admin_tambien_descarga_el_recibo(self):
+        pago = self.pagar('70', date(2026, 2, 5))
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        self.assertEqual(self.client.get(reverse('recibo_pago', args=[pago.pk])).status_code, 200)
+
+
+class GastosDeMiUnidadTests(TestCase):
+    """Story 4: los arreglos imputados a una UF se ven aparte en Mis Expensas."""
+
+    def setUp(self):
+        from consorcios.models import TipoReparto
+        from .services import procesar_liquidacion_periodo
+        self.consorcio, self.general = crear_consorcio()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=self.usuario), consorcio=self.consorcio,
+            piso=3, departamento='B', alicuota=Decimal('50'))
+        otro = Propietario.objects.create(usuario=User.objects.create_user('vecino', password='clave'))
+        self.vecina = UnidadFuncional.objects.create(
+            propietario=otro, consorcio=self.consorcio, piso=1, departamento='A', alicuota=Decimal('50'))
+        particular = GrupoProrrateo.objects.create(
+            consorcio=self.consorcio, rubro=self.general.rubro, nombre='Arreglos 3B', codigo='P',
+            tipo_reparto=TipoReparto.PARTICULAR)
+        particular.unidades.add(self.uf)
+        liquidacion = Liquidacion.objects.create(consorcio=self.consorcio, periodo='2026-09', cerrada=True)
+        for posicion, (concepto, grupo, monto) in enumerate([
+            ('Limpieza', self.general, '1000'), ('Rotura de caño 3°B', particular, '30000'),
+        ]):
+            Gasto.objects.create(liquidacion=liquidacion, consorcio=self.consorcio, periodo='2026-09',
+                                 fecha_comprobante=date(2026, 9, 30), posicion=posicion, concepto=concepto,
+                                 tipo='ordinario', grupo=grupo, monto=Decimal(monto))
+        procesar_liquidacion_periodo(liquidacion)
+
+    def contexto(self, usuario):
+        self.client.force_login(usuario)
+        return self.client.get(reverse('mis_expensas'), {'periodo': '2026-09'}).context
+
+    def test_mi_uf_ve_el_arreglo_aparte_y_lo_paga_completo(self):
+        particulares = self.contexto(self.usuario)['gastos_particulares']
+        self.assertEqual([item['gasto'].concepto for item in particulares], ['Rotura de caño 3°B'])
+        self.assertEqual(particulares[0]['monto_asignado'], Decimal('30000'))
+        self.assertEqual(particulares[0]['compartido_con'], 0)
+
+    def test_la_vecina_no_lo_ve_ni_lo_paga(self):
+        self.assertEqual(self.contexto(self.vecina.propietario.usuario)['gastos_particulares'], [])
+
+
+    def test_el_admin_decide_si_el_propietario_ve_la_factura(self):
+        gasto = Gasto.objects.get(concepto='Rotura de caño 3°B')
+        gasto.comprobante = 'comprobantes/factura.pdf'
+        gasto.save()
+        self.client.force_login(self.usuario)
+        url = reverse('mis_expensas')
+        self.assertContains(self.client.get(url, {'periodo': '2026-09'}), 'Ver factura')
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        self.client.post(reverse('visibilidad_comprobante', args=[gasto.pk]))
+        gasto.refresh_from_db()
+        self.assertFalse(gasto.comprobante_visible)
+        self.client.force_login(self.usuario)
+        self.assertNotContains(self.client.get(url, {'periodo': '2026-09'}), 'Ver factura')

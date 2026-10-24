@@ -5,19 +5,21 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
+from django.db.models import Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import number_format
 from django.utils.http import content_disposition_header
 from django.views.decorators.http import require_POST
 
 from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
 from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante
-from consorcios.models import Consorcio, GrupoProrrateo, UnidadFuncional
-from .models import Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente
-from .pdf import generar_pdf_liquidacion
+from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
+from .models import imputar_pago, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente
+from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
 
@@ -365,6 +367,18 @@ def subir_comprobante(request, gasto_id):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 @require_POST
+def alternar_visibilidad_comprobante(request, gasto_id):
+    """Decide si el propietario puede ver la factura de un gasto imputado a su UF."""
+    gasto = get_object_or_404(Gasto.objects.select_related('liquidacion'), pk=gasto_id)
+    liquidacion_permitida(request, gasto.liquidacion_id)
+    gasto.comprobante_visible = not gasto.comprobante_visible
+    gasto.save(update_fields=['comprobante_visible'])
+    return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
 def quitar_comprobante(request, gasto_id):
     gasto = get_object_or_404(Gasto.objects.select_related('liquidacion'), pk=gasto_id)
     liquidacion_permitida(request, gasto.liquidacion_id)
@@ -376,6 +390,122 @@ def quitar_comprobante(request, gasto_id):
     return redirect('detalle_liquidacion', liquidacion_id=gasto.liquidacion_id)
 
 
+NOMBRES_MESES = ('', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre')
+
+
+def periodo_legible(periodo):
+    """'2026-09' -> 'Septiembre 2026'."""
+    try:
+        anio, mes = periodo.split('-')
+        return f'{NOMBRES_MESES[int(mes)]} {anio}'
+    except (ValueError, IndexError):
+        return periodo
+
+
+def dias_hasta(fecha, hoy):
+    dias = (fecha - hoy).days
+    if dias == 0:
+        return 'Hoy'
+    if dias == 1:
+        return 'Mañana'
+    if dias > 1:
+        return f'En {dias} días'
+    return f'Vencido hace {-dias} día{"s" if dias < -1 else ""}'
+
+
+CLAVE_UNIDAD_PROPIETARIO = 'unidad_propietario'
+
+
+def unidad_recordada(request, propietario):
+    """La última UF que eligió el propietario, para mantenerla al pasar entre Inicio y Mis Expensas."""
+    pk = request.session.get(CLAVE_UNIDAD_PROPIETARIO)
+    if not pk:
+        return None
+    return UnidadFuncional.objects.filter(pk=pk, propietario=propietario).select_related('consorcio').first()
+
+
+@login_required
+def inicio_propietario(request):
+    """Inicio del propietario: estado de cuenta de una UF, novedades y próximos vencimientos."""
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    unidades = UnidadFuncional.objects.filter(propietario=propietario).select_related('consorcio').order_by(
+        'consorcio__nombre', 'piso', 'departamento'
+    )
+    unidad = unidades.filter(pk=request.GET.get('unidad')).first() if request.GET.get('unidad', '').isdecimal() else None
+    unidad = unidad or unidad_recordada(request, propietario) or unidades.first()
+    if not unidad:
+        return render(request, 'inicio_propietario.html', {'sin_unidades': True})
+    request.session[CLAVE_UNIDAD_PROPIETARIO] = unidad.pk
+
+    hoy = date.today()
+    detalles = list(DetalleLiquidacionUF.objects.filter(
+        unidad_funcional=unidad, liquidacion__cerrada=True,
+    ).select_related('liquidacion__consorcio').prefetch_related('imputaciones__pago').order_by('liquidacion__periodo'))
+    impagos = [detalle for detalle in detalles if not detalle.esta_pagado]
+    ultima = detalles[-1] if detalles else None
+    capital = sum((detalle.deuda_total_actualizada for detalle in impagos), Decimal('0'))
+    intereses = sum((detalle.interes(hoy) for detalle in impagos), Decimal('0'))
+    pagos = list(Pago.objects.filter(detalle_liquidacion__unidad_funcional=unidad).select_related(
+        'detalle_liquidacion__liquidacion'
+    ).order_by('-fecha_registro'))
+    pagos_en_revision = [pago for pago in pagos if pago.estado == 'pendiente']
+    # Se informa el pago del período impago más viejo, salvo que ya tenga un comprobante en revisión.
+    a_pagar = next((detalle for detalle in impagos if not detalle.tiene_pago_pendiente), None)
+
+    vencimientos = [
+        {
+            'fecha': detalle.liquidacion.fecha_vencimiento_1,
+            'titulo': f'Vencimiento: expensas {periodo_legible(detalle.liquidacion.periodo)}',
+            'cuando': dias_hasta(detalle.liquidacion.fecha_vencimiento_1, hoy),
+            'vencido': detalle.liquidacion.fecha_vencimiento_1 < hoy,
+        }
+        for detalle in impagos if detalle.liquidacion.fecha_vencimiento_1
+    ]
+
+    textos_pago = {
+        'pendiente': ('Pago en revisión', 'La administración todavía tiene que validar tu comprobante'),
+        'validado': ('Pago validado', 'La administración acreditó tu pago'),
+        'rechazado': ('Pago rechazado', 'Revisá el motivo en el historial de pagos'),
+    }
+    novedades = [
+        {
+            'fecha': detalle.liquidacion.fecha_cierre or detalle.liquidacion.fecha_emision,
+            'tipo': 'liquidacion',
+            'titulo': f'Nueva liquidación: {periodo_legible(detalle.liquidacion.periodo)}',
+            'texto': f'Te corresponde $ {number_format(detalle.monto_total, 2, force_grouping=True)}',
+        }
+        for detalle in detalles
+    ] + [
+        {
+            'fecha': timezone.localdate(pago.fecha_registro),
+            'tipo': pago.estado,
+            'titulo': textos_pago[pago.estado][0],
+            'texto': f'{textos_pago[pago.estado][1]} de $ {number_format(pago.monto_pagado, 2, force_grouping=True)} '
+                     f'({periodo_legible(pago.detalle_liquidacion.liquidacion.periodo)}).',
+        }
+        for pago in pagos if pago.estado in textos_pago
+    ]
+    novedades.sort(key=lambda novedad: novedad['fecha'], reverse=True)
+
+    return render(request, 'inicio_propietario.html', {
+        'unidades': unidades,
+        'unidad': unidad,
+        'ultima': ultima,
+        'ultima_label': periodo_legible(ultima.liquidacion.periodo) if ultima else '',
+        'capital': capital,
+        'intereses': intereses,
+        'saldo': capital + intereses,
+        'periodos_impagos': len(impagos),
+        'proximo_vencimiento': min((v['fecha'] for v in vencimientos), default=None),
+        'pagos_en_revision': len(pagos_en_revision),
+        'a_pagar': a_pagar,
+        'periodo_destino': (impagos[0] if impagos else ultima).liquidacion.periodo if ultima else None,
+        'vencimientos': sorted(vencimientos, key=lambda v: v['fecha']),
+        'novedades': novedades[:5],
+        'hoy': hoy,
+    })
+
+
 @login_required
 def mis_expensas(request):
     """Panel mensual del propietario para una de sus unidades funcionales."""
@@ -385,7 +515,8 @@ def mis_expensas(request):
         unidades_funcionales__propietario=propietario
     ).distinct().order_by('nombre')
     consorcio = consorcios.filter(pk=request.GET.get('consorcio')).first() if request.GET.get('consorcio', '').isdecimal() else None
-    consorcio = consorcio or consorcios.first()
+    recordada = unidad_recordada(request, propietario)
+    consorcio = consorcio or (recordada.consorcio if recordada else None) or consorcios.first()
     if not consorcio:
         return render(request, 'mis_expensas.html', {
             'sin_unidades': True,
@@ -393,7 +524,9 @@ def mis_expensas(request):
 
     unidades = UnidadFuncional.objects.filter(propietario=propietario, consorcio=consorcio).order_by('piso', 'departamento')
     unidad = unidades.filter(pk=request.GET.get('unidad')).first() if request.GET.get('unidad', '').isdecimal() else None
-    unidad = unidad or unidades.first()
+    unidad = unidad or (recordada if recordada and recordada.consorcio_id == consorcio.pk else None) or unidades.first()
+    if unidad:
+        request.session[CLAVE_UNIDAD_PROPIETARIO] = unidad.pk
     periodos = list(Liquidacion.objects.filter(
         consorcio=consorcio, cerrada=True,
         detalles_uf__unidad_funcional__in=unidades,
@@ -409,7 +542,7 @@ def mis_expensas(request):
     if unidad and periodo in periodos:
         detalle = DetalleLiquidacionUF.objects.select_related(
             'liquidacion', 'unidad_funcional', 'liquidacion__consorcio'
-        ).filter(unidad_funcional=unidad, liquidacion__periodo=periodo, liquidacion__cerrada=True).first()
+        ).prefetch_related('imputaciones__pago').filter(unidad_funcional=unidad, liquidacion__periodo=periodo, liquidacion__cerrada=True).first()
         if detalle:
             distribuciones = {
                 distribucion.gasto_id: distribucion
@@ -419,13 +552,21 @@ def mis_expensas(request):
             }
             gastos_liquidacion = detalle.liquidacion.gastos_cargados.select_related(
                 'grupo__rubro'
-            ).order_by('posicion', 'pk')
+            ).prefetch_related('grupo__unidades').order_by('posicion', 'pk')
             por_rubro = {}
             for gasto in gastos_liquidacion:
                 distribucion = distribuciones.get(gasto.pk)
                 monto_asignado = distribucion.monto_asignado if distribucion else Decimal('0')
                 rubro = gasto.rubro.nombre if gasto.rubro else 'Otros gastos'
-                gastos.append({'gasto': gasto, 'distribucion': distribucion, 'monto_asignado': monto_asignado, 'rubro': rubro})
+                # Gasto imputado a mi UF: columna "particular" que solo pagan las UF elegidas, entre ellas la mía.
+                unidades_que_pagan = list(gasto.grupo.unidades.all()) if gasto.grupo else []
+                particular = bool(
+                    gasto.grupo and gasto.grupo.tipo_reparto == TipoReparto.PARTICULAR and unidad in unidades_que_pagan
+                )
+                gastos.append({
+                    'gasto': gasto, 'distribucion': distribucion, 'monto_asignado': monto_asignado, 'rubro': rubro,
+                    'particular': particular, 'compartido_con': len(unidades_que_pagan) - 1 if particular else 0,
+                })
                 item = por_rubro.setdefault(rubro, {'nombre': rubro, 'total_edificio': Decimal('0'), 'tu_parte': Decimal('0')})
                 item['total_edificio'] += gasto.monto
                 item['tu_parte'] += monto_asignado
@@ -435,17 +576,46 @@ def mis_expensas(request):
     anterior = periodos[indice + 1] if indice >= 0 and indice + 1 < len(periodos) else None
     siguiente = periodos[indice - 1] if indice > 0 else None
     pagos_pendientes = detalle.pagos.filter(estado='pendiente').exists() if detalle else False
-    nombres_meses = ('', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre')
-    try:
-        anio, mes = periodo.split('-')
-        periodo_label = f'{nombres_meses[int(mes)]} {anio}'
-    except (ValueError, IndexError):
-        periodo_label = periodo
+    interes = detalle.interes() if detalle else Decimal('0')
+    # Lo que cada pago validado canceló de este período, agrupado por pago.
+    pagos_del_periodo = {}
+    for imputacion in (detalle.imputaciones.all() if detalle else []):
+        item = pagos_del_periodo.setdefault(imputacion.pago_id, {
+            'fecha': imputacion.pago.fecha_pago, 'monto_pagado': imputacion.pago.monto_pagado, 'total': Decimal('0'),
+            'interes': Decimal('0'), 'capital': Decimal('0'),
+        })
+        item[imputacion.concepto] += imputacion.monto
+        item['total'] += imputacion.monto
+    pagos_del_periodo = sorted(pagos_del_periodo.values(), key=lambda item: item['fecha'])
+    # Períodos anteriores que siguen impagos: se arrastran como saldo anterior, con sus intereses.
+    saldo_anterior = []
+    if detalle:
+        for previo in DetalleLiquidacionUF.objects.filter(
+            unidad_funcional=unidad, liquidacion__cerrada=True, liquidacion__periodo__lt=detalle.liquidacion.periodo,
+        ).select_related('liquidacion__consorcio').prefetch_related('imputaciones__pago').order_by('liquidacion__periodo'):
+            if not previo.esta_pagado:
+                saldo_anterior.append({
+                    'periodo': periodo_legible(previo.liquidacion.periodo),
+                    'capital': previo.deuda_total_actualizada,
+                    'interes': previo.interes(),
+                    'meses': previo.meses_de_atraso(),
+                })
+    total_saldo_anterior = sum((item['capital'] + item['interes'] for item in saldo_anterior), Decimal('0'))
+    periodo_label = periodo_legible(periodo)
     return render(request, 'mis_expensas.html', {
         'consorcios': consorcios, 'consorcio': consorcio, 'unidades': unidades, 'unidad': unidad,
         'periodo': periodo, 'periodo_label': periodo_label, 'periodos': periodos, 'anterior': anterior, 'siguiente': siguiente,
         'detalle': detalle, 'gastos': gastos, 'resumen_rubros': resumen_rubros,
+        'gastos_particulares': [item for item in gastos if item['particular']],
         'pagos_pendientes': pagos_pendientes,
+        'interes': interes,
+        'tasa_interes': consorcio.tasa_interes_mensual,
+        'meses_atraso': detalle.meses_de_atraso() if detalle else 0,
+        'interes_devengado': detalle.interes_devengado() if detalle else Decimal('0'),
+        'pagos_del_periodo': pagos_del_periodo,
+        'saldo_anterior': saldo_anterior,
+        'total_saldo_anterior': total_saldo_anterior,
+        'total_a_pagar': (total_saldo_anterior + detalle.deuda_total_actualizada + interes) if detalle else Decimal('0'),
     })
 
 
@@ -457,7 +627,7 @@ def historial_pagos(request):
         detalle_liquidacion__unidad_funcional__propietario=propietario
     ).select_related(
         'detalle_liquidacion__liquidacion__consorcio', 'detalle_liquidacion__unidad_funcional'
-    ).order_by('-fecha_pago', '-fecha_registro')
+    ).prefetch_related('imputaciones__detalle_liquidacion__liquidacion').order_by('-fecha_pago', '-fecha_registro')
     return render(request, 'historial_pagos.html', {
         'pagos': pagos,
     })
@@ -476,6 +646,22 @@ def descargar_documento_propietario(request, liquidacion_id):
     respuesta['Content-Disposition'] = content_disposition_header(
         True, f'liquidacion-{liquidacion.consorcio_id}-{liquidacion.periodo}.pdf'
     )
+    return respuesta
+
+
+@login_required
+def descargar_recibo_pago(request, pago_id):
+    """Recibo en PDF de un pago validado: para su propietario o para quien administra el consorcio."""
+    pagos = Pago.objects.filter(estado='validado').select_related(
+        'detalle_liquidacion__liquidacion__consorcio', 'detalle_liquidacion__unidad_funcional__propietario__usuario'
+    )
+    propietario = Propietario.objects.filter(usuario=request.user).first()
+    permitido = Q(detalle_liquidacion__liquidacion__consorcio__in=consorcios_permitidos(request.user))
+    if propietario:
+        permitido |= Q(detalle_liquidacion__unidad_funcional__propietario=propietario)
+    pago = get_object_or_404(pagos.filter(permitido), pk=pago_id)
+    respuesta = HttpResponse(generar_recibo_pago_pdf(pago), content_type='application/pdf')
+    respuesta['Content-Disposition'] = content_disposition_header(True, f'recibo-pago-{pago.pk:08d}.pdf')
     return respuesta
 
 
@@ -531,7 +717,7 @@ def registrar_pago(request, detalle_id):
                 return redirect('mis_expensas')
             return redirect('detalle_liquidacion', liquidacion_id=detalle.liquidacion.id)
     else:
-        monto_sugerido = detalle.deuda_total_actualizada
+        monto_sugerido = detalle.deuda_total_actualizada + detalle.interes()
         form = FormularioPago(initial={'monto_pagado': monto_sugerido, 'fecha_pago': date.today()})
         
     return render(request, 'registrar_pago.html', {
@@ -568,9 +754,13 @@ def procesar_pago(request, pago_id):
         return redirect('pagos_pendientes')
 
     # Solo se procesa si sigue pendiente; el filtro por estado evita que dos requests lo procesen a la vez.
-    if not Pago.objects.filter(pk=pago.pk, estado='pendiente').update(estado=estados[accion]):
-        messages.error(request, 'Este pago ya fue procesado.')
-        return redirect('pagos_pendientes')
+    with transaction.atomic():
+        if not Pago.objects.filter(pk=pago.pk, estado='pendiente').update(estado=estados[accion]):
+            messages.error(request, 'Este pago ya fue procesado.')
+            return redirect('pagos_pendientes')
+        if accion == 'validar':
+            pago.estado = 'validado'
+            imputar_pago(pago)
 
     if accion == 'validar':
         messages.success(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} validado.')

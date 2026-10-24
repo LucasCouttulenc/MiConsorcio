@@ -4,7 +4,7 @@
 @import "_tabla.css";
 @import "_componentes.css?v=20261020-toast-layout";
 @import "_liquidaciones.css";
-@import "_portal_propietario.css";
+@import "_portal_propietario.css?v=20261023-particulares";
 @import "_pagos_pendientes.css";
 @import "_utilidades.css";
 

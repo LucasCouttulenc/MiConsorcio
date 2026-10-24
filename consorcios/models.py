@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -20,6 +21,12 @@ class Consorcio(models.Model):
     codigo_postal = models.IntegerField(verbose_name="Código Postal")
     localidad = models.CharField(max_length=100, blank=True, default='', verbose_name="Localidad")
     horario_atencion = models.CharField(max_length=100, blank=True, default='', verbose_name="Horario de atención")
+    tasa_interes_mensual = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        verbose_name="Interés por mora (% mensual)",
+        help_text="Se cobra sobre el capital adeudado por cada mes o fracción de atraso.",
+    )
 
     def __str__(self):
         return f"{self.nombre} - {self.calle} {self.altura}, CP {self.codigo_postal}"

@@ -23,6 +23,7 @@ class FormularioConsorcio(forms.ModelForm):
             "codigo_postal",
             "localidad",
             "horario_atencion",
+            "tasa_interes_mensual",
         ]
         widgets = {
             "fecha_creacion": DatePickerInput(),
@@ -51,6 +52,12 @@ class FormularioConsorcio(forms.ModelForm):
                 Column('codigo_postal'),
                 Column('localidad'),
                 Column('horario_atencion'),
+                css_class = 'row'
+            ),
+            Row(
+                Column('tasa_interes_mensual'),
+                Column(),
+                Column(),
                 css_class = 'row'
             ),
             Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')

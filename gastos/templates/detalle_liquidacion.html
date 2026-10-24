@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'css/_detalle_liquidacion.css' %}">
+<link rel="stylesheet" href="{% static 'css/_detalle_liquidacion.css' %}?v=20261023-visibilidad">
 
 {% include "componentes/mensajes.html" %}
 
@@ -31,15 +31,15 @@
 <div class="dl-resumen">
     <div class="dl-card dl-card-ordinario">
         <span class="dl-card-etiqueta">Total Ordinario</span>
-        <span class="dl-card-monto">$ {{ liquidacion.total_ordinario }}</span>
+        <span class="dl-card-monto">$ {{ liquidacion.total_ordinario|floatformat:"2g" }}</span>
     </div>
     <div class="dl-card dl-card-extra">
         <span class="dl-card-etiqueta">Total Extraordinario</span>
-        <span class="dl-card-monto">$ {{ liquidacion.total_extraordinario }}</span>
+        <span class="dl-card-monto">$ {{ liquidacion.total_extraordinario|floatformat:"2g" }}</span>
     </div>
     <div class="dl-card dl-card-total">
         <span class="dl-card-etiqueta">Total General</span>
-        <span class="dl-card-monto">$ {{ liquidacion.total }}</span>
+        <span class="dl-card-monto">$ {{ liquidacion.total|floatformat:"2g" }}</span>
     </div>
 </div>
 
@@ -71,9 +71,9 @@
                         <td class="col-dpto">{{ detalle.unidad_funcional.piso }}° {{ detalle.unidad_funcional.departamento|default:"" }}</td>
                         <td class="col-prop">{{ detalle.unidad_funcional.propietario.usuario.get_full_name|default:detalle.unidad_funcional.propietario.usuario.username }}</td>
                         <td class="col-num">{{ detalle.alicuota|floatformat:0 }}%</td>
-                        <td class="col-num">$ {{ detalle.monto_ordinario }}</td>
-                        <td class="col-num">$ {{ detalle.monto_extraordinario }}</td>
-                        <td class="col-num col-total">$ {{ detalle.monto_total }}</td>
+                        <td class="col-num">$ {{ detalle.monto_ordinario|floatformat:"2g" }}</td>
+                        <td class="col-num">$ {{ detalle.monto_extraordinario|floatformat:"2g" }}</td>
+                        <td class="col-num col-total">$ {{ detalle.monto_total|floatformat:"2g" }}</td>
                         <td class="col-resumen">
                             <a href="{% url 'descargar_resumen_uf' detalle.id %}"
                             class="dl-btn-pdf" title="Descargar resumen de esta UF" target="_blank">
@@ -92,9 +92,9 @@
                     <tr>
                         <td colspan="3" class="col-etiqueta">TOTAL</td>
                         <td class="col-num">100.0000</td>
-                        <td class="col-num">$ {{ liquidacion.total_ordinario }}</td>
-                        <td class="col-num">$ {{ liquidacion.total_extraordinario }}</td>
-                        <td class="col-num col-total">$ {{ liquidacion.total }}</td>
+                        <td class="col-num">$ {{ liquidacion.total_ordinario|floatformat:"2g" }}</td>
+                        <td class="col-num">$ {{ liquidacion.total_extraordinario|floatformat:"2g" }}</td>
+                        <td class="col-num col-total">$ {{ liquidacion.total|floatformat:"2g" }}</td>
                         <td></td> 
                     </tr>
                 </tfoot>
@@ -127,7 +127,7 @@
                         <td>{{ gasto.concepto }}</td>
                         <td class="col-tipo">{{ gasto.get_tipo_display }}</td>
                         <td>{{ gasto.grupo.nombre }}</td>
-                        <td class="col-num">$ {{ gasto.monto }}</td>
+                        <td class="col-num">$ {{ gasto.monto|floatformat:"2g" }}</td>
                         <td class="col-comprobante">
                             {% if gasto.comprobante %}
                                 <div class="dl-comp-box">
@@ -138,6 +138,12 @@
                                     <a class="dl-comp-ver" href="{{ gasto.comprobante.url }}" target="_blank" rel="noopener" title="Ver comprobante" aria-label="Ver">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     </a>
+                                    <form method="post" action="{% url 'visibilidad_comprobante' gasto.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dl-comp-visible{% if not gasto.comprobante_visible %} dl-comp-oculto{% endif %}" title="{% if gasto.comprobante_visible %}El propietario puede verlo. Clic para ocultarlo{% else %}Oculto para el propietario. Clic para mostrarlo{% endif %}" aria-label="{% if gasto.comprobante_visible %}Ocultar al propietario{% else %}Mostrar al propietario{% endif %}">
+                                            {% if gasto.comprobante_visible %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6M3 3l18 18"/></svg>{% endif %}
+                                        </button>
+                                    </form>
                                     <form method="post" action="{% url 'quitar_comprobante' gasto.id %}" onsubmit="return confirm('¿Quitar el comprobante?');">
                                         {% csrf_token %}
                                         <button type="submit" class="dl-comp-quitar" title="Quitar comprobante" aria-label="Quitar">

@@ -339,3 +339,78 @@ def _tabla_detalle_uf(liquidacion, est):
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
     return tabla
+
+
+def _periodo(periodo):
+    """'2026-09' -> 'Septiembre 2026'."""
+    anio, _, mes = (periodo or "").partition("-")
+    return f"{MESES.get(mes, mes)} {anio}".strip()
+
+
+def generar_recibo_pago_pdf(pago):
+    """Recibo de un pago validado: datos del consorcio y la UF, importe y cómo se imputó."""
+    est = _estilos()
+    detalle = pago.detalle_liquidacion
+    uf = detalle.unidad_funcional
+    consorcio = detalle.liquidacion.consorcio
+    usuario = uf.propietario.usuario
+    unidad = f"Piso {uf.piso}" + (f" · Depto. {uf.departamento}" if uf.departamento else "")
+
+    banner = Table([
+        [Paragraph("RECIBO DE PAGO", est["banner_t"])],
+        [Paragraph(f"N° {pago.pk:08d} · Expensas {escape(consorcio.nombre)}", est["banner_p"])],
+    ], colWidths=[ANCHO_UTIL])
+    banner.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), AZUL),
+        ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]))
+
+    datos = [
+        ("Consorcio", f"{_txt(consorcio.nombre)} · CUIT {_txt(consorcio.cuit)}"),
+        ("Domicilio", f"{_txt(consorcio.calle)} {_txt(consorcio.altura)}"),
+        ("Unidad funcional", _txt(unidad)),
+        ("Propietario", _txt(usuario.get_full_name() or usuario.username)),
+        ("Fecha de pago", _fecha(pago.fecha_pago)),
+        ("Período informado", _periodo(detalle.liquidacion.periodo)),
+    ]
+    tabla_datos = Table(
+        [[Paragraph(etiqueta, est["bold"]), Paragraph(valor, est["normal"])] for etiqueta, valor in datos],
+        colWidths=[ANCHO_UTIL * 0.3, ANCHO_UTIL * 0.7],
+    )
+    tabla_datos.setStyle(TableStyle([
+        ("LINEBELOW", (0, 0), (-1, -1), 0.4, BORDE),
+        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+
+    filas = [[Paragraph("Período", est["th_left"]), Paragraph("Concepto", est["th_left"]),
+              Paragraph("Importe", est["th"])]]
+    for imputacion in pago.imputaciones.select_related("detalle_liquidacion__liquidacion"):
+        periodo = _periodo(imputacion.detalle_liquidacion.liquidacion.periodo) if imputacion.detalle_liquidacion else "-"
+        filas.append([Paragraph(periodo, est["normal"]), Paragraph(imputacion.get_concepto_display(), est["normal"]),
+                      Paragraph(_money(imputacion.monto), est["num"])])
+    filas.append([Paragraph("TOTAL RECIBIDO", est["bold"]), "", Paragraph(_money(pago.monto_pagado), est["num_b"])])
+    tabla_imputacion = Table(filas, colWidths=[ANCHO_UTIL * 0.35, ANCHO_UTIL * 0.4, ANCHO_UTIL * 0.25])
+    tabla_imputacion.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), GRIS_HEADER),
+        ("BACKGROUND", (0, -1), (-1, -1), GRIS_TOTAL),
+        ("SPAN", (0, -1), (1, -1)),
+        ("GRID", (0, 0), (-1, -1), 0.4, BORDE),
+        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+
+    story = [
+        banner, Spacer(1, 6 * mm), tabla_datos, Spacer(1, 6 * mm),
+        Paragraph("Imputación del pago", est["titulo"]),
+        Paragraph("El pago cancela primero los intereses y después el capital, del período más viejo al más nuevo.",
+                  est["small"]),
+        Spacer(1, 2 * mm), tabla_imputacion, Spacer(1, 8 * mm),
+        Paragraph("Pago validado por la administración del consorcio.", est["small"]),
+    ]
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        leftMargin=15 * mm, rightMargin=15 * mm, topMargin=15 * mm, bottomMargin=15 * mm,
+        title=f"Recibo de pago {pago.pk:08d}",
+    )
+    doc.build(story)
+    return buffer.getvalue()

@@ -58,7 +58,7 @@
         <td>{{ liquidacion.consorcio.nombre }}</td>
         <td>{{ liquidacion.fecha_emision|date:'d/m/Y' }}</td>
         <td>{{ liquidacion.fecha_vencimiento_1|date:'d/m/Y' }}</td>
-        <td>$ {{ liquidacion.total|floatformat:2 }}</td>
+        <td>$ {{ liquidacion.total|floatformat:"2g" }}</td>
         <td><a class="tabla__boton-accion-registro" href="{% url 'detalle_liquidacion' liquidacion.id %}">Ver</a></td>
       </tr>
     {% empty %}

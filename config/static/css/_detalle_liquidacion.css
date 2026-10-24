@@ -284,6 +284,21 @@
 
 .dl-comp-quitar:hover { color: #991b1b; }
 
+.dl-comp-visible {
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    color: #16a34a;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.dl-comp-visible svg { width: 18px; height: 18px; display: block; }
+
+.dl-comp-visible.dl-comp-oculto { color: #94a3b8; }
+
 
 
 /* ---------- Botón de descarga de resumen UF ---------- */

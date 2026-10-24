@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static l10n %}
 
 {% block title %}Servicios recurrentes{% endblock %}
 
@@ -76,7 +76,7 @@
                                 <span class="badge-tipo tipo-general">{{ s.get_frecuencia_meses_display }}</span>
                                 {% if s.tipo == 'extraordinario' %}<span class="badge-tipo tipo-parcial">Extraordinario</span>{% endif %}
                             </td>
-                            <td>{% if s.monto_sugerido %}$ {{ s.monto_sugerido }}{% else %}<em>A completar</em>{% endif %}</td>
+                            <td>{% if s.monto_sugerido %}$ {{ s.monto_sugerido|floatformat:"2g" }}{% else %}<em>A completar</em>{% endif %}</td>
                             <td>
                                 {% if not s.activo %}Pausado{% elif s.proximo %}{{ s.proximo }}{% else %}Finalizado{% endif %}
                             </td>
@@ -199,7 +199,7 @@
                     <div class="cols-fg" style="flex: 0 1 260px;">
                         <label class="cols-label">Monto sugerido (opcional)</label>
                         <input type="number" name="monto_sugerido" id="servicio-monto" class="cols-input" step="0.01" min="0.01"
-                               placeholder="Se completa al liquidar" value="{{ formulario.monto_sugerido.value|default_if_none:'' }}">
+                               placeholder="Se completa al liquidar" value="{{ formulario.monto_sugerido.value|default_if_none:''|unlocalize }}">
                         {{ formulario.monto_sugerido.errors }}
                     </div>
                 </div>

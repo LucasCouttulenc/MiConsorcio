@@ -1,3 +1,7 @@
+import calendar
+from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
+
 from django.db import models
 from consorcios.models import Consorcio, UnidadFuncional, GrupoProrrateo
 
@@ -22,6 +26,7 @@ class Gasto(models.Model):
     liquidacion = models.ForeignKey('Liquidacion', on_delete=models.CASCADE, related_name='gastos_cargados', null=True, blank=True)
     posicion = models.PositiveIntegerField(default=0)
     comprobante = models.FileField(upload_to='comprobantes/%Y/%m/', null=True, blank=True, verbose_name="Comprobante / Factura")
+    comprobante_visible = models.BooleanField(default=True, verbose_name="El propietario puede ver el comprobante")
     servicio = models.ForeignKey('ServicioRecurrente', on_delete=models.SET_NULL, related_name='gastos', null=True, blank=True, verbose_name="Servicio recurrente de origen")
 
     class Meta:
@@ -154,11 +159,17 @@ class DetalleLiquidacionUF(models.Model):
     def __str__(self):
         return f"UF {self.unidad_funcional} - Período {self.liquidacion.periodo}: ${self.monto_total}"
 
+    def _imputaciones(self, concepto):
+        return [imp for imp in self.imputaciones.all() if imp.concepto == concepto]
+
     @property
     def total_pagado(self):
-        """Suma todos los pagos validados"""
-        pagos_validos = self.pagos.filter(estado='validado')
-        return sum(pago.monto_pagado for pago in pagos_validos) if pagos_validos else 0
+        """Capital cancelado por los pagos validados (lo imputado a intereses no cuenta)."""
+        return sum((imp.monto for imp in self._imputaciones('capital')), Decimal('0'))
+
+    @property
+    def intereses_pagados(self):
+        return sum((imp.monto for imp in self._imputaciones('interes')), Decimal('0'))
 
     @property
     def deuda_total_actualizada(self):
@@ -171,6 +182,70 @@ class DetalleLiquidacionUF(models.Model):
     @property
     def tiene_pago_pendiente(self):
         return self.pagos.filter(estado='pendiente').exists()
+
+    def meses_de_atraso(self, hoy=None):
+        """Meses o fracción transcurridos desde el vencimiento (0 si todavía no venció)."""
+        vencimiento = self.liquidacion.fecha_vencimiento_1
+        hoy = hoy or date.today()
+        if not vencimiento or hoy <= vencimiento:
+            return 0
+        meses = (hoy.year - vencimiento.year) * 12 + hoy.month - vencimiento.month
+        return meses + 1 if hoy.day > vencimiento.day else meses
+
+    def capital_adeudado_al(self, fecha):
+        """Capital que seguía impago en esa fecha, según los pagos hechos hasta entonces."""
+        return self.monto_total - sum(
+            (imp.monto for imp in self._imputaciones('capital') if imp.pago.fecha_pago <= fecha), Decimal('0')
+        )
+
+    def interes_devengado(self, hoy=None):
+        """
+        Interés simple acumulado hasta `hoy`: cada mes (o fracción) de atraso cobra la tasa del
+        consorcio sobre el capital que seguía impago al empezar ese mes.
+        """
+        tasa = self.liquidacion.consorcio.tasa_interes_mensual
+        vencimiento = self.liquidacion.fecha_vencimiento_1
+        if not tasa or not vencimiento:
+            return Decimal('0')
+        interes = sum(
+            (self.capital_adeudado_al(sumar_meses(vencimiento, mes)) for mes in range(self.meses_de_atraso(hoy))),
+            Decimal('0'),
+        ) * tasa / 100
+        return interes.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    def interes(self, hoy=None):
+        """Interés devengado que todavía no se pagó."""
+        return max(self.interes_devengado(hoy) - self.intereses_pagados, Decimal('0'))
+
+
+def sumar_meses(fecha, meses):
+    """Misma fecha `meses` después; si ese mes es más corto, cae en su último día."""
+    total = fecha.month - 1 + meses
+    anio, mes = fecha.year + total // 12, total % 12 + 1
+    return date(anio, mes, min(fecha.day, calendar.monthrange(anio, mes)[1]))
+
+
+def imputar_pago(pago):
+    """
+    Reparte un pago validado entre las deudas de su UF, del período más viejo al más nuevo:
+    primero el interés de cada período y después su capital. Lo que sobra queda como saldo a favor.
+    """
+    restante = pago.monto_pagado
+    detalles = DetalleLiquidacionUF.objects.filter(
+        unidad_funcional=pago.detalle_liquidacion.unidad_funcional, liquidacion__cerrada=True,
+    ).select_related('liquidacion__consorcio').prefetch_related('imputaciones__pago').order_by('liquidacion__periodo')
+    imputaciones = []
+    for detalle in detalles:
+        for concepto, deuda in (('interes', detalle.interes(pago.fecha_pago)), ('capital', detalle.deuda_total_actualizada)):
+            monto = min(restante, deuda)
+            if monto > 0:
+                imputaciones.append(ImputacionPago(pago=pago, detalle_liquidacion=detalle, concepto=concepto, monto=monto))
+                restante -= monto
+        if restante <= 0:
+            break
+    if restante > 0:
+        imputaciones.append(ImputacionPago(pago=pago, concepto='excedente', monto=restante))
+    return ImputacionPago.objects.bulk_create(imputaciones)
 
 class Pago(models.Model):
     ESTADOS = (
@@ -192,6 +267,34 @@ class Pago(models.Model):
 
     def __str__(self):
         return f"Pago de {self.detalle_liquidacion.unidad_funcional} - ${self.monto_pagado}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.estado == 'validado' and not self.imputaciones.exists():
+            imputar_pago(self)
+
+
+class ImputacionPago(models.Model):
+    """Parte de un pago validado que cancela el interés o el capital de un período."""
+    CONCEPTOS = (
+        ('interes', 'Interés'),
+        ('capital', 'Capital'),
+        ('excedente', 'Saldo a favor'),
+    )
+    pago = models.ForeignKey(Pago, on_delete=models.CASCADE, related_name='imputaciones')
+    detalle_liquidacion = models.ForeignKey(
+        DetalleLiquidacionUF, on_delete=models.CASCADE, related_name='imputaciones', null=True, blank=True
+    )
+    concepto = models.CharField(max_length=10, choices=CONCEPTOS)
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        verbose_name = "Imputación de pago"
+        verbose_name_plural = "Imputaciones de pagos"
+        ordering = ['pk']
+
+    def __str__(self):
+        return f"{self.get_concepto_display()} ${self.monto} - {self.pago}"
 
 
 class DetalleGastoUF(models.Model):

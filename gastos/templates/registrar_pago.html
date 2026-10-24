@@ -141,7 +141,7 @@
             <p><strong>Consorcio:</strong> {{ detalle.liquidacion.consorcio.nombre }}</p>
             <p><strong>Unidad:</strong> Piso {{ detalle.unidad_funcional.piso }}° {{ detalle.unidad_funcional.departamento|default:"" }}</p>
             <p><strong>Período:</strong> {{ detalle.liquidacion.periodo }}</p>
-            <p class="pago-deuda">Total a pagar: ${{ detalle.deuda_total_actualizada }}</p>
+            <p class="pago-deuda">Total a pagar: $ {{ detalle.deuda_total_actualizada|floatformat:"2g" }}</p>
         </div>
 
         <form method="POST" enctype="multipart/form-data">
