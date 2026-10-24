@@ -2,15 +2,23 @@
 {% block title %}Consultas{% endblock %}
 {% block content %}
 {% include "componentes/mensajes.html" %}
-<div class="liquidaciones-cabecera">
-    <h1 class="titulo">Consultas de propietarios</h1>
+
+<div class="liquidaciones-cabecera" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+    <h1 class="titulo" style="margin-bottom: 0;">Consultas de propietarios</h1>
+    {% if consorcio_activo %}
+        <p style="color: #64748b; font-size: 1.1rem; margin: 0;">
+            {{ consorcio_activo.nombre }}
+        </p>
+    {% endif %}
 </div>
+
 <nav class="consultas-filtros" aria-label="Filtrar por estado">
     <a href="?estado=abierta" class="{% if estado == 'abierta' %}activo{% endif %}">Abiertas <b>{{ totales.abiertas }}</b></a>
     <a href="?estado=en_curso" class="{% if estado == 'en_curso' %}activo{% endif %}">En curso <b>{{ totales.en_curso }}</b></a>
     <a href="?estado=cerrada" class="{% if estado == 'cerrada' %}activo{% endif %}">Cerradas <b>{{ totales.cerradas }}</b></a>
     <a href="?estado=todas" class="{% if estado == 'todas' %}activo{% endif %}">Todas</a>
 </nav>
+
 <div class="contenedor-tabla">
     <table class="tabla">
         <thead><tr><th>N°</th><th>Asunto</th><th>Consorcio / UF</th><th>Propietario</th><th>Última actividad</th><th>Estado</th></tr></thead>

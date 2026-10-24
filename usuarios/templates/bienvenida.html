@@ -11,26 +11,43 @@
             ¡Hola, {{ user.first_name|default:user.username }}!
         </h1>
 
-        <p class="tarjeta-bienvenida__texto">
-            Te damos la bienvenida al sistema. Utilizá el menú de la izquierda para navegar por las distintas secciones.
-        </p>
-
-        <div class="indicador-menu flex center">
-            <span class="indicador-menu__icono" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            </span>
-            <span>Accedé a tus opciones desde la barra lateral</span>
-        </div>
+        {% if not consorcios_disponibles %}
+            <!-- Si no tiene ningún consorcio, lo invitamos a crear el primero -->
+            <p class="tarjeta-bienvenida__texto">
+                Para comenzar a utilizar el sistema, primero necesitás crear un consorcio.
+            </p>
+            <a href="{% url 'crear_consorcio' %}" class="boton-primario" style="margin-top: 1rem; padding: 10px 20px; text-decoration: none; font-size: 1rem;">
+                Crear mi primer consorcio
+            </a>
+        {% else %}
+            <!-- Si ya tiene consorcios, le mostramos el activo y un botón directo -->
+            <p class="tarjeta-bienvenida__texto">
+                Te damos la bienvenida al sistema. Actualmente estás administrando:
+            </p>
+            
+            <h2 style="font-size: 1.6rem; color: #1e293b; margin: 1.5rem 0; font-weight: 700;">
+                {{ consorcio_activo.nombre }}
+            </h2>
+            
+            <a href="{% url 'gestionar_consorcio' %}" class="boton-primario" style="padding: 10px 20px; text-decoration: none; font-size: 1rem;">
+                Ir al panel del consorcio
+            </a>
+            
+            <div class="indicador-menu flex center" style="margin-top: 2rem;">
+                <span class="indicador-menu__icono" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </span>
+                <span>O usá el menú de la izquierda para navegar</span>
+            </div>
+        {% endif %}
     </div>
 
 </div>
 
 <script>
     $(document).ready(function() {
-        // Fuerza la apertura del sidebar y ajusta el layout al cargar la vista de bienvenida
         $('#sidebar').addClass('open');
         $('body').addClass('sidebar-abierta');
     });
 </script>
-
 {% endblock %}

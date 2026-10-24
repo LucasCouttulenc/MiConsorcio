@@ -23,6 +23,25 @@
         {% endif %}
     </div>
 
+        <!-- SELECTOR DE CONSORCIO GLOBAL -->
+    {% if consorcios_disponibles %}
+        <div class="sidebar-consorcio-selector" style="padding: 10px 20px; margin-bottom: 10px;">
+            <label style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; font-weight: 700;">
+                Consorcio Activo
+            </label>
+            <form method="POST" action="{% url 'cambiar_consorcio_activo' %}">
+                {% csrf_token %}
+                <select name="consorcio_id" onchange="this.form.submit()" class="sin-select2" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; font-weight: bold; cursor: pointer;">
+                    {% for c in consorcios_disponibles %}
+                        <option value="{{ c.pk }}" {% if consorcio_activo.pk == c.pk %}selected{% endif %}>
+                            {{ c.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    {% endif %}    
+
     {% if user.is_authenticated %}
         <!-- Menú -->
         <div class="sidebar-menu flex column between">
@@ -30,13 +49,13 @@
                 {% if user.is_superuser or 'Administrador' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL ADMINISTRADOR</span>
-                        <div class="submenu-item {% if request.resolver_match.url_name == 'listar_consorcios' %}active{% endif %}">
-                            <a href="{% url 'listar_consorcios' %}" title="Consorcios">
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'gestionar_consorcio' %}active{% endif %}">
+                            <a href="{% url 'gestionar_consorcio' %}" title="Datos del consorcio">
                                 <span class="item-icono">
-                                    <img src="{% static 'imagenes/consorcios.svg' %}" class="svg-icono default-icon" alt="Consorcios">
-                                    <img src="{% static 'imagenes/consorcios_blanco.svg' %}" class="svg-icono hover-icon" alt="Consorcios">
+                                    <img src="{% static 'imagenes/consorcios.svg' %}" class="svg-icono default-icon" alt="Datos">
+                                    <img src="{% static 'imagenes/consorcios_blanco.svg' %}" class="svg-icono hover-icon" alt="Datos">
                                 </span>
-                                <span class="item-texto">Consorcios</span>
+                                <span class="item-texto">Datos del consorcio</span>
                             </a>
                         </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'listar_unidades_funcionales' %}active{% endif %}">

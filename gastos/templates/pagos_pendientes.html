@@ -6,8 +6,13 @@
 {% block content %}
 {% include "componentes/mensajes.html" %}
 
-<div class="liquidaciones-cabecera">
-    <h1 class="titulo">Pagos Pendientes de Validación</h1>
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">Pagos Pendientes de Validación</h1>
+    {% if consorcio %}
+        <p style="color: #64748b; font-size: 1.1rem; margin: 0;">
+            {{ consorcio.nombre }}
+        </p>
+    {% endif %}
 </div>
 
 <div class="contenedor-tabla">

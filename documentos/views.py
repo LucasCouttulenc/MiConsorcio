@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from consorcios.models import Consorcio
@@ -15,21 +14,26 @@ from .models import DocumentoConsorcio
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def documentos_consorcio(request):
-    """El administrador sube y borra los documentos de cada consorcio que administra."""
-    consorcios = consorcios_permitidos(request.user).order_by('nombre')
-    consorcio_id = request.GET.get('consorcio') or request.POST.get('consorcio') or ''
-    consorcio = consorcios.filter(pk=consorcio_id).first() if consorcio_id.isdecimal() else None
-    consorcio = consorcio or consorcios.first()
+    """El administrador sube y borra los documentos del consorcio activo."""
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
     formulario = FormularioDocumento(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and consorcio and formulario.is_valid():
+    
+    if request.method == 'POST' and formulario.is_valid():
         documento = formulario.save(commit=False)
         documento.consorcio = consorcio
         documento.save()
         messages.success(request, f'Documento "{documento.titulo}" subido.')
-        return redirect(f"{request.path}?consorcio={consorcio.pk}")
+        return redirect('documentos_consorcio')
+        
     return render(request, 'documentos_consorcio.html', {
-        'consorcios': consorcios, 'consorcio': consorcio, 'formulario': formulario,
-        'documentos': consorcio.documentos.all() if consorcio else [],
+        'consorcio': consorcio,
+        'formulario': formulario,
+        'documentos': consorcio.documentos.all(),
     })
 
 
@@ -37,13 +41,17 @@ def documentos_consorcio(request):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 @require_POST
 def borrar_documento(request, documento_id):
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        return redirect('bienvenida')
+
     documento = get_object_or_404(
-        DocumentoConsorcio, pk=documento_id, consorcio__in=consorcios_permitidos(request.user)
+        DocumentoConsorcio, pk=documento_id, consorcio_id=consorcio_id
     )
     documento.archivo.delete(save=False)
     documento.delete()
     messages.success(request, 'Documento borrado.')
-    return redirect(f"{reverse('documentos_consorcio')}?consorcio={documento.consorcio_id}")
+    return redirect('documentos_consorcio')
 
 
 @login_required

@@ -27,52 +27,24 @@ def _administra(usuario, consorcio_id):
     administrador = Administrador.objects.filter(usuario=usuario).first()
     return bool(administrador and administrador.administra(consorcio_id))
 
-
-@method_decorator(login_required, name='dispatch')
-@method_decorator(permission_required('consorcios.view_consorcio', raise_exception=True), name='dispatch')
-class ListarConsorcios(Lista):
-    model = Consorcio
-    table_class = TablaConsorcios
-    export_name = 'consorcios'
-    filterset_class = FiltroConsorcios
-    template_name = 'listar_consorcios.html'
-    acciones = [
-        { "nombre": "Crear", "tipo": "link", "perm": "consorcios.add_consorcio", "url": "crear_consorcio" },
-    ]
-    columnas_con_permiso = {} # dict
-    columnas_a_ocultar = {} # set
-
-    def get_queryset(self):
-        """
-        Obtiene el queryset de consorcios según el usuario autenticado.
-        """
-        usuario = self.request.user
-        queryset = super().get_queryset()
-        if usuario.is_superuser:
-            return queryset
-        else:
-            administrador = Administrador.objects.filter(usuario=usuario).first()
-            consorcios = administrador.consorcios.all() if administrador else Consorcio.objects.none()
-            return queryset.filter(id__in=consorcios)
-
 @login_required
 @permission_required('consorcios.change_consorcio', raise_exception=True)
-def gestionar_consorcio(request, id):
+def gestionar_consorcio(request):
     """
-    Vista para gestionar un consorcio.
-    Permite ver y editar los datos del consorcio.
+    Vista para gestionar los datos del consorcio activo (sin pedir ID por URL).
+    """
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
 
-    :param request: Objeto HttpRequest.
-    :param id: ID del consorcio a gestionar.
-    :return: Renderiza la plantilla de gestión de consorcios.
-    """
-    if not _administra(request.user, id):
+    if not _administra(request.user, consorcio_id):
         messages.error(request, "No tenes permisos para gestionar este consorcio.")
-        return redirect('listar_consorcios')
+        return redirect('bienvenida')
 
     return gestionar_modelo(
         request=request,
-        id_modelo=id,
+        id_modelo=consorcio_id,
         formulario_modelo=FormularioConsorcio,
         template="gestionar_consorcio.html",
     )
@@ -82,28 +54,44 @@ def gestionar_consorcio(request, id):
 def crear_consorcio(request):
     """
     Vista para crear un nuevo consorcio.
-    Permite ingresar los datos del consorcio y guardarlos en la base de datos.
-
-    :param request: Objeto HttpRequest.
-    :return: Renderiza la plantilla de creación de consorcios.
+    Al crearlo, lo dejamos seleccionado en la sesión automáticamente
+    y le creamos una estructura base (Rubro y Columna) para que sea usable.
     """
-
-    """Agrega el consocio al administrador que lo crea, si es que no es superusuario."""
     def func_post_save(modelo, _form):
-        if request.user.is_superuser: return
+        # Lo seleccionamos como activo
+        request.session['consorcio_activo_id'] = modelo.id
+        
+        # Si no es superusuario, lo asignamos a su perfil
+        if not request.user.is_superuser:
+            administrador = Administrador.objects.filter(usuario=request.user).first()
+            if administrador:
+                administrador.consorcios.add(modelo)
+                administrador.save()
 
-        administrador = Administrador.objects.filter(usuario=request.user).first()
-        if administrador:
-            administrador.consorcios.add(modelo)
-            administrador.save()
+        # --- AUTO-CREACIÓN DE ESTRUCTURA BASE ---
+        # Creamos un rubro por defecto
+        rubro, _ = Rubro.objects.get_or_create(
+            consorcio=modelo, 
+            nombre='GASTOS GENERALES'
+        )
+        # Creamos una columna General por defecto
+        GrupoProrrateo.objects.get_or_create(
+            consorcio=modelo, 
+            rubro=rubro, 
+            codigo='A', 
+            defaults={
+                'nombre': 'General', 
+                'tipo_reparto': TipoReparto.GENERAL
+            }
+        )
 
     return crear_modelo(
         request=request,
         formulario_modelo=FormularioConsorcio,
         template="crear_consorcio.html",
-        vista_exito="listar_consorcios",
+        vista_exito="gestionar_consorcio",
         func_post_save=func_post_save
-    ) 
+    )
 
 @method_decorator(login_required, name='dispatch')
 @method_decorator(permission_required('consorcios.view_unidadfuncional', raise_exception=True), name='dispatch')
@@ -113,55 +101,35 @@ class ListarUnidadesFuncionales(Lista):
     export_name = 'unidades_funcionales'
     filterset_class = FiltroUnidadesFuncionales
     template_name = 'listar_unidades_funcionales.html'
-    acciones = [
-        { "nombre": "Crear", "tipo": "link", "perm": "consorcios.add_unidadfuncional", "url": "crear_unidad_funcional"},
-    ]
-    columnas_con_permiso = {"gestionar": "consorcios.change_unidadfuncional"} # dict
-    columnas_a_ocultar = {} # set
+    
+    # agregaremos manualmente o vía contexto
+    acciones = [] 
+    columnas_con_permiso = {"gestionar": "consorcios.change_unidadfuncional"}
+    columnas_a_ocultar = {}
 
     def get_queryset(self):
-        """
-        Obtiene el queryset de unidades funcionales según el consorcio deseado y el usuario autenticado.
-        """
-        usuario = self.request.user
         queryset = super().get_queryset()
-
-        if usuario.is_superuser:
-            return queryset
-
-        # Solo muestra el personal de los que administra
-        if usuario.groups.filter(name=GRUPO_ADMINISTRADORES).exists():
-            administrador = Administrador.objects.filter(usuario=usuario).first()
-            consorcios = administrador.consorcios.all() if administrador else Consorcio.objects.none()
-            return queryset.filter(consorcio__in=consorcios)
-
-        return queryset.filter(propietario__usuario=usuario)
+        consorcio_id = self.request.session.get('consorcio_activo_id')
+        
+        if not consorcio_id:
+            return queryset.none()
+            
+        return queryset.filter(consorcio_id=consorcio_id)
 
     def get_context_data(self, **kwargs):
-        """
-        Agrega el consorcio al contexto y bloquea los botones si no hay uno seleccionado.
-        """
         context = super().get_context_data(**kwargs)
-        consorcio_id = self.request.GET.get('consorcio')
+        consorcio_id = self.request.session.get('consorcio_activo_id')
         
-        if consorcio_id and consorcio_id.isdecimal():
+        if consorcio_id:
             consorcio = Consorcio.objects.filter(id=consorcio_id).first()
             context['consorcio'] = consorcio
-            context['elemento'] = consorcio
+            # context['elemento'] = consorcio  <-- ELIMINAR ESTA LÍNEA
             
-            # Botones habilitados
-            context['acciones'] = list(self.acciones) + [
-                { "nombre": "Cambiar porcentajes","label": "Cambiar porcentajes", "tipo": "link", "perm": "consorcios.change_unidadfuncional", "url": "definir_alicuotas" }
-            ]
-        else:
-            # Botones deshabilitados (bloqueados)
             context['acciones'] = [
-                { "nombre": "Crear Unidad Funcional", "disabled": True },
-                { "nombre": "Cambiar porcentajes", "disabled": True },
+                { "nombre": "Crear Unidad Funcional", "label": "Crear Unidad Funcional", "tipo": "link", "url": "crear_unidad_funcional" },
+                { "nombre": "Cambiar porcentajes", "label": "Cambiar porcentajes", "tipo": "link", "url": "definir_alicuotas" }
             ]
-            
         return context
-    
 
 @login_required
 @permission_required('consorcios.add_unidadfuncional', raise_exception=True)
@@ -171,7 +139,8 @@ def crear_unidad_funcional(request, consorcio_id=None):
     """
     if consorcio_id is not None and not _administra(request.user, consorcio_id):
         messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
-        return redirect('listar_consorcios')
+        return redirect('bienvenida')
+
 
     vista_exito = "listar_unidades_funcionales"
     params_vista_exito = None
@@ -209,7 +178,8 @@ def gestionar_unidad_funcional(request, unidad_id):
     unidad_funcional = get_object_or_404(UnidadFuncional, id=unidad_id)
     if not _administra(request.user, unidad_funcional.consorcio_id):
         messages.error(request, "No tenes permisos para gestionar esta unidad funcional.")
-        return redirect('listar_consorcios')
+        return redirect('bienvenida')
+
 
     return gestionar_modelo(
         request=request,
@@ -231,58 +201,52 @@ class ListarPersonal(Lista):
     export_name = 'personal'
     filterset_class = FiltroPersonal
     template_name = 'listar_personal.html'
-    acciones = [
-        { "nombre": "Agregar", "tipo": "link", "perm": "consorcios.add_personal", "url": "crear_personal"},
-    ]
-    columnas_con_permiso = {"gestionar": "consorcios.change_personal"} # dict
-    columnas_a_ocultar = {} # set
+    acciones = [] # Lo manejamos en get_context_data
+    columnas_con_permiso = {"gestionar": "consorcios.change_personal"}
+    columnas_a_ocultar = {}
 
     def get_queryset(self):
-        """
-        Obtiene el queryset de personal según el consorcio deseado y el usuario autenticado.
-        """
-        usuario = self.request.user
-        consorcio_id = self.kwargs.get('consorcio_id')
         queryset = super().get_queryset()
-
-        if _administra(usuario, consorcio_id):
-            return queryset.filter(consorcio_id=consorcio_id)
-
-        messages.error(self.request, "No tenes permisos para ver el personal de este consorcio.")
-        return queryset.none()
+        consorcio_id = self.request.session.get('consorcio_activo_id')
+        
+        if not consorcio_id:
+            return queryset.none()
+            
+        return queryset.filter(consorcio_id=consorcio_id)
 
     def get_context_data(self, **kwargs):
-        """
-        Agrega el consorcio al contexto para poder mostrar su nombre en la plantilla.
-        """
         context = super().get_context_data(**kwargs)
-        consorcio_id = self.kwargs.get('consorcio_id')
-        consorcio = Consorcio.objects.filter(id=consorcio_id).first()
-        context['consorcio'] = consorcio
-        context['elemento'] = consorcio
+        consorcio_id = self.request.session.get('consorcio_activo_id')
+        
+        if consorcio_id:
+            consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+            context['consorcio'] = consorcio
+            
+            # Habilitamos el botón de agregar personal
+            context['acciones'] = [
+                { "nombre": "Agregar", "tipo": "link", "perm": "consorcios.add_personal", "url": "crear_personal"}
+            ]
         return context
 
 @login_required
 @permission_required('consorcios.add_personal', raise_exception=True)
-def crear_personal(request, consorcio_id):
+def crear_personal(request):
     """
-    Vista para agregar personal a un consorcio específico.
-
-    :param request: Objeto HttpRequest.
-    :param consorcio_id: ID del consorcio al que pertenece el personal.
+    Vista para agregar personal al consorcio activo.
     """
+    consorcio_id = request.session.get('consorcio_activo_id')
+    
+    if not consorcio_id or not _administra(request.user, consorcio_id):
+        messages.error(request, "Seleccioná un consorcio válido para agregar personal.")
+        return redirect('listar_personal')
 
     consorcio = get_object_or_404(Consorcio, id=consorcio_id)
-    if not _administra(request.user, consorcio_id):
-        messages.error(request, "No tenes permisos para agregar personal en este consorcio.")
-        return redirect('listar_consorcios')
 
     return crear_modelo(
         request=request,
         formulario_modelo=FormularioPersonal,
         template="crear_personal.html",
         vista_exito="listar_personal",
-        params_vista_exito={"consorcio_id": consorcio_id},
         modelo_secundario=consorcio
     )
 
@@ -300,7 +264,8 @@ def gestionar_personal(request, personal_id):
     personal = get_object_or_404(Personal, id=personal_id)
     if not _administra(request.user, personal.consorcio_id):
         messages.error(request, "No tenes permisos para gestionar este personal.")
-        return redirect('listar_consorcios')
+        return redirect('bienvenida')
+
 
     return gestionar_modelo(
         request=request,
@@ -324,16 +289,23 @@ def _consorcio_gestionable(request, consorcio_id):
  
 @login_required
 @permission_required('consorcios.change_unidadfuncional', raise_exception=True)
-def definir_alicuotas(request, consorcio_id):
+def definir_alicuotas(request):
     """
     Pantalla simple: una sola alícuota por UF, la suma debe dar 100%.
     """
+    consorcio_id = request.session.get('consorcio_activo_id')
+    
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
     consorcio = get_object_or_404(Consorcio, id=consorcio_id)
 
     # Permisos
     if not _administra(request.user, consorcio_id):
         messages.error(request, "No tenés permisos para gestionar este consorcio.")
-        return redirect('listar_consorcios')
+        return redirect('bienvenida')
+
 
     unidades = (
         consorcio.unidades_funcionales
@@ -349,7 +321,7 @@ def definir_alicuotas(request, consorcio_id):
         else:
             guardar_alicuotas(consorcio, valores)
             messages.success(request, "Alícuotas guardadas correctamente.")
-            return redirect('definir_alicuotas', consorcio_id=consorcio_id)
+            return redirect('definir_alicuotas') # Ya no lleva parámetros
 
     suma = suma_alicuotas(consorcio)
     return render(request, 'definir_alicuotas.html', {
@@ -358,7 +330,6 @@ def definir_alicuotas(request, consorcio_id):
         'suma': suma,
         'suma_valida': suma == 100,
     })
-
 
 def _generar_codigo_columna(consorcio, nombre):
     base = re.sub(r'[^A-Za-z0-9]', '', nombre).upper()[:10] or 'COL'
@@ -375,21 +346,17 @@ def _generar_codigo_columna(consorcio, nombre):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def configurar_columnas(request):
     """
-    Pantalla principal: lista los rubros del consorcio. Solo permite
-    crear/editar/borrar rubros. Las columnas se editan en una vista aparte.
+    Pantalla principal: lista los rubros del consorcio activo.
     """
-    if request.user.is_superuser:
-        consorcios_disp = Consorcio.objects.all().order_by('nombre')
-    else:
-        consorcios_disp = Consorcio.objects.filter(administradores__usuario=request.user).distinct().order_by('nombre')
+    consorcio_id = request.session.get('consorcio_activo_id')
+    
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
 
-    consorcio_id = request.POST.get('consorcio') or request.GET.get('consorcio', '')
-    consorcio = consorcios_disp.filter(id=consorcio_id).first() if consorcio_id.isdecimal() else None
-    if consorcio_id and not consorcio:
-        messages.error(request, "No tenés acceso a ese consorcio.")
-        return redirect('configurar_columnas')
+    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
 
-    if request.method == 'POST' and consorcio:
+    if request.method == 'POST':
         accion = request.POST.get('accion', '')
         try:
             with transaction.atomic():
@@ -426,14 +393,11 @@ def configurar_columnas(request):
 
         except ValueError as e:
             messages.error(request, str(e))
-        return redirect(f"{reverse('configurar_columnas')}?consorcio={consorcio.id}")
+        return redirect('configurar_columnas')
 
-    rubros = []
-    if consorcio:
-        rubros = consorcio.rubros.prefetch_related('columnas').order_by('nombre')
+    rubros = consorcio.rubros.prefetch_related('columnas').order_by('nombre')
 
     return render(request, 'configurar_columnas.html', {
-        'consorcios': consorcios_disp,
         'consorcio': consorcio,
         'rubros': rubros,
     })
@@ -454,7 +418,8 @@ def editar_columnas_rubro(request, rubro_id):
         administrador = Administrador.objects.filter(usuario=request.user).first()
         if not administrador or not administrador.administra(consorcio.id):
             messages.error(request, "No tenés permisos para gestionar este consorcio.")
-            return redirect('listar_consorcios')
+            return redirect('bienvenida')
+
 
     unidades = consorcio.unidades_funcionales.order_by('piso', 'departamento')
 

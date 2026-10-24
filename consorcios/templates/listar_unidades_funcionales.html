@@ -1,12 +1,19 @@
 {% extends "base.html" %}
 
-{%block title%}Unidades Funcionales{% endblock %}
+{% block title %}Unidades Funcionales{% endblock %}
 
-{%block content %}
+{% block content %}
 
 {% include "componentes/mensajes.html" %}
 
-<h1 class="titulo">Unidades Funcionales</h1>
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">Unidades Funcionales</h1>
+    {% if consorcio %}
+        <p style="color: #64748b; font-size: 1.1rem; margin: 0;">
+            {{ consorcio.nombre }}
+        </p>
+    {% endif %}
+</div>
 
 {% include "componentes/tabla.html" %}
     

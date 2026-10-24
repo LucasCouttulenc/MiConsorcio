@@ -34,18 +34,24 @@ urlpatterns = [
     path('cerrar-sesion/', auth_views.LogoutView.as_view(next_page='login'), name='cerrar_sesion'),
     path('usuarios/login/', views_usuarios.login, name='login'),
     path('usuarios/bienvenida/', views_usuarios.bienvenida, name='bienvenida'),
-
+    path('cambiar-consorcio/', views_usuarios.cambiar_consorcio_activo, name='cambiar_consorcio_activo'),
+    
     # Consorcios
-    path('consorcios/listar/', views_consorcios.ListarConsorcios.as_view(), name='listar_consorcios'),
-    path('consorcios/gestionar/<int:id>/', views_consorcios.gestionar_consorcio, name='gestionar_consorcio'),
+    path('consorcios/datos/', views_consorcios.gestionar_consorcio, name='gestionar_consorcio'),
     path('consorcios/crear/', views_consorcios.crear_consorcio, name='crear_consorcio'),
-    path('consorcios/unidades/listar', views_consorcios.ListarUnidadesFuncionales.as_view(), name='listar_unidades_funcionales'),
-    re_path(r'^consorcios/(?:(?P<consorcio_id>[0-9]+)/)?unidades/crear/$', views_consorcios.crear_unidad_funcional, name='crear_unidad_funcional'),
+    
+    # Unidades 
+    path('consorcios/unidades/', views_consorcios.ListarUnidadesFuncionales.as_view(), name='listar_unidades_funcionales'),
+    path('consorcios/unidades/crear/', views_consorcios.crear_unidad_funcional, name='crear_unidad_funcional'),
     path('consorcios/unidades/<int:unidad_id>/gestionar/', views_consorcios.gestionar_unidad_funcional, name='gestionar_unidad_funcional'),
-    path('consorcios/<int:consorcio_id>/personal/', views_consorcios.ListarPersonal.as_view(), name='listar_personal'),
-    path('consorcios/<int:consorcio_id>/personal/agregar/', views_consorcios.crear_personal, name='crear_personal'),
+    
+    # Personal 
+    path('consorcios/personal/', views_consorcios.ListarPersonal.as_view(), name='listar_personal'),
+    path('consorcios/personal/agregar/', views_consorcios.crear_personal, name='crear_personal'),
     path('consorcios/personal/<int:personal_id>/gestionar/', views_consorcios.gestionar_personal, name='gestionar_personal'),
-    path('consorcios/<int:consorcio_id>/alicuotas/',views_consorcios.definir_alicuotas,name='definir_alicuotas'),
+    
+    # Alícuotas y Rubros
+    path('consorcios/alicuotas/', views_consorcios.definir_alicuotas, name='definir_alicuotas'),
     path('consorcios/columnas/', views_consorcios.configurar_columnas, name='configurar_columnas'),
     path('consorcios/columnas/rubro/<int:rubro_id>/', views_consorcios.editar_columnas_rubro, name='editar_columnas_rubro'),
     

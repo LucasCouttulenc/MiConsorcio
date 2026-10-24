@@ -15,14 +15,14 @@
         <p class="alicuotas-subtitulo" style="margin-bottom: 0.8rem;">
             {{ consorcio.nombre }} · {{ consorcio.calle }} {{ consorcio.altura }}
         </p>
-        <a href="{% url 'gestionar_consorcio' consorcio.id %}" class="boton-secundario">← Volver al consorcio</a>
+        <a href="{% url 'gestionar_consorcio' %}" class="boton-secundario">← Volver al consorcio</a>
     </div>
 </div>
 
 {% if not unidades %}
     <div class="alerta alerta-info">
         Este consorcio todavía no tiene unidades funcionales cargadas.
-        <a href="{% url 'crear_unidad_funcional' consorcio.id %}">Crear la primera UF</a>.
+        <a href="{% url 'crear_unidad_funcional' %}">Crear la primera UF</a>.
     </div>
 {% else %}
 

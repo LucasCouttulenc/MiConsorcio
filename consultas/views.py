@@ -12,11 +12,14 @@ from .forms import FormularioConsulta, FormularioMensaje
 from .models import Consulta, EstadoConsulta, MensajeConsulta
 
 
+# ==========================================
+# VISTAS DEL PROPIETARIO
+# ==========================================
+
 def consultas_del_propietario(propietario):
     return Consulta.objects.filter(unidad_funcional__propietario=propietario).select_related(
         'unidad_funcional__consorcio'
     )
-
 
 @login_required
 def mis_consultas(request):
@@ -24,7 +27,6 @@ def mis_consultas(request):
     propietario = get_object_or_404(Propietario, usuario=request.user)
     consultas = consultas_del_propietario(propietario).annotate(cantidad_mensajes=Count('mensajes'))
     return render(request, 'mis_consultas.html', {'consultas': consultas})
-
 
 @login_required
 def nueva_consulta(request):
@@ -48,7 +50,6 @@ def nueva_consulta(request):
         return redirect('ver_consulta', consulta_id=consulta.pk)
     return render(request, 'nueva_consulta.html', {'formulario': formulario})
 
-
 @login_required
 def ver_consulta(request, consulta_id):
     """Hilo de una consulta para el propietario; puede seguir escribiendo mientras no esté cerrada."""
@@ -67,33 +68,45 @@ def ver_consulta(request, consulta_id):
     })
 
 
-def consultas_administradas(usuario):
-    return Consulta.objects.filter(
-        unidad_funcional__consorcio__in=consorcios_permitidos(usuario)
-    ).select_related('unidad_funcional__consorcio', 'unidad_funcional__propietario__usuario')
-
+# ==========================================
+# VISTAS DEL ADMINISTRADOR (CONSORCIO ACTIVO)
+# ==========================================
 
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def bandeja_consultas(request):
-    """Bandeja del administrador, filtrada por estado."""
-    consultas = consultas_administradas(request.user)
+    """Bandeja del administrador, filtrada por el consorcio activo y por estado."""
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    # Filtramos estrictamente por el consorcio de la sesión
+    consultas = Consulta.objects.filter(
+        unidad_funcional__consorcio_id=consorcio_id
+    ).select_related('unidad_funcional__consorcio', 'unidad_funcional__propietario__usuario')
+
+    # Filtro opcional si vienen desde el detalle de una UF
     if request.GET.get('unidad', '').isdecimal():
         consultas = consultas.filter(unidad_funcional_id=request.GET['unidad'])
+
     totales = consultas.aggregate(
         abiertas=Count('pk', filter=Q(estado=EstadoConsulta.ABIERTA)),
         en_curso=Count('pk', filter=Q(estado=EstadoConsulta.EN_CURSO)),
         cerradas=Count('pk', filter=Q(estado=EstadoConsulta.CERRADA)),
     )
-    # Por defecto, las que esperan respuesta de la administración.
+    
+    # Por defecto, mostramos las que esperan respuesta
     estado = request.GET.get('estado', EstadoConsulta.ABIERTA)
     if estado in EstadoConsulta.values:
         consultas = consultas.filter(estado=estado)
     else:
         estado = 'todas'
+        
     return render(request, 'bandeja_consultas.html', {
         'consultas': consultas.annotate(cantidad_mensajes=Count('mensajes')),
-        'estado': estado, 'totales': totales,
+        'estado': estado, 
+        'totales': totales,
     })
 
 
@@ -101,8 +114,19 @@ def bandeja_consultas(request):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def gestionar_consulta(request, consulta_id):
     """El administrador responde (pasa a En curso) o cierra la consulta."""
-    consulta = get_object_or_404(consultas_administradas(request.user), pk=consulta_id)
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        return redirect('bienvenida')
+
+    # Seguridad: Verificamos que la consulta pertenezca al consorcio activo
+    consulta = get_object_or_404(
+        Consulta.objects.select_related('unidad_funcional__consorcio', 'unidad_funcional__propietario__usuario'),
+        pk=consulta_id,
+        unidad_funcional__consorcio_id=consorcio_id
+    )
+    
     formulario = FormularioMensaje(request.POST or None)
+    
     if request.method == 'POST':
         accion = request.POST.get('accion')
         if accion == 'cerrar' and not consulta.cerrada:
@@ -110,6 +134,7 @@ def gestionar_consulta(request, consulta_id):
             consulta.save(update_fields=['estado', 'actualizada'])
             messages.success(request, 'Consulta cerrada.')
             return redirect('bandeja_consultas')
+            
         if accion == 'responder' and not consulta.cerrada and formulario.is_valid():
             MensajeConsulta.objects.create(
                 consulta=consulta, autor=request.user, de_administracion=True, texto=formulario.cleaned_data['texto'],
@@ -117,6 +142,9 @@ def gestionar_consulta(request, consulta_id):
             consulta.estado = EstadoConsulta.EN_CURSO
             consulta.save(update_fields=['estado', 'actualizada'])
             return redirect('gestionar_consulta', consulta_id=consulta.pk)
+            
     return render(request, 'gestionar_consulta.html', {
-        'consulta': consulta, 'mensajes_consulta': consulta.mensajes.select_related('autor'), 'formulario': formulario,
+        'consulta': consulta, 
+        'mensajes_consulta': consulta.mensajes.select_related('autor'), 
+        'formulario': formulario,
     })

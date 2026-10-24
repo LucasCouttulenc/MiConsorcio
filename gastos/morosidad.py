@@ -5,10 +5,12 @@ Usa los mismos cálculos que el portal del propietario, así los números coinci
 from datetime import date
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
-from consorcios.models import UnidadFuncional
+# Agregamos Consorcio acá
+from consorcios.models import UnidadFuncional, Consorcio
 
 from .models import DetalleLiquidacionUF, Liquidacion, Pago
 from .views import consorcios_permitidos, periodo_legible
@@ -59,18 +61,19 @@ def detalles_cerrados(unidades):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def morosidad(request):
-    consorcios = consorcios_permitidos(request.user).order_by('nombre')
-    consorcio_id = request.GET.get('consorcio', '')
-    consorcio = consorcios.filter(pk=consorcio_id).first() if consorcio_id.isdecimal() else None
-    consorcio = consorcio or consorcios.first()
-    if not consorcio:
-        return render(request, 'morosidad.html', {'consorcios': consorcios})
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+    
+    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
 
     hoy = date.today()
     unidades = list(UnidadFuncional.objects.filter(consorcio=consorcio).select_related('propietario__usuario'))
     por_unidad = {unidad.pk: [] for unidad in unidades}
     for detalle in detalles_cerrados(unidades):
         por_unidad[detalle.unidad_funcional_id].append(detalle)
+        
     filas = []
     for unidad in unidades:
         fila = deuda_de_unidad(unidad, por_unidad[unidad.pk], hoy)
@@ -96,7 +99,7 @@ def morosidad(request):
             cobrado = round(sum((d.total_pagado for d in detalles_ultima), Decimal('0')) * 100 / liquidado)
 
     return render(request, 'morosidad.html', {
-        'consorcios': consorcios, 'consorcio': consorcio, 'hoy': hoy,
+        'consorcio': consorcio, 'hoy': hoy,
         'filas': visibles, 'filtro': filtro,
         'filtros': [(clave, nombre, sum(1 for fila in filas if regla(fila))) for clave, (nombre, regla) in FILTROS.items()],
         'total_capital': sum((fila['capital'] for fila in visibles), Decimal('0')),
@@ -115,9 +118,15 @@ def morosidad(request):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def morosidad_unidad(request, unidad_id):
     """Estado de cuenta de una UF para el administrador: deuda por período y movimientos."""
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    # Filtramos por el consorcio activo para evitar que puedan ver UFs de otros consorcios por URL
     unidad = get_object_or_404(
         UnidadFuncional.objects.select_related('consorcio', 'propietario__usuario'),
-        pk=unidad_id, consorcio__in=consorcios_permitidos(request.user),
+        pk=unidad_id, consorcio_id=consorcio_id,
     )
     hoy = date.today()
     detalles = list(detalles_cerrados([unidad]))
@@ -146,7 +155,9 @@ def morosidad_unidad(request, unidad_id):
     movimientos.sort(key=lambda movimiento: movimiento['fecha'], reverse=True)
 
     return render(request, 'morosidad_unidad.html', {
-        'unidad': unidad, 'resumen': resumen, 'nivel': nivel_atraso(resumen['dias_atraso']),
+        'unidad': unidad,
+        'resumen': resumen,
+        'nivel': nivel_atraso(resumen['dias_atraso']),
         'periodos': periodos, 'movimientos': movimientos,
         'tasa': unidad.consorcio.tasa_interes_mensual,
     })

@@ -1,35 +1,53 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Gestionar consorcio{% endblock %}
+{% block title %}Datos del consorcio{% endblock %}
 
 {% block content %}
 
 {% include "componentes/mensajes.html" %}
 
 <link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
-<link rel="stylesheet" href="{% static 'css/_alicuotas.css' %}">
 
 <div style="margin-bottom: 1.5rem;">
-    <h1 class="titulo" style="margin-bottom: 0.5rem;">Gestionar consorcio</h1>
-    <a href="{% url 'listar_consorcios' %}" class="boton-secundario" style="display: inline-block;">
-        ← Volver a la lista
+    <h1 class="titulo" style="margin-bottom: 0.5rem;">Datos del consorcio</h1>
+    <p style="color: #64748b; font-size: 1.1rem;">Editando: <strong>{{ consorcio.nombre }}</strong></p>
+</div>
+
+<!-- ACCESOS DIRECTOS (DASHBOARD) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <a href="{% url 'definir_alicuotas' %}" style="text-decoration: none; background: #d6e8fe; padding: 1.2rem; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
+        <div>
+            <strong style="display: block; color: #1e293b; font-size: 1rem;">Alícuotas</strong>
+            <span style="color: #64748b; font-size: 0.85rem;">Definir % de UF</span>
+        </div>
+    </a>
+    <a href="{% url 'configurar_columnas' %}" style="text-decoration: none; background: #d6e8fe; padding: 1.2rem; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
+        <div>
+            <strong style="display: block; color: #1e293b; font-size: 1rem;">Rubros y columnas</strong>
+            <span style="color: #64748b; font-size: 0.85rem;">Configurar prorrateo</span>
+        </div>
+    </a>
+    <a href="{% url 'listar_unidades_funcionales' %}" style="text-decoration: none; background: #d6e8fe; padding: 1.2rem; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
+        <div>
+            <strong style="display: block; color: #1e293b; font-size: 1rem;">Unidades</strong>
+            <span style="color: #64748b; font-size: 0.85rem;">Ver y gestionar UF</span>
+        </div>
+    </a>
+    <a href="{% url 'listar_personal' %}" style="text-decoration: none; background: #d6e8fe; padding: 1.2rem; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 1rem;">
+        <div>
+            <strong style="display: block; color: #1e293b; font-size: 1rem;">Personal</strong>
+            <span style="color: #64748b; font-size: 0.85rem;">Gestionar empleados</span>
+        </div>
     </a>
 </div>
 
-<div class="flex around">
-    <div>
+<!-- FORMULARIO DE EDICIÓN -->
+<div style="background: #173252; padding:1.5rem;border-radius: 10px;border: 1px solid #034297;box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+    <h2 style="font-size: 1.2rem; margin-bottom: 1rem; color: #b3b3b3;">Editar información</h2>
+    <div class="contenedor-formulario-custom" style="background: transparent; padding: 0; box-shadow: none; border: none;">
         {% include "formulario.html" with formulario=formulario %}
     </div>
 </div>
-
-<section class="acciones-consorcio">
-    <a href="{% url 'definir_alicuotas' consorcio.id %}" class="accion-card">
-        <div class="accion-texto">
-            <strong>Definir alícuotas de UF</strong>
-            <p>Configurá los porcentajes de cada unidad funcional</p>
-        </div>
-    </a>
-</section>
 
 {% endblock %}

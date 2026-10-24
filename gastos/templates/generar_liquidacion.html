@@ -19,33 +19,25 @@
 
     <form method="POST" action="{% url 'finalizar_liquidacion' %}" id="form-liquidacion" data-autosave-url="{% url 'autosave_liquidacion' %}">
         {% csrf_token %}
+        
+        <!-- INPUTS OCULTOS: Mantienen compatibilidad con tus scripts JS actuales -->
+        <input type="hidden" name="consorcio" id="select-consorcio" value="{{ consorcio.id }}">
         <input type="hidden" name="liquidacion_id" id="liquidacion-id" value="{{ liquidacion.id|default:'' }}">
         <input type="hidden" name="gastos" id="gastos-json">
-        <small id="estado-guardado" class="text-muted" aria-live="polite"></small>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: #1e293b;">{{ consorcio.nombre }}</h3>
+                <span style="font-size: 0.85rem; color: #64748b;">{{ consorcio.calle }} {{ consorcio.altura }}</span>
+            </div>
+            <small id="estado-guardado" class="text-muted" aria-live="polite"></small>
+        </div>
 
         <div class="gl-grid">
             <!-- COLUMNA IZQUIERDA: FORMULARIO DE CARGA -->
             <div class="gl-main-content">
 
-                <!-- 1. SELECCIÓN DE CONSORCIO -->
-                <div class="gl-card">
-                    <div class="gl-card-header gl-card-header-primary">
-                        <span class="gl-card-header-title">Selección de Consorcio</span>
-                    </div>
-                    <div class="gl-card-body">
-                        <div class="gl-form-group">
-                            <label class="gl-label">Consorcio</label>
-                            <select name="consorcio" id="select-consorcio" class="gl-select" required>
-                                <option value="">-- Seleccionar Consorcio --</option>
-                                {% for consorcio in consorcios %}
-                                    <option value="{{ consorcio.id }}">{{ consorcio.nombre }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. DATOS EDITABLES DE LA ADMINISTRACIÓN -->
+                <!-- 1. DATOS EDITABLES DE LA ADMINISTRACIÓN -->
                 <div class="gl-card">
                     <div class="gl-card-header gl-card-header-secondary">
                         <span class="gl-card-header-title">Datos de la Administración</span>
@@ -97,7 +89,7 @@
                     </div>
                 </div>
 
-                <!-- 3. PERÍODO Y FECHAS -->
+                <!-- 2. PERÍODO Y FECHAS -->
                 <div class="gl-card">
                     <div class="gl-card-header gl-card-header-dark">
                         <span class="gl-card-header-title">Período y Fechas de Vencimiento</span>
@@ -143,7 +135,7 @@
                     </div>
                 </div>
 
-                <!-- 4. MATRIZ DE GASTOS -->
+                <!-- 3. MATRIZ DE GASTOS -->
                 <div class="gl-card">
                     <div class="gl-card-header">
                         <span class="gl-card-header-title">Gastos Imputados</span>
@@ -228,8 +220,6 @@
             <button type="submit" class="btn btn-primary fw-bold px-4">Finalizar y calcular liquidación</button>
         </div>
 
-
-
         <!-- MODAL RUBRO -->
         <div class="gl-modal" id="modal-rubro" style="display:none">
             <div class="gl-modal-content">
@@ -237,13 +227,11 @@
                         <h4>Seleccionar Rubro</h4>
                         <button type="button" class="gl-modal-close" onclick="cerrarModal('modal-rubro')">✕</button>
                 </div>
-                <div class="gl-modal-list" id="modal-rubro-list">
-                        <!-- Opciones inyectadas por JS -->
-                </div>
+                <div class="gl-modal-list" id="modal-rubro-list"></div>
             </div>
         </div>
 
-            <!-- MODAL MONTO -->
+        <!-- MODAL MONTO -->
         <div class="gl-modal" id="modal-monto" style="display:none">
             <div class="gl-modal-content">
                 <div class="gl-modal-header">
@@ -262,8 +250,7 @@
             </div>
         </div>
 
-
-           <!-- MODAL CONCEPTO -->
+        <!-- MODAL CONCEPTO -->
         <div class="gl-modal" id="modal-concepto" style="display:none">
             <div class="gl-modal-content">
                 <div class="gl-modal-header">
@@ -286,13 +273,11 @@
                     <h4>Seleccionar Columna</h4>
                     <button type="button" class="gl-modal-close" onclick="cerrarModal('modal-columna')">✕</button>
                 </div>
-                <div class="gl-modal-list" id="modal-columna-list">
-                    <!-- Opciones inyectadas por JS -->
-                </div>
+                <div class="gl-modal-list" id="modal-columna-list"></div>
             </div>
         </div>
 
-    </form> <!-- Fin del form existente -->
+    </form>
 
 </div>
 
@@ -302,26 +287,23 @@
 {{ personal_por_consorcio|json_script:"personal-por-consorcio" }}
 {{ servicios_por_consorcio|json_script:"servicios-por-consorcio" }}
 
-
 <script>
     window.rubrosPorConsorcio = JSON.parse(document.getElementById('rubros-por-consorcio').textContent);
     window.columnasPorRubro = JSON.parse(document.getElementById('columnas-por-rubro').textContent);
     window.personalPorConsorcio = JSON.parse(document.getElementById('personal-por-consorcio').textContent);
     window.serviciosPorConsorcio = JSON.parse(document.getElementById('servicios-por-consorcio').textContent);
 
-
+    // Adaptamos el objeto para que el JS encuentre los datos del único consorcio activo
     window.datosConsorcios = {
-        {% for consorcio in consorcios %}
-            "{{ consorcio.id }}": {
-                nombre: "{{ consorcio.nombre|default:'-'|escapejs }}",
-                localidad: "{{ consorcio.localidad|default:'-'|escapejs }}", 
-                cuit: "{{ consorcio.cuit|default:'-'|escapejs }}",
-                suterh: "{{ consorcio.clave_suterh|default:'-'|escapejs }}", 
-                horario_atencion: "{{ consorcio.horario_atencion|default:'-'|escapejs }}",
-                admin_razon: "-", admin_nombre: "-", admin_domicilio: "-", admin_fiscal: "-",
-                admin_cuit: "-", admin_rpa: "-", admin_telefono: "-", admin_mail: "-"
-            },
-        {% endfor %}
+        "{{ consorcio.id }}": {
+            nombre: "{{ consorcio.nombre|default:'-'|escapejs }}",
+            localidad: "{{ consorcio.localidad|default:'-'|escapejs }}", 
+            cuit: "{{ consorcio.cuit|default:'-'|escapejs }}",
+            suterh: "{{ consorcio.clave_suterh|default:'-'|escapejs }}", 
+            horario_atencion: "{{ consorcio.horario_atencion|default:'-'|escapejs }}",
+            admin_razon: "-", admin_nombre: "-", admin_domicilio: "-", admin_fiscal: "-",
+            admin_cuit: "-", admin_rpa: "-", admin_telefono: "-", admin_mail: "-"
+        }
     };
 </script>
 

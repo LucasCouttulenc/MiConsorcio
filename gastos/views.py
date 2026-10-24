@@ -47,110 +47,80 @@ def liquidacion_permitida(request, liquidacion_id):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def listar_liquidaciones(request):
-    consorcios = consorcios_permitidos(request.user).order_by('nombre')
-    consorcio_id = request.GET.get('consorcio', '')
-    liquidaciones = Liquidacion.objects.filter(consorcio__in=consorcios).select_related('consorcio')
-    if consorcio_id:
-        if not consorcio_id.isdecimal() or not consorcios.filter(pk=consorcio_id).exists():
-            raise Http404('Consorcio no disponible')
-        liquidaciones = liquidaciones.filter(consorcio_id=consorcio_id)
+    consorcio_id = request.session.get('consorcio_activo_id')
+    
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
+    liquidaciones = Liquidacion.objects.filter(consorcio=consorcio).select_related('consorcio')
+    
     return render(request, 'listar_liquidaciones.html', {
-        'consorcios': consorcios, 'consorcio_id': str(consorcio_id),
+        'consorcio': consorcio,
         'borradores': liquidaciones.filter(cerrada=False).order_by('-actualizada'),
         'finalizadas': liquidaciones.filter(cerrada=True).order_by('-periodo', '-fecha_emision', '-pk'),
     })
 
 
-
-
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
-def generar_liquidacion(request, liquidacion_id=None):
-    from consorcios.models import Rubro  
+def servicios_recurrentes(request):
+    """
+    Alta, edición, pausa y baja de los servicios recurrentes del consorcio activo.
+    """
+    consorcio_id = request.session.get('consorcio_activo_id')
+    
+    if not consorcio_id:
+        messages.error(request, 'Seleccioná un consorcio primero.')
+        return redirect('bienvenida')
+        
+    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
 
-    consorcios = consorcios_permitidos(request.user).order_by('nombre')
+    formulario = None
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '')
+        servicio = None
+        if accion in ('editar', 'pausar', 'borrar'):
+            servicio = get_object_or_404(ServicioRecurrente, pk=request.POST.get('servicio_id', ''), consorcio=consorcio)
+        
+        if accion in ('crear', 'editar'):
+            formulario = FormularioServicioRecurrente(request.POST, instance=servicio, consorcio=consorcio)
+            if formulario.is_valid():
+                servicio = formulario.save()
+                messages.success(request, f"Servicio '{servicio.concepto}' guardado.")
+                return redirect('servicios_recurrentes')
+            messages.error(request, 'Revisá los datos del servicio.')
+        elif accion == 'pausar':
+            servicio.activo = not servicio.activo
+            servicio.save(update_fields=['activo'])
+            messages.success(request, f"Servicio '{servicio.concepto}' {'reactivado' if servicio.activo else 'pausado'}.")
+            return redirect('servicios_recurrentes')
+        elif accion == 'borrar':
+            servicio.delete()
+            messages.success(request, f"Servicio '{servicio.concepto}' eliminado.")
+            return redirect('servicios_recurrentes')
 
-    # Inicializar los 3 diccionarios ANTES del for
-    rubros_por_consorcio = {}
-    columnas_por_rubro = {}
-    personal_por_consorcio = {} 
+    hoy = date.today().strftime('%Y-%m')
+    servicios = list(consorcio.servicios_recurrentes.select_related('columna__rubro'))
+    for servicio in servicios:
+        servicio.proximo = servicio.proximo_periodo(hoy)
+    
+    columnas = GrupoProrrateo.objects.filter(consorcio=consorcio).select_related('rubro').order_by('rubro__nombre', 'codigo')
+    if formulario is None:
+        formulario = FormularioServicioRecurrente(consorcio=consorcio)
 
-    for c in consorcios:
-        # 1. Garantizar rubro "REMUNERACIONES AL PERSONAL"
-        rubro_sueldos, _ = Rubro.objects.get_or_create(
-            consorcio=c,
-            nombre='REMUNERACIONES AL PERSONAL',
-        )
-
-        # 2. Rubros y columnas
-        rubros = c.rubros.all().order_by('nombre')
-        rubros_por_consorcio[c.pk] = [
-            {'val': r.pk, 'nombre': r.nombre} for r in rubros
-        ]
-        for r in rubros:
-            columnas_por_rubro[r.pk] = [
-                {
-                    'val': col.pk,
-                    'codigo': col.codigo,
-                    'nombre': col.nombre,
-                    'tipo_reparto': col.tipo_reparto,
-                }
-                for col in r.columnas.all().order_by('codigo')
-            ]
-
-        # 3. Personal con concepto y rubro armados
-        personal_por_consorcio[c.pk] = {
-            'rubro_id': rubro_sueldos.pk,
-            'items': [
-                {
-                    'concepto': (
-                        f"Sueldo: {p.nombre} {p.apellido}"
-                        + (
-                            f" - {p.empresa_tercerizada}"
-                            if p.tipo_contratacion == 'tercerizado' and p.empresa_tercerizada
-                            else ''
-                        )
-                    ),
-                    'tipo': 'ordinario',
-                }
-                for p in c.personal.all().order_by('apellido', 'nombre')
-            ],
-        }
-
-    # 4. Servicios recurrentes activos: el JS decide cuáles corresponden al período elegido
-    servicios_por_consorcio = {}
-    for s in ServicioRecurrente.objects.filter(consorcio__in=consorcios, activo=True).select_related('columna'):
-        servicios_por_consorcio.setdefault(s.consorcio_id, []).append({
-            'id': s.pk,
-            'concepto': s.concepto,
-            'tipo': s.tipo,
-            'rubro_id': s.columna.rubro_id,
-            'columna_id': s.columna_id,
-            'monto': str(s.monto_sugerido) if s.monto_sugerido is not None else '',
-            'frecuencia': s.frecuencia_meses,
-            'inicio': s.periodo_inicio,
-            'fin': s.periodo_fin,
-        })
-
-    liquidacion = liquidacion_permitida(request, liquidacion_id) if liquidacion_id else None
-    if liquidacion and liquidacion.cerrada:
-        return redirect('detalle_liquidacion', liquidacion_id=liquidacion.pk)
-
-    consorcio_id = request.GET.get('consorcio', '')
-    if consorcio_id and (not consorcio_id.isdecimal() or not consorcios.filter(pk=consorcio_id).exists()):
-        raise Http404('Consorcio no disponible')
-
-    return render(request, 'generar_liquidacion.html', {
-        'consorcios': consorcios,
-        'liquidacion': liquidacion,
-        'datos_iniciales': liquidacion.datos_borrador if liquidacion else {},
-        'consorcio_inicial': liquidacion.consorcio_id if liquidacion else consorcio_id,
-        'rubros_por_consorcio': rubros_por_consorcio,
-        'columnas_por_rubro': columnas_por_rubro,
-        'personal_por_consorcio': personal_por_consorcio,
-        'servicios_por_consorcio': servicios_por_consorcio,
+    return render(request, 'servicios_recurrentes.html', {
+        'consorcio': consorcio,
+        'servicios': servicios,
+        'columnas': columnas,
+        'formulario': formulario,
+        'frecuencias': ServicioRecurrente.FRECUENCIAS,
+        'tipos': TipoGasto.choices,
     })
-
+    
+    
+    
 def leer_datos(request, finalizar=False):
     consorcio_id = request.POST.get('consorcio', '')
     mes, anio = request.POST.get('mes', ''), request.POST.get('anio', '')
@@ -272,6 +242,74 @@ def eliminar_borrador(request, liquidacion_id):
     messages.success(request, f"Borrador del período {liquidacion.periodo} eliminado correctamente.")
     return redirect('listar_liquidaciones')
 
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def generar_liquidacion(request, liquidacion_id=None):
+    from consorcios.models import Rubro  
+
+    consorcio_id = request.session.get('consorcio_activo_id')
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
+
+    # Garantizar rubro de sueldos
+    rubro_sueldos, _ = Rubro.objects.get_or_create(
+        consorcio=consorcio,
+        nombre='REMUNERACIONES AL PERSONAL',
+    )
+
+    # Rubros y columnas
+    rubros = consorcio.rubros.all().order_by('nombre')
+    rubros_por_consorcio = {consorcio.pk: [{'val': r.pk, 'nombre': r.nombre} for r in rubros]}
+    
+    columnas_por_rubro = {}
+    for r in rubros:
+        columnas_por_rubro[r.pk] = [
+            {'val': col.pk, 'codigo': col.codigo, 'nombre': col.nombre, 'tipo_reparto': col.tipo_reparto}
+            for col in r.columnas.all().order_by('codigo')
+        ]
+
+    # Personal
+    personal_por_consorcio = {
+        consorcio.pk: {
+            'rubro_id': rubro_sueldos.pk,
+            'items': [
+                {
+                    'concepto': f"Sueldo: {p.nombre} {p.apellido}" + (f" - {p.empresa_tercerizada}" if p.tipo_contratacion == 'tercerizado' and p.empresa_tercerizada else ''),
+                    'tipo': 'ordinario',
+                }
+                for p in consorcio.personal.all().order_by('apellido', 'nombre')
+            ],
+        }
+    }
+
+    # Servicios recurrentes
+    servicios_por_consorcio = {}
+    for s in ServicioRecurrente.objects.filter(consorcio=consorcio, activo=True).select_related('columna'):
+        servicios_por_consorcio.setdefault(s.consorcio_id, []).append({
+            'id': s.pk, 'concepto': s.concepto, 'tipo': s.tipo,
+            'rubro_id': s.columna.rubro_id, 'columna_id': s.columna_id,
+            'monto': str(s.monto_sugerido) if s.monto_sugerido is not None else '',
+            'frecuencia': s.frecuencia_meses, 'inicio': s.periodo_inicio, 'fin': s.periodo_fin,
+        })
+
+    liquidacion = liquidacion_permitida(request, liquidacion_id) if liquidacion_id else None
+    if liquidacion and liquidacion.cerrada:
+        return redirect('detalle_liquidacion', liquidacion_id=liquidacion.pk)
+
+    return render(request, 'generar_liquidacion.html', {
+        'consorcio': consorcio, 
+        'liquidacion': liquidacion,
+        'datos_iniciales': liquidacion.datos_borrador if liquidacion else {},
+        'rubros_por_consorcio': rubros_por_consorcio,
+        'columnas_por_rubro': columnas_por_rubro,
+        'personal_por_consorcio': personal_por_consorcio,
+        'servicios_por_consorcio': servicios_por_consorcio,
+    })
 
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
@@ -728,14 +766,24 @@ def registrar_pago(request, detalle_id):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def listar_pagos_pendientes(request):
-    """Muestra al administrador los pagos que esperan revisión."""
-    consorcios = consorcios_permitidos(request.user)
+    """Muestra al administrador los pagos que esperan revisión del consorcio activo."""
+    consorcio_id = request.session.get('consorcio_activo_id')
+    
+    if not consorcio_id:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
+    
     pagos = Pago.objects.filter(
-        detalle_liquidacion__liquidacion__consorcio__in=consorcios,
+        detalle_liquidacion__liquidacion__consorcio=consorcio,
         estado='pendiente'
     ).order_by('-fecha_registro')
     
-    return render(request, 'pagos_pendientes.html', {'pagos': pagos})
+    return render(request, 'pagos_pendientes.html', {
+        'pagos': pagos,
+        'consorcio': consorcio
+    })
 
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
@@ -790,61 +838,3 @@ def descargar_resumen_uf(request, detalle_id):
     )
     return respuesta
 
-@login_required
-@permission_required('consorcios.view_consorcio', raise_exception=True)
-def servicios_recurrentes(request):
-    """
-    Alta, edición, pausa y baja de los servicios recurrentes de un consorcio.
-    Los servicios se proponen solos en Generar Liquidación cuando corresponde.
-    """
-    consorcios = consorcios_permitidos(request.user).order_by('nombre')
-    consorcio_id = request.POST.get('consorcio') or request.GET.get('consorcio', '')
-    consorcio = consorcios.filter(pk=consorcio_id).first() if consorcio_id.isdecimal() else None
-    if consorcio_id and not consorcio:
-        messages.error(request, 'No tenés acceso a ese consorcio.')
-        return redirect('servicios_recurrentes')
-
-    formulario = None
-    if request.method == 'POST' and consorcio:
-        accion = request.POST.get('accion', '')
-        servicio = None
-        if accion in ('editar', 'pausar', 'borrar'):
-            servicio = get_object_or_404(ServicioRecurrente, pk=request.POST.get('servicio_id', ''), consorcio=consorcio)
-        if accion in ('crear', 'editar'):
-            formulario = FormularioServicioRecurrente(request.POST, instance=servicio, consorcio=consorcio)
-            if formulario.is_valid():
-                servicio = formulario.save()
-                messages.success(request, f"Servicio '{servicio.concepto}' guardado.")
-                return redirect(f"{reverse('servicios_recurrentes')}?consorcio={consorcio.pk}")
-            messages.error(request, 'Revisá los datos del servicio.')
-        elif accion == 'pausar':
-            servicio.activo = not servicio.activo
-            servicio.save(update_fields=['activo'])
-            estado = 'reactivado' if servicio.activo else 'pausado'
-            messages.success(request, f"Servicio '{servicio.concepto}' {estado}.")
-            return redirect(f"{reverse('servicios_recurrentes')}?consorcio={consorcio.pk}")
-        elif accion == 'borrar':
-            servicio.delete()
-            messages.success(request, f"Servicio '{servicio.concepto}' eliminado.")
-            return redirect(f"{reverse('servicios_recurrentes')}?consorcio={consorcio.pk}")
-
-    servicios = []
-    columnas = []
-    if consorcio:
-        hoy = date.today().strftime('%Y-%m')
-        servicios = list(consorcio.servicios_recurrentes.select_related('columna__rubro'))
-        for servicio in servicios:
-            servicio.proximo = servicio.proximo_periodo(hoy)
-        columnas = GrupoProrrateo.objects.filter(consorcio=consorcio).select_related('rubro').order_by('rubro__nombre', 'codigo')
-        if formulario is None:
-            formulario = FormularioServicioRecurrente(consorcio=consorcio)
-
-    return render(request, 'servicios_recurrentes.html', {
-        'consorcios': consorcios,
-        'consorcio': consorcio,
-        'servicios': servicios,
-        'columnas': columnas,
-        'formulario': formulario,
-        'frecuencias': ServicioRecurrente.FRECUENCIAS,
-        'tipos': TipoGasto.choices,
-    })

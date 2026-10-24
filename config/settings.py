@@ -88,6 +88,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'gastos.context_processors.notificaciones',
+                'config.context_processors.consorcio_context'
             ],
         },
     },

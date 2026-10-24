@@ -2,21 +2,21 @@
 {% block title %}Documentos{% endblock %}
 {% block content %}
 {% include "componentes/mensajes.html" %}
-<div class="liquidaciones-cabecera doc-admin-cabecera">
-    <h1 class="titulo">Documentos del consorcio</h1>
-    {% if consorcios %}
-    <form method="get">
-        <select name="consorcio" class="sin-select2 doc-select" onchange="this.form.submit()" aria-label="Consorcio">
-            {% for opcion in consorcios %}<option value="{{ opcion.pk }}" {% if opcion.pk == consorcio.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
-        </select>
-    </form>
+
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">Documentos del consorcio</h1>
+    {% if consorcio %}
+        <p style="color: #64748b; font-size: 1.1rem; margin: 0;">
+            {{ consorcio.nombre }}
+        </p>
     {% endif %}
 </div>
 
 {% if consorcio %}
 <form method="post" enctype="multipart/form-data" class="doc-subir">
     {% csrf_token %}
-    <input type="hidden" name="consorcio" value="{{ consorcio.pk }}">
+    <!-- Se eliminó el input hidden del consorcio porque la vista lo toma de la sesión -->
+    
     {% for campo in formulario %}
         <label class="doc-campo doc-campo-{{ campo.name }}">
             <span>{{ campo.label }}</span>
@@ -53,6 +53,8 @@
     </table>
 </div>
 {% else %}
-<p>No administrás ningún consorcio.</p>
+    <div class="alerta alerta-warning">
+        No administrás ningún consorcio o no tenés uno seleccionado.
+    </div>
 {% endif %}
 {% endblock %}

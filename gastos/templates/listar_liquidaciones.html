@@ -4,20 +4,13 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/_liquidaciones.css' %}">
 {% include "componentes/mensajes.html" %}
+
 <div class="liquidaciones-cabecera">
-  <h1 class="titulo">Liquidaciones</h1>
-  <a class="boton-primario" href="{% url 'generar_liquidacion' %}{% if consorcio_id %}?consorcio={{ consorcio_id }}{% endif %}">Crear liquidación</a>
+  <h1 class="titulo">Liquidaciones - {{ consorcio.nombre }}</h1>
+  <a class="boton-primario" href="{% url 'generar_liquidacion' %}">Crear liquidación</a>
 </div>
-<form method="get" class="liquidaciones-filtro">
-  <label for="filtro-consorcio">Consorcio</label>
-  <select id="filtro-consorcio" name="consorcio" class="sin-select2" onchange="this.form.requestSubmit()">
-    <option value="">Todos los consorcios</option>
-    {% for consorcio in consorcios %}
-      <option value="{{ consorcio.id }}" {% if consorcio_id == consorcio.id|stringformat:'s' %}selected{% endif %}>{{ consorcio.nombre }}</option>
-    {% endfor %}
-  </select>
-  <button class="boton-primario" type="submit">Filtrar</button>
-</form>
+
+<!-- Se eliminó el filtro de consorcio -->
 
 <h2 class="liquidaciones-subtitulo">Borradores</h2>
 

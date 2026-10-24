@@ -3,14 +3,12 @@
 {% block content %}
 {% include "componentes/mensajes.html" %}
 <section class="mor">
-    <div class="mor-cabecera">
-        <h1 class="titulo">Morosidad</h1>
-        {% if consorcios %}
-        <form method="get">
-            <select name="consorcio" class="sin-select2 mor-select" onchange="this.form.submit()" aria-label="Consorcio">
-                {% for opcion in consorcios %}<option value="{{ opcion.pk }}" {% if opcion.pk == consorcio.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
-            </select>
-        </form>
+    <div class="mor-cabecera" style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+        <h1 class="titulo" style="margin-bottom: 0;">Morosidad</h1>
+        {% if consorcio %}
+            <p style="color: #64748b; font-size: 1.1rem; margin: 0;">
+                {{ consorcio.nombre }}
+            </p>
         {% endif %}
     </div>
 
@@ -18,7 +16,7 @@
     <div class="mor-kpis">
         <div class="mor-kpi"><span>DEUDA TOTAL</span><strong>$ {{ deuda_consorcio|floatformat:"2g" }}</strong><small>Capital + intereses al {{ hoy|date:"d/m/Y" }}</small></div>
         <div class="mor-kpi"><span>INTERESES ACUMULADOS</span><strong class="mor-rojo">$ {{ intereses_consorcio|floatformat:"2g" }}</strong>
-            <small>{% if consorcio.tasa_interes_mensual %}{{ consorcio.tasa_interes_mensual|floatformat:"-2" }}% mensual{% else %}Sin tasa de interés{% endif %} · <a href="{% url 'gestionar_consorcio' consorcio.pk %}">Cambiar tasa</a></small></div>
+            <small>{% if consorcio.tasa_interes_mensual %}{{ consorcio.tasa_interes_mensual|floatformat:"-2" }}% mensual{% else %}Sin tasa de interés{% endif %} · <a href="{% url 'gestionar_consorcio' %}">Cambiar tasa</a></small></div>
         <div class="mor-kpi"><span>UF CON DEUDA</span><strong>{{ con_deuda }} de {{ cantidad_unidades }}</strong><small>{{ con_deuda_30 }} con más de 30 días</small></div>
         <div class="mor-kpi"><span>COBRADO ÚLTIMA LIQ.</span><strong>{% if cobrado is not None %}{{ cobrado }}%{% else %}—{% endif %}</strong>
             <small>{% if ultima %}{{ ultima_label }}{% if ultima.fecha_vencimiento_1 %} · vence {{ ultima.fecha_vencimiento_1|date:"d/m" }}{% endif %}{% else %}Sin liquidaciones{% endif %}</small></div>
@@ -26,7 +24,7 @@
 
     <nav class="mor-filtros" aria-label="Filtrar unidades">
         {% for clave, nombre, cantidad in filtros %}
-            <a href="?consorcio={{ consorcio.pk }}&filtro={{ clave }}" class="{% if filtro == clave %}activo{% endif %}">{{ nombre }} <b>{{ cantidad }}</b></a>
+            <a href="?filtro={{ clave }}" class="{% if filtro == clave %}activo{% endif %}">{{ nombre }} <b>{{ cantidad }}</b></a>
         {% endfor %}
     </nav>
 
@@ -57,7 +55,7 @@
     </table></div>
     <p class="mor-nota">Ordenado por total adeudado. Atraso: días desde el vencimiento impago más viejo. Los pagos en revisión se descuentan cuando se validan.</p>
     {% else %}
-    <p>No administrás ningún consorcio.</p>
+    <p class="mor-vacio">No administrás ningún consorcio.</p>
     {% endif %}
 </section>
 {% endblock %}

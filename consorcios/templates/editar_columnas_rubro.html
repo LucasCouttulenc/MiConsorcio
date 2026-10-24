@@ -11,7 +11,7 @@
 <div class="cols-header">
     <div>
         <p class="cols-breadcrumb">
-            <a href="{% url 'configurar_columnas' %}?consorcio={{ consorcio.id }}">← Volver a contenido</a>
+            <a href="{% url 'configurar_columnas' %}">← Volver a contenido</a>
         </p>
         <h1 class="titulo">{{ rubro.nombre }}</h1>
         <p class="cols-sub">
@@ -23,7 +23,7 @@
 {% if not unidades %}
     <div class="alerta alerta-warning">
         Este consorcio no tiene unidades funcionales cargadas.
-        <a href="{% url 'crear_unidad_funcional' consorcio.id %}">Crear la primera UF</a>.
+        <a href="{% url 'crear_unidad_funcional'%}">Crear la primera UF</a>.
     </div>
 {% endif %}
 
