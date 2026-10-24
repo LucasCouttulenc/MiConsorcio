@@ -78,6 +78,8 @@ def consultas_administradas(usuario):
 def bandeja_consultas(request):
     """Bandeja del administrador, filtrada por estado."""
     consultas = consultas_administradas(request.user)
+    if request.GET.get('unidad', '').isdecimal():
+        consultas = consultas.filter(unidad_funcional_id=request.GET['unidad'])
     totales = consultas.aggregate(
         abiertas=Count('pk', filter=Q(estado=EstadoConsulta.ABIERTA)),
         en_curso=Count('pk', filter=Q(estado=EstadoConsulta.EN_CURSO)),

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Morosidad{% endblock %}
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<section class="mor">
+    <div class="mor-cabecera">
+        <h1 class="titulo">Morosidad</h1>
+        {% if consorcios %}
+        <form method="get">
+            <select name="consorcio" class="sin-select2 mor-select" onchange="this.form.submit()" aria-label="Consorcio">
+                {% for opcion in consorcios %}<option value="{{ opcion.pk }}" {% if opcion.pk == consorcio.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
+            </select>
+        </form>
+        {% endif %}
+    </div>
+
+    {% if consorcio %}
+    <div class="mor-kpis">
+        <div class="mor-kpi"><span>DEUDA TOTAL</span><strong>$ {{ deuda_consorcio|floatformat:"2g" }}</strong><small>Capital + intereses al {{ hoy|date:"d/m/Y" }}</small></div>
+        <div class="mor-kpi"><span>INTERESES ACUMULADOS</span><strong class="mor-rojo">$ {{ intereses_consorcio|floatformat:"2g" }}</strong>
+            <small>{% if consorcio.tasa_interes_mensual %}{{ consorcio.tasa_interes_mensual|floatformat:"-2" }}% mensual{% else %}Sin tasa de interés{% endif %} · <a href="{% url 'gestionar_consorcio' consorcio.pk %}">Cambiar tasa</a></small></div>
+        <div class="mor-kpi"><span>UF CON DEUDA</span><strong>{{ con_deuda }} de {{ cantidad_unidades }}</strong><small>{{ con_deuda_30 }} con más de 30 días</small></div>
+        <div class="mor-kpi"><span>COBRADO ÚLTIMA LIQ.</span><strong>{% if cobrado is not None %}{{ cobrado }}%{% else %}—{% endif %}</strong>
+            <small>{% if ultima %}{{ ultima_label }}{% if ultima.fecha_vencimiento_1 %} · vence {{ ultima.fecha_vencimiento_1|date:"d/m" }}{% endif %}{% else %}Sin liquidaciones{% endif %}</small></div>
+    </div>
+
+    <nav class="mor-filtros" aria-label="Filtrar unidades">
+        {% for clave, nombre, cantidad in filtros %}
+            <a href="?consorcio={{ consorcio.pk }}&filtro={{ clave }}" class="{% if filtro == clave %}activo{% endif %}">{{ nombre }} <b>{{ cantidad }}</b></a>
+        {% endfor %}
+    </nav>
+
+    <div class="mor-tabla-wrap"><table class="mor-tabla">
+        <thead><tr><th>UF</th><th>Propietario</th><th>Períodos impagos</th><th>Atraso</th><th class="mor-num">Capital</th><th class="mor-num">Intereses</th><th class="mor-num">Total</th><th></th></tr></thead>
+        <tbody>
+        {% for fila in filas %}
+            <tr>
+                <td><strong>Piso {{ fila.unidad.piso }}{% if fila.unidad.departamento %} · {{ fila.unidad.departamento }}{% endif %}</strong></td>
+                <td>{{ fila.unidad.propietario.usuario.get_full_name|default:fila.unidad.propietario.usuario.username }}</td>
+                <td>{{ fila.periodos_impagos }}{% if fila.desde %}<small>desde {{ fila.desde }}</small>{% endif %}</td>
+                <td>
+                    {% if fila.total %}<span class="mor-badge mor-{{ fila.nivel }}">{% if fila.dias_atraso %}{{ fila.dias_atraso }} día{{ fila.dias_atraso|pluralize }}{% else %}Sin vencer{% endif %}</span>{% else %}<span class="mor-badge mor-al-dia">Al día</span>{% endif %}
+                    {% if fila.pagos_en_revision %}<span class="mor-badge mor-revision">{{ fila.pagos_en_revision }} pago{{ fila.pagos_en_revision|pluralize }} en revisión</span>{% endif %}
+                </td>
+                <td class="mor-num">$ {{ fila.capital|floatformat:"2g" }}</td>
+                <td class="mor-num mor-rojo">$ {{ fila.intereses|floatformat:"2g" }}</td>
+                <td class="mor-num mor-total">$ {{ fila.total|floatformat:"2g" }}</td>
+                <td><a class="mor-ver" href="{% url 'morosidad_unidad' fila.unidad.pk %}">Ver detalle</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8" class="mor-vacio">No hay unidades en este filtro.</td></tr>
+        {% endfor %}
+        </tbody>
+        {% if filas %}
+        <tfoot><tr><td colspan="4">Total</td><td class="mor-num">$ {{ total_capital|floatformat:"2g" }}</td><td class="mor-num mor-rojo">$ {{ total_intereses|floatformat:"2g" }}</td><td class="mor-num mor-total">$ {{ total_deuda|floatformat:"2g" }}</td><td></td></tr></tfoot>
+        {% endif %}
+    </table></div>
+    <p class="mor-nota">Ordenado por total adeudado. Atraso: días desde el vencimiento impago más viejo. Los pagos en revisión se descuentan cuando se validan.</p>
+    {% else %}
+    <p>No administrás ningún consorcio.</p>
+    {% endif %}
+</section>
+{% endblock %}

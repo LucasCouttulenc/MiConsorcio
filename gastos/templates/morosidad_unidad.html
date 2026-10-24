@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Morosidad · Piso {{ unidad.piso }} {{ unidad.departamento }}{% endblock %}
+{% block content %}
+<section class="mor">
+    <div class="mor-cabecera">
+        <div>
+            <a class="mor-volver" href="{% url 'morosidad' %}?consorcio={{ unidad.consorcio_id }}">← Morosidad</a>
+            <h1 class="titulo">Piso {{ unidad.piso }}{% if unidad.departamento %} · {{ unidad.departamento }}{% endif %} — {{ unidad.propietario.usuario.get_full_name|default:unidad.propietario.usuario.username }}</h1>
+            <p class="mor-sub">{{ unidad.consorcio.nombre }} · Alícuota {{ unidad.alicuota|floatformat:"-2" }}%</p>
+        </div>
+        {% if resumen.total %}<span class="mor-badge mor-{{ nivel }} mor-badge-grande">{% if resumen.dias_atraso %}{{ resumen.dias_atraso }} día{{ resumen.dias_atraso|pluralize }} de atraso{% else %}Sin vencer{% endif %}</span>
+        {% else %}<span class="mor-badge mor-al-dia mor-badge-grande">Al día</span>{% endif %}
+    </div>
+
+    <div class="mor-detalle">
+        <div class="mor-card">
+            <h2>ESTADO DE CUENTA</h2>
+            {% for periodo in periodos %}
+                <div class="mor-periodo">
+                    <h3>{{ periodo.label|upper }}{% if periodo.detalle.liquidacion.fecha_vencimiento_1 %} · {% if periodo.meses %}venció{% else %}vence{% endif %} {{ periodo.detalle.liquidacion.fecha_vencimiento_1|date:"d/m/Y" }}{% endif %}</h3>
+                    <div class="mor-fila"><span>Capital original</span><span>$ {{ periodo.detalle.monto_total|floatformat:"2g" }}</span></div>
+                    {% if periodo.interes_devengado %}<div class="mor-fila mor-fila-interes"><span>Intereses ({{ tasa|floatformat:"-2" }}% × {{ periodo.meses }} mes{{ periodo.meses|pluralize:"es" }})</span><span>+ $ {{ periodo.interes_devengado|floatformat:"2g" }}</span></div>{% endif %}
+                    {% if periodo.intereses_pagados %}<div class="mor-fila mor-fila-pago"><span>Pagado a intereses</span><span>− $ {{ periodo.intereses_pagados|floatformat:"2g" }}</span></div>{% endif %}
+                    {% if periodo.capital_pagado %}<div class="mor-fila mor-fila-pago"><span>Pagado a capital</span><span>− $ {{ periodo.capital_pagado|floatformat:"2g" }}</span></div>{% endif %}
+                    <div class="mor-fila mor-fila-sub"><span>Adeuda</span><span>$ {{ periodo.adeuda|floatformat:"2g" }}</span></div>
+                </div>
+            {% empty %}
+                <p class="mor-vacio">No tiene deuda.</p>
+            {% endfor %}
+            <div class="mor-gran-total"><span>Total adeudado</span><span>$ {{ resumen.total|floatformat:"2g" }}</span></div>
+        </div>
+        <div class="mor-card">
+            <h2>MOVIMIENTOS</h2>
+            <div class="mor-movimientos">
+            {% for movimiento in movimientos %}
+                <div class="mor-movimiento mor-movimiento-{{ movimiento.tipo }}">
+                    <span>{{ movimiento.titulo }}</span>
+                    <small>{{ movimiento.fecha|date:"d/m/Y" }} · {% if movimiento.tipo != "liquidacion" %}− {% endif %}$ {{ movimiento.monto|floatformat:"2g" }}</small>
+                </div>
+            {% empty %}
+                <p class="mor-vacio">Sin movimientos.</p>
+            {% endfor %}
+            </div>
+            <a class="mor-boton" href="{% url 'bandeja_consultas' %}?estado=todas&unidad={{ unidad.pk }}">Ver consultas de esta UF</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

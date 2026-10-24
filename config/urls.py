@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
 from usuarios import views as views_usuarios
 from gastos import views as views_gastos
+from gastos import morosidad as views_morosidad
 from consorcios import views as views_consorcios
 from consultas import views as views_consultas
 from documentos import views as views_documentos
@@ -76,6 +77,8 @@ urlpatterns = [
     path('mis-expensas/liquidacion/<int:liquidacion_id>/documento/', views_gastos.descargar_documento_propietario, name='documento_liquidacion_propietario'),
     path('liquidaciones/detalle/<int:detalle_id>/pagar/', views_gastos.registrar_pago, name='registrar_pago'),
     path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),
+    path('administracion/morosidad/', views_morosidad.morosidad, name='morosidad'),
+    path('administracion/morosidad/uf/<int:unidad_id>/', views_morosidad.morosidad_unidad, name='morosidad_unidad'),
     path('pagos/<int:pago_id>/procesar/', views_gastos.procesar_pago, name='procesar_pago'),
     path('liquidaciones/detalle-uf/<int:detalle_id>/resumen/',views_gastos.descargar_resumen_uf,name='descargar_resumen_uf'),
     path('liquidaciones/<int:liquidacion_id>/eliminar/', views_gastos.eliminar_borrador, name='eliminar_borrador'),

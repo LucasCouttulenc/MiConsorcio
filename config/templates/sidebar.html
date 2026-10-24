@@ -84,6 +84,15 @@
                                 <span class="item-texto">Pagos Pendientes</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'morosidad' or request.resolver_match.url_name == 'morosidad_unidad' %}active{% endif %}">
+                            <a href="{% url 'morosidad' %}" title="Morosidad">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Morosidad">
+                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Morosidad">
+                                </span>
+                                <span class="item-texto">Morosidad</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'documentos_consorcio' %}active{% endif %}">
                             <a href="{% url 'documentos_consorcio' %}" title="Documentos">
                                 <span class="item-icono">

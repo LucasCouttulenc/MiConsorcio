@@ -1,0 +1,64 @@
+/* Morosidad (panel del administrador) */
+
+.mor { color: #eaf2ff; }
+.mor-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.mor-select { min-width: 260px; padding: 9px 12px; border: 1px solid #52739e; border-radius: 8px; background: #142b4b; color: #fff; font-weight: 700; }
+.mor-sub { margin-top: 4px; color: #c5d5ec; font-size: .88rem; }
+.mor-volver { display: inline-block; margin-bottom: 4px; color: #8ac2ff; font-size: .85rem; font-weight: 700; }
+
+.mor-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.mor-kpi { padding: 14px 16px; border: 1px solid #31598e; border-radius: 12px; background: linear-gradient(120deg, #193a68, #102746); }
+.mor-kpi span { display: block; color: #9fc9ff; font-size: .68rem; font-weight: 800; letter-spacing: .1em; }
+.mor-kpi strong { display: block; margin-top: 4px; color: #fff; font: 700 1.4rem 'Exo 2', sans-serif; }
+.mor-kpi small { color: #c5d5ec; font-size: .75rem; }
+.mor-kpi a { color: #8ac2ff; font-weight: 700; }
+.mor-rojo, .mor-kpi .mor-rojo, .mor-tabla td.mor-rojo { color: #ff9b9b; }
+
+.mor-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.mor-filtros a { padding: 5px 12px; border: 1px solid #9fb3cb; border-radius: 999px; color: #eaf2ff; font-size: .8rem; font-weight: 700; }
+.mor-filtros a.activo { border-color: #1c65bd; background: #1c65bd; }
+.mor-filtros b { margin-left: 3px; }
+
+.mor-tabla-wrap { overflow-x: auto; border-radius: 12px; }
+.mor-tabla { width: 100%; border-collapse: collapse; background: #13294a; font-size: .85rem; }
+.mor-tabla th { padding: 10px 12px; background: #0f2240; color: #cfe0f7; font-size: .68rem; letter-spacing: .06em; text-align: left; text-transform: uppercase; }
+.mor-tabla td { padding: 11px 12px; border-top: 1px solid #23406a; color: #eaf2ff; vertical-align: middle; }
+.mor-tabla td small { display: block; color: #9fb7d6; font-size: .72rem; }
+.mor-tabla tfoot td { background: #0f2240; font-weight: 800; }
+.mor-num { text-align: right !important; white-space: nowrap; }
+.mor-total { color: #61b7ff !important; font-weight: 800; }
+.mor-vacio { padding: 16px; color: #b7cbe3; text-align: center; }
+.mor-nota { margin-top: 10px; color: #9fb7d6; font-size: .75rem; }
+
+.mor-badge { display: inline-block; margin: 2px 2px 2px 0; padding: 3px 9px; border-radius: 999px; font-size: .72rem; font-weight: 800; white-space: nowrap; }
+.mor-badge-grande { font-size: .85rem; padding: 5px 12px; }
+.mor-sin-vencer { background: #e2e8f0; color: #475569; }
+.mor-hasta-30 { background: #fff0cc; color: #815400; }
+.mor-hasta-60 { background: #ffe0c2; color: #9a4a00; }
+.mor-mas-60 { background: #ffe2e2; color: #a52525; }
+.mor-al-dia { background: #d9f6e9; color: #086744; }
+.mor-revision { background: #dbeafe; color: #1d4ed8; }
+.mor-ver { padding: 5px 12px; border-radius: 999px; background: #1c65bd; color: #fff !important; font-size: .76rem; font-weight: 800; white-space: nowrap; }
+.mor-ver:hover { background: #154f96; }
+
+.mor-detalle { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.mor-card { padding: 18px 20px; border: 1px solid #31598e; border-radius: 12px; background: linear-gradient(160deg, #173560, #102746); }
+.mor-card h2 { margin-bottom: 12px; color: #fff; font: 700 .95rem 'Exo 2', sans-serif; letter-spacing: .04em; }
+.mor-periodo { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px dashed #35577f; }
+.mor-periodo h3 { margin-bottom: 6px; color: #9fc9ff; font-size: .78rem; letter-spacing: .08em; }
+.mor-fila { display: flex; justify-content: space-between; gap: 16px; padding: 3px 0; font-size: .86rem; }
+.mor-fila-interes { color: #ffb3b3; }
+.mor-fila-pago { color: #8be0b4; }
+.mor-fila-sub { margin-top: 3px; padding-top: 5px; border-top: 1px solid #35577f; font-weight: 800; }
+.mor-gran-total { display: flex; justify-content: space-between; padding-top: 8px; color: #fff; font: 700 1.1rem 'Exo 2', sans-serif; }
+.mor-gran-total span:last-child { color: #61b7ff; }
+.mor-movimiento { padding: 7px 0; border-bottom: 1px solid #23406a; font-size: .84rem; }
+.mor-movimiento small { display: block; color: #9fb7d6; }
+.mor-movimiento-validado span { color: #8be0b4; }
+.mor-movimiento-pendiente span { color: #9fc9ff; }
+.mor-boton { display: block; margin-top: 12px; padding: 9px; border-radius: 8px; background: #f29b08; color: #fff !important; font-size: .82rem; font-weight: 800; text-align: center; }
+
+@media (max-width: 1100px) {
+    .mor-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mor-detalle { grid-template-columns: 1fr; }
+}

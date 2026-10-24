@@ -635,3 +635,50 @@ class GastosDeMiUnidadTests(TestCase):
         self.assertFalse(gasto.comprobante_visible)
         self.client.force_login(self.usuario)
         self.assertNotContains(self.client.get(url, {'periodo': '2026-09'}), 'Ver factura')
+
+
+class MorosidadTests(TestCase):
+    """Pantalla de morosidad del admin: deuda por UF con los mismos números que ve el propietario."""
+
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        self.consorcio.tasa_interes_mensual = Decimal('3')
+        self.consorcio.save()
+        self.morosa = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=User.objects.create_user('moroso', password='clave')),
+            consorcio=self.consorcio, piso=2, departamento='A', alicuota=Decimal('50'))
+        self.al_dia = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=User.objects.create_user('aldia', password='clave')),
+            consorcio=self.consorcio, piso=1, departamento='A', alicuota=Decimal('50'))
+        liquidacion = Liquidacion.objects.create(
+            consorcio=self.consorcio, periodo='2026-08', cerrada=True,
+            fecha_vencimiento_1=date.today() - timedelta(days=45))
+        for unidad in (self.morosa, self.al_dia):
+            DetalleLiquidacionUF.objects.create(liquidacion=liquidacion, unidad_funcional=unidad, monto_total=Decimal('1000'))
+        Pago.objects.create(detalle_liquidacion=self.al_dia.detalleliquidacionuf_set.get(), fecha_pago=date.today() - timedelta(days=50),
+                            monto_pagado=Decimal('1000'), estado='validado', comprobante='x.pdf')
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+
+    def test_listado_con_deuda_y_atraso(self):
+        contexto = self.client.get(reverse('morosidad')).context
+        self.assertEqual([fila['unidad'] for fila in contexto['filas']], [self.morosa])
+        fila = contexto['filas'][0]
+        self.assertEqual(fila['capital'], Decimal('1000'))
+        self.assertEqual(fila['intereses'], Decimal('60.00'))  # 3% x 2 meses (45 días)
+        self.assertEqual(fila['dias_atraso'], 45)
+        self.assertEqual(fila['nivel'], 'hasta-60')
+        self.assertEqual(contexto['cobrado'], 50)
+        self.assertEqual(contexto['con_deuda'], 1)
+
+    def test_filtro_todas_incluye_las_al_dia(self):
+        contexto = self.client.get(reverse('morosidad'), {'filtro': 'todas'}).context
+        self.assertEqual(len(contexto['filas']), 2)
+
+    def test_detalle_de_la_uf(self):
+        contexto = self.client.get(reverse('morosidad_unidad', args=[self.morosa.pk])).context
+        self.assertEqual(contexto['resumen']['total'], Decimal('1060.00'))
+        self.assertEqual(contexto['periodos'][0]['adeuda'], Decimal('1060.00'))
+
+    def test_propietario_no_entra(self):
+        self.client.force_login(User.objects.get(username='moroso'))
+        self.assertEqual(self.client.get(reverse('morosidad')).status_code, 403)
