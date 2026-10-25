@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from consorcios.models import Consorcio
-from gastos.views import consorcios_permitidos
+from consorcios.permisos import consorcio_activo
 from usuarios.models import Propietario
 
 from .forms import FormularioDocumento
@@ -15,12 +15,11 @@ from .models import DocumentoConsorcio
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def documentos_consorcio(request):
     """El administrador sube y borra los documentos del consorcio activo."""
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
 
-    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
     formulario = FormularioDocumento(request.POST or None, request.FILES or None)
     
     if request.method == 'POST' and formulario.is_valid():
@@ -41,12 +40,12 @@ def documentos_consorcio(request):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 @require_POST
 def borrar_documento(request, documento_id):
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         return redirect('bienvenida')
 
     documento = get_object_or_404(
-        DocumentoConsorcio, pk=documento_id, consorcio_id=consorcio_id
+        DocumentoConsorcio, pk=documento_id, consorcio=consorcio
     )
     documento.archivo.delete(save=False)
     documento.delete()

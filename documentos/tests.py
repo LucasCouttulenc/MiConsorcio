@@ -46,7 +46,8 @@ class DocumentosTests(TestCase):
 
     def subir(self, **datos):
         self.client.force_login(self.admin)
-        datos = {'consorcio': self.consorcio.pk, 'tipo': 'certificado', 'titulo': 'Certificado de ascensores',
+        self.client.post(reverse('cambiar_consorcio_activo'), {'consorcio_id': self.consorcio.pk})
+        datos = {'tipo': 'certificado', 'titulo': 'Certificado de ascensores',
                  'archivo': pdf(), **datos}
         return self.client.post(reverse('documentos_consorcio'), datos)
 

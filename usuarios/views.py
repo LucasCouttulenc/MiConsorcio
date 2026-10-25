@@ -5,6 +5,9 @@ from django.shortcuts import redirect
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
+from consorcios.permisos import consorcios_permitidos
 
 
 def pagina_inicial(usuario):
@@ -34,12 +37,17 @@ def bienvenida(request):
 
 
 @login_required
+@require_POST
 def cambiar_consorcio_activo(request):
-    # Aceptamos tanto POST (desde el sidebar) como GET (desde los botones de la tabla)
-    consorcio_id = request.POST.get('consorcio_id') or request.GET.get('consorcio_id')
-    next_url = request.POST.get('next') or request.GET.get('next') or request.META.get('HTTP_REFERER', 'bienvenida')
+    """Cambia el consorcio activo desde el selector del sidebar, solo a uno que el usuario administre."""
+    consorcio_id = request.POST.get('consorcio_id', '')
+    consorcio = consorcios_permitidos(request.user).filter(pk=consorcio_id).first() if consorcio_id.isdecimal() else None
+    if consorcio:
+        request.session['consorcio_activo_id'] = consorcio.pk
+    else:
+        messages.error(request, "No tenés acceso a ese consorcio.")
 
-    if consorcio_id:
-        request.session['consorcio_activo_id'] = consorcio_id
-        
-    return redirect(next_url)
+    destino = request.POST.get('next') or request.META.get('HTTP_REFERER', '')
+    if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        destino = 'bienvenida'
+    return redirect(destino)

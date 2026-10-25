@@ -27,6 +27,18 @@ def crear_usuario_administrador(username, con_registro=True):
     return usuario, administrador
 
 
+def activar_consorcio(client, consorcio):
+    """Elige el consorcio activo igual que el selector del sidebar."""
+    return client.post(reverse('cambiar_consorcio_activo'), {'consorcio_id': consorcio.pk})
+
+
+def forzar_consorcio_en_sesion(client, consorcio_id):
+    """Pone un id cualquiera en la sesión, como si se hubiera manipulado sin pasar por el selector."""
+    sesion = client.session
+    sesion['consorcio_activo_id'] = consorcio_id
+    sesion.save()
+
+
 class PermisosAdministradorTests(TestCase):
     def setUp(self):
         self.consorcio = crear_consorcio()
@@ -35,17 +47,16 @@ class PermisosAdministradorTests(TestCase):
         administrador.consorcios.add(self.consorcio)
         self.client.force_login(self.usuario)
 
-    def test_crear_uf_desde_un_consorcio_que_administra(self):
-        respuesta = self.client.get(reverse('crear_unidad_funcional', args=[self.consorcio.pk]))
-        self.assertEqual(respuesta.status_code, 200)
-
     def test_crear_uf_sin_consorcio(self):
         respuesta = self.client.get(reverse('crear_unidad_funcional'))
         self.assertEqual(respuesta.status_code, 200)
 
-    def test_crear_uf_desde_un_consorcio_ajeno(self):
-        respuesta = self.client.get(reverse('crear_unidad_funcional', args=[self.otro.pk]))
-        self.assertRedirects(respuesta, reverse('listar_consorcios'), fetch_redirect_response=False)
+    def test_crear_uf_en_un_consorcio_ajeno_no_se_guarda(self):
+        propietario = Propietario.objects.create(usuario=User.objects.create_user('prop', password='clave'))
+        self.client.post(reverse('crear_unidad_funcional'), {
+            'propietario': propietario.pk, 'consorcio': self.otro.pk, 'piso': 1, 'departamento': 'A',
+        })
+        self.assertFalse(UnidadFuncional.objects.filter(consorcio=self.otro).exists())
 
     def test_gestionar_uf_inexistente_da_404(self):
         respuesta = self.client.get(reverse('gestionar_unidad_funcional', args=[999999]))
@@ -55,13 +66,24 @@ class PermisosAdministradorTests(TestCase):
         respuesta = self.client.get(reverse('gestionar_personal', args=[999999]))
         self.assertEqual(respuesta.status_code, 404)
 
-    def test_agregar_personal_a_consorcio_inexistente_da_404(self):
-        respuesta = self.client.get(reverse('crear_personal', args=[999999]))
-        self.assertEqual(respuesta.status_code, 404)
+    def test_agregar_personal_va_al_consorcio_activo_aunque_se_mande_otro(self):
+        self.client.post(reverse('crear_personal'), {
+            'consorcio': self.otro.pk, 'nombre': 'Ana', 'apellido': 'Paz', 'dni': '30111222',
+            'cargo': 'Encargada', 'tipo_contratacion': 'directo',
+        })
+        self.assertFalse(Personal.objects.filter(consorcio=self.otro).exists())
+        self.assertTrue(Personal.objects.filter(consorcio=self.consorcio, dni='30111222').exists())
 
-    def test_configurar_columnas_con_id_no_numerico(self):
-        respuesta = self.client.get(reverse('configurar_columnas'), {'consorcio': 'abc'})
-        self.assertRedirects(respuesta, reverse('configurar_columnas'), fetch_redirect_response=False)
+    def test_configurar_columnas_con_id_no_numerico_en_sesion(self):
+        forzar_consorcio_en_sesion(self.client, 'abc')
+        respuesta = self.client.get(reverse('configurar_columnas'))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.context['consorcio'], self.consorcio)
+
+    def test_crear_consorcio_muestra_el_formulario(self):
+        respuesta = self.client.get(reverse('crear_consorcio'))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, reverse('bienvenida'))
 
 
 class UsuarioSinRegistroDeAdministradorTests(TestCase):
@@ -73,25 +95,26 @@ class UsuarioSinRegistroDeAdministradorTests(TestCase):
             consorcio=self.consorcio, nombre='Ana', apellido='Paz', dni='30111222', cargo='Encargada')
         usuario, _ = crear_usuario_administrador('sin_registro', con_registro=False)
         self.client.force_login(usuario)
+        forzar_consorcio_en_sesion(self.client, self.consorcio.pk)
 
     def assertSinPermiso(self, url):
         respuesta = self.client.get(url)
-        self.assertRedirects(respuesta, reverse('listar_consorcios'), fetch_redirect_response=False)
+        self.assertRedirects(respuesta, reverse('bienvenida'), fetch_redirect_response=False)
 
     def test_gestionar_consorcio(self):
-        self.assertSinPermiso(reverse('gestionar_consorcio', args=[self.consorcio.pk]))
+        self.assertSinPermiso(reverse('gestionar_consorcio'))
 
     def test_definir_alicuotas(self):
-        self.assertSinPermiso(reverse('definir_alicuotas', args=[self.consorcio.pk]))
+        self.assertSinPermiso(reverse('definir_alicuotas'))
 
     def test_crear_personal(self):
-        self.assertSinPermiso(reverse('crear_personal', args=[self.consorcio.pk]))
+        self.assertSinPermiso(reverse('crear_personal'))
 
     def test_gestionar_personal(self):
         self.assertSinPermiso(reverse('gestionar_personal', args=[self.personal.pk]))
 
     def test_listar_personal_no_muestra_nada(self):
-        respuesta = self.client.get(reverse('listar_personal', args=[self.consorcio.pk]))
+        respuesta = self.client.get(reverse('listar_personal'))
         self.assertEqual(respuesta.status_code, 200)
         self.assertNotContains(respuesta, 'Paz')
 
@@ -115,13 +138,21 @@ class ListarUnidadesFuncionalesTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         return list(respuesta.context['table'].data)
 
-    def test_propietario_solo_ve_sus_unidades(self):
+    def test_propietario_no_lista_unidades_aunque_fuerce_el_consorcio(self):
+        # El listado es del administrador; el propietario ve sus UF desde su portal.
         self.client.force_login(self.propietario_usuario)
-        unidades = self.unidades_listadas()
-        self.assertEqual(sorted(uf.departamento for uf in unidades), ['A', 'Z'])
+        forzar_consorcio_en_sesion(self.client, self.consorcio.pk)
+        self.assertEqual(self.unidades_listadas(), [])
 
     def test_administrador_solo_ve_las_de_sus_consorcios(self):
         usuario, administrador = crear_usuario_administrador('admin')
         administrador.consorcios.add(self.consorcio)
         self.client.force_login(usuario)
+        self.assertEqual({uf.consorcio for uf in self.unidades_listadas()}, {self.consorcio})
+
+    def test_administrador_que_fuerza_otro_consorcio_sigue_viendo_el_suyo(self):
+        usuario, administrador = crear_usuario_administrador('admin')
+        administrador.consorcios.add(self.consorcio)
+        self.client.force_login(usuario)
+        forzar_consorcio_en_sesion(self.client, self.otro.pk)
         self.assertEqual({uf.consorcio for uf in self.unidades_listadas()}, {self.consorcio})

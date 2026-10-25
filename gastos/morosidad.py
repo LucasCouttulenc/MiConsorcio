@@ -9,11 +9,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-# Agregamos Consorcio acá
-from consorcios.models import UnidadFuncional, Consorcio
+from consorcios.models import UnidadFuncional
+from consorcios.permisos import consorcio_activo
 
 from .models import DetalleLiquidacionUF, Liquidacion, Pago
-from .views import consorcios_permitidos, periodo_legible
+from .views import periodo_legible
 
 FILTROS = {
     'con_deuda': ('Con deuda', lambda fila: fila['total'] > 0),
@@ -61,12 +61,10 @@ def detalles_cerrados(unidades):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def morosidad(request):
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
-    
-    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
 
     hoy = date.today()
     unidades = list(UnidadFuncional.objects.filter(consorcio=consorcio).select_related('propietario__usuario'))
@@ -118,15 +116,15 @@ def morosidad(request):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def morosidad_unidad(request, unidad_id):
     """Estado de cuenta de una UF para el administrador: deuda por período y movimientos."""
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
 
     # Filtramos por el consorcio activo para evitar que puedan ver UFs de otros consorcios por URL
     unidad = get_object_or_404(
         UnidadFuncional.objects.select_related('consorcio', 'propietario__usuario'),
-        pk=unidad_id, consorcio_id=consorcio_id,
+        pk=unidad_id, consorcio=consorcio,
     )
     hoy = date.today()
     detalles = list(detalles_cerrados([unidad]))

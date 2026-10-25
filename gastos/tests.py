@@ -26,6 +26,11 @@ def crear_consorcio(nombre='Torre Uno', cuit='30712345678'):
     return consorcio, columna
 
 
+def activar_consorcio(client, consorcio):
+    """Elige el consorcio activo igual que el selector del sidebar."""
+    client.post(reverse('cambiar_consorcio_activo'), {'consorcio_id': consorcio.pk})
+
+
 class ServicioRecurrenteModeloTests(TestCase):
     def setUp(self):
         self.consorcio, self.columna = crear_consorcio()
@@ -110,11 +115,12 @@ class ServiciosRecurrentesVistasTests(TestCase):
         self.otro, _ = crear_consorcio('Torre Dos', '30798765432')
         self.admin = User.objects.create_superuser('admin', 'admin@example.com', 'clave')
         self.client.force_login(self.admin)
+        activar_consorcio(self.client, self.consorcio)
         self.url = reverse('servicios_recurrentes')
 
     def test_crear_pausar_y_borrar(self):
         respuesta = self.client.post(self.url, {
-            'consorcio': self.consorcio.pk, 'accion': 'crear', 'concepto': 'Fumigación',
+            'accion': 'crear', 'concepto': 'Fumigación',
             'columna': self.columna.pk, 'tipo': 'ordinario', 'frecuencia_meses': 3,
             'periodo_inicio': '2026-01', 'periodo_fin': '', 'monto_sugerido': '45000',
         })
@@ -122,24 +128,25 @@ class ServiciosRecurrentesVistasTests(TestCase):
         servicio = ServicioRecurrente.objects.get()
         self.assertEqual(servicio.monto_sugerido, Decimal('45000'))
 
-        self.client.post(self.url, {'consorcio': self.consorcio.pk, 'accion': 'pausar', 'servicio_id': servicio.pk})
+        self.client.post(self.url, {'accion': 'pausar', 'servicio_id': servicio.pk})
         servicio.refresh_from_db()
         self.assertFalse(servicio.activo)
 
-        self.client.post(self.url, {'consorcio': self.consorcio.pk, 'accion': 'borrar', 'servicio_id': servicio.pk})
+        self.client.post(self.url, {'accion': 'borrar', 'servicio_id': servicio.pk})
         self.assertFalse(ServicioRecurrente.objects.exists())
 
     def test_no_se_puede_tocar_un_servicio_desde_otro_consorcio(self):
         servicio = ServicioRecurrente.objects.create(
             consorcio=self.consorcio, columna=self.columna, concepto='Fumigación', periodo_inicio='2026-01')
-        respuesta = self.client.post(self.url, {'consorcio': self.otro.pk, 'accion': 'borrar', 'servicio_id': servicio.pk})
+        activar_consorcio(self.client, self.otro)
+        respuesta = self.client.post(self.url, {'accion': 'borrar', 'servicio_id': servicio.pk})
         self.assertEqual(respuesta.status_code, 404)
         self.assertTrue(ServicioRecurrente.objects.exists())
 
     def test_listado_muestra_el_proximo_periodo(self):
         ServicioRecurrente.objects.create(
             consorcio=self.consorcio, columna=self.columna, concepto='Fumigación', periodo_inicio='2026-01')
-        respuesta = self.client.get(self.url, {'consorcio': self.consorcio.pk})
+        respuesta = self.client.get(self.url)
         self.assertContains(respuesta, 'Fumigación')
         self.assertContains(respuesta, date.today().strftime('%Y-%m'))
 

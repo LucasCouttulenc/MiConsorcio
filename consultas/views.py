@@ -5,7 +5,7 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from consorcios.models import UnidadFuncional
-from gastos.views import consorcios_permitidos
+from consorcios.permisos import consorcio_activo
 from usuarios.models import Propietario
 
 from .forms import FormularioConsulta, FormularioMensaje
@@ -76,14 +76,14 @@ def ver_consulta(request, consulta_id):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def bandeja_consultas(request):
     """Bandeja del administrador, filtrada por el consorcio activo y por estado."""
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
 
-    # Filtramos estrictamente por el consorcio de la sesión
+    # Filtramos estrictamente por el consorcio activo (ya validado contra los que administra)
     consultas = Consulta.objects.filter(
-        unidad_funcional__consorcio_id=consorcio_id
+        unidad_funcional__consorcio=consorcio
     ).select_related('unidad_funcional__consorcio', 'unidad_funcional__propietario__usuario')
 
     # Filtro opcional si vienen desde el detalle de una UF
@@ -114,15 +114,15 @@ def bandeja_consultas(request):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def gestionar_consulta(request, consulta_id):
     """El administrador responde (pasa a En curso) o cierra la consulta."""
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         return redirect('bienvenida')
 
     # Seguridad: Verificamos que la consulta pertenezca al consorcio activo
     consulta = get_object_or_404(
         Consulta.objects.select_related('unidad_funcional__consorcio', 'unidad_funcional__propietario__usuario'),
         pk=consulta_id,
-        unidad_funcional__consorcio_id=consorcio_id
+        unidad_funcional__consorcio=consorcio
     )
     
     formulario = FormularioMensaje(request.POST or None)

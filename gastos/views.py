@@ -22,6 +22,7 @@ from .models import imputar_pago, Gasto, Liquidacion, TipoGasto, Pago, DetalleGa
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
+from consorcios.permisos import consorcios_permitidos, consorcio_activo
 
 MONTO_MAXIMO_GASTO = Decimal('10000000000')  # Gasto.monto: max_digits=12, decimal_places=2
 
@@ -30,12 +31,6 @@ class BorradorExistente(ValueError):
     def __init__(self, liquidacion):
         super().__init__('Ya existe un borrador para ese consorcio y período.')
         self.url = reverse('editar_liquidacion', args=[liquidacion.pk])
-
-
-def consorcios_permitidos(usuario):
-    if usuario.is_superuser:
-        return Consorcio.objects.all()
-    return Consorcio.objects.filter(administradores__usuario=usuario).distinct()
 
 
 def liquidacion_permitida(request, liquidacion_id):
@@ -47,13 +42,10 @@ def liquidacion_permitida(request, liquidacion_id):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def listar_liquidaciones(request):
-    consorcio_id = request.session.get('consorcio_activo_id')
-    
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
-
-    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
     liquidaciones = Liquidacion.objects.filter(consorcio=consorcio).select_related('consorcio')
     
     return render(request, 'listar_liquidaciones.html', {
@@ -69,13 +61,10 @@ def servicios_recurrentes(request):
     """
     Alta, edición, pausa y baja de los servicios recurrentes del consorcio activo.
     """
-    consorcio_id = request.session.get('consorcio_activo_id')
-    
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, 'Seleccioná un consorcio primero.')
         return redirect('bienvenida')
-        
-    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
 
     formulario = None
     if request.method == 'POST':
@@ -249,12 +238,10 @@ def eliminar_borrador(request, liquidacion_id):
 def generar_liquidacion(request, liquidacion_id=None):
     from consorcios.models import Rubro  
 
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
-
-    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
 
     # Garantizar rubro de sueldos
     rubro_sueldos, _ = Rubro.objects.get_or_create(
@@ -767,13 +754,10 @@ def registrar_pago(request, detalle_id):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def listar_pagos_pendientes(request):
     """Muestra al administrador los pagos que esperan revisión del consorcio activo."""
-    consorcio_id = request.session.get('consorcio_activo_id')
-    
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
-
-    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
     
     pagos = Pago.objects.filter(
         detalle_liquidacion__liquidacion__consorcio=consorcio,
@@ -846,12 +830,10 @@ def descargar_resumen_uf(request, detalle_id):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def caja(request):
     """Muestra la caja del consorcio activo con sus saldos y permite cargar movimientos."""
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
-
-    consorcio = get_object_or_404(consorcios_permitidos(request.user), pk=consorcio_id)
 
     # Procesar nuevo movimiento
     if request.method == 'POST':
