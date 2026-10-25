@@ -23,24 +23,25 @@
         {% endif %}
     </div>
 
-        <!-- SELECTOR DE CONSORCIO GLOBAL -->
+    <!-- SELECTOR DE CONSORCIO GLOBAL -->
     {% if consorcios_disponibles %}
-        <div class="sidebar-consorcio-selector" style="padding: 10px 20px; margin-bottom: 10px;">
-            <label style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; font-weight: 700;">
-                Consorcio Activo
-            </label>
-            <form method="POST" action="{% url 'cambiar_consorcio_activo' %}">
+        <div class="sidebar-consorcio-selector">
+            <label class="consorcio-label" for="consorcio-activo-select">Consorcio Activo</label>
+            <form method="POST" action="{% url 'cambiar_consorcio_activo' %}" class="consorcio-form">
                 {% csrf_token %}
-                <select name="consorcio_id" onchange="this.form.submit()" class="sin-select2" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: white; font-weight: bold; cursor: pointer;">
-                    {% for c in consorcios_disponibles %}
-                        <option value="{{ c.pk }}" {% if consorcio_activo.pk == c.pk %}selected{% endif %}>
-                            {{ c.nombre }}
-                        </option>
-                    {% endfor %}
-                </select>
+                <div class="consorcio-select-wrapper">
+                    <span class="consorcio-icono" title="{{ consorcio_activo.nombre }}">🏢</span>
+                    <select name="consorcio_id" id="consorcio-activo-select" onchange="this.form.submit()" class="consorcio-select sin-select2">
+                        {% for c in consorcios_disponibles %}
+                            <option value="{{ c.pk }}" {% if consorcio_activo.pk == c.pk %}selected{% endif %}>
+                                {{ c.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </form>
         </div>
-    {% endif %}    
+    {% endif %}  
 
     {% if user.is_authenticated %}
         <!-- Menú -->

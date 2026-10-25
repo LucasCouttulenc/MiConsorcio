@@ -369,3 +369,121 @@
 .btn-confirmar:hover {
     background-color: var(--colorErrorHover);
 }
+
+
+/* ==========================================================
+   Selector de Consorcio en la Barra Lateral
+   ========================================================== */
+
+.sidebar-consorcio-selector {
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+}
+
+.consorcio-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    transition: opacity 0.3s, height 0.3s;
+}
+
+.consorcio-form {
+    margin: 0;
+}
+
+.consorcio-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: #112240 !important;
+    border: 1px solid #233554;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.consorcio-select-wrapper:hover {
+    border-color: #60A5FA;
+}
+
+/* EL ICONO ESTÁ OCULTO POR DEFECTO (cuando está expandido) */
+.consorcio-icono {
+    display: none !important; 
+}
+
+/* EL SELECT ELEGANTE (evitando el modo oscuro del navegador) */
+.consorcio-select {
+    width: 100%;
+    background-color: #112240 !important; /* Forzamos el azul marino */
+    color: #CCD6F6 !important;
+    border: none !important;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    appearance: none; 
+    -webkit-appearance: none;
+    /* Flechita personalizada */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 8px center !important;
+    background-size: 14px !important;
+}
+
+.consorcio-select option {
+    background: #112240 !important;
+    color: #CCD6F6 !important;
+}
+
+
+/* ==========================================================
+   ESTILOS CUANDO LA SIDEBAR ESTÁ CERRADA (Contraída)
+   ========================================================== */
+
+.app-layout:not(.sidebar-expanded) .consorcio-label {
+    display: none;
+}
+
+.app-layout:not(.sidebar-expanded) .sidebar-consorcio-selector {
+    padding: 10px 0;
+    display: flex;
+    justify-content: center;
+    border-bottom: none;
+}
+
+.app-layout:not(.sidebar-expanded) .consorcio-select-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    justify-content: center;
+    background-color: rgba(96, 165, 250, 0.1) !important;
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    cursor: pointer;
+}
+
+/* MOSTRAMOS EL ICONO SOLO CUANDO ESTÁ CERRADA */
+.app-layout:not(.sidebar-expanded) .consorcio-icono {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: #60A5FA;
+}
+
+/* Hacemos invisible el select para que se vea el icono, pero siga clickeable */
+.app-layout:not(.sidebar-expanded) .consorcio-select {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    background: none !important;
+}
