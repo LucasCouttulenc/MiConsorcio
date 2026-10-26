@@ -14,6 +14,7 @@ from django.db.models import ProtectedError
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 import re
+from .permisos import consorcio_activo
 from .alicuotas import leer_alicuotas, guardar_alicuotas, suma_alicuotas, consorcio_tiene_alicuotas_validas
 
 
@@ -33,18 +34,14 @@ def gestionar_consorcio(request):
     """
     Vista para gestionar los datos del consorcio activo (sin pedir ID por URL).
     """
-    consorcio_id = request.session.get('consorcio_activo_id')
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
-        return redirect('bienvenida')
-
-    if not _administra(request.user, consorcio_id):
-        messages.error(request, "No tenes permisos para gestionar este consorcio.")
         return redirect('bienvenida')
 
     return gestionar_modelo(
         request=request,
-        id_modelo=consorcio_id,
+        id_modelo=consorcio.pk,
         formulario_modelo=FormularioConsorcio,
         template="gestionar_consorcio.html",
     )
@@ -109,21 +106,16 @@ class ListarUnidadesFuncionales(Lista):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        consorcio_id = self.request.session.get('consorcio_activo_id')
-        
-        if not consorcio_id:
+        consorcio = consorcio_activo(self.request)
+        if not consorcio:
             return queryset.none()
-            
-        return queryset.filter(consorcio_id=consorcio_id)
+        return queryset.filter(consorcio=consorcio)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        consorcio_id = self.request.session.get('consorcio_activo_id')
-        
-        if consorcio_id:
-            consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+        consorcio = consorcio_activo(self.request)
+        if consorcio:
             context['consorcio'] = consorcio
-            # context['elemento'] = consorcio  <-- ELIMINAR ESTA LÍNEA
             
             context['acciones'] = [
                 { "nombre": "Crear Unidad Funcional", "label": "Crear Unidad Funcional", "tipo": "link", "url": "crear_unidad_funcional" },
@@ -133,36 +125,18 @@ class ListarUnidadesFuncionales(Lista):
 
 @login_required
 @permission_required('consorcios.add_unidadfuncional', raise_exception=True)
-def crear_unidad_funcional(request, consorcio_id=None):
+def crear_unidad_funcional(request):
     """
-    Vista para crear una nueva unidad funcional.
+    Vista para crear una nueva unidad funcional en alguno de los consorcios que administra el usuario.
     """
-    if consorcio_id is not None and not _administra(request.user, consorcio_id):
-        messages.error(request, "No tenes permisos para crear una unidad funcional en este consorcio.")
-        return redirect('bienvenida')
-
-
-    vista_exito = "listar_unidades_funcionales"
-    params_vista_exito = None
-    
-    # Si venimos desde un consorcio, forzamos la ida a alícuotas al terminar
-    consorcio_obj = None
-    if consorcio_id:
-        consorcio_obj = Consorcio.objects.filter(id=consorcio_id).first()
-        vista_exito = "definir_alicuotas"
-        params_vista_exito = {"consorcio_id": consorcio_id}
-
-    # Le pasamos el consorcio al formulario, o el usuario si es una creación general
-    modelo_sec = consorcio_obj if consorcio_obj else request.user
-
     return crear_modelo(
         request=request,
         formulario_modelo=FormularioUnidadFuncional,
         template="crear_unidad_funcional.html",
-        vista_exito=vista_exito,
-        params_vista_exito=params_vista_exito,
-        modelo_secundario=modelo_sec
+        vista_exito="listar_unidades_funcionales",
+        modelo_secundario=request.user
     )
+
 @login_required
 @permission_required('consorcios.change_unidadfuncional', raise_exception=True)
 def gestionar_unidad_funcional(request, unidad_id):
@@ -207,21 +181,17 @@ class ListarPersonal(Lista):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        consorcio_id = self.request.session.get('consorcio_activo_id')
-        
-        if not consorcio_id:
+        consorcio = consorcio_activo(self.request)
+        if not consorcio:
             return queryset.none()
-            
-        return queryset.filter(consorcio_id=consorcio_id)
+        return queryset.filter(consorcio=consorcio)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        consorcio_id = self.request.session.get('consorcio_activo_id')
-        
-        if consorcio_id:
-            consorcio = Consorcio.objects.filter(id=consorcio_id).first()
+        consorcio = consorcio_activo(self.request)
+        if consorcio:
             context['consorcio'] = consorcio
-            
+
             # Habilitamos el botón de agregar personal
             context['acciones'] = [
                 { "nombre": "Agregar", "tipo": "link", "perm": "consorcios.add_personal", "url": "crear_personal"}
@@ -234,13 +204,10 @@ def crear_personal(request):
     """
     Vista para agregar personal al consorcio activo.
     """
-    consorcio_id = request.session.get('consorcio_activo_id')
-    
-    if not consorcio_id or not _administra(request.user, consorcio_id):
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio válido para agregar personal.")
-        return redirect('listar_personal')
-
-    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
+        return redirect('bienvenida')
 
     return crear_modelo(
         request=request,
@@ -293,17 +260,9 @@ def definir_alicuotas(request):
     """
     Pantalla simple: una sola alícuota por UF, la suma debe dar 100%.
     """
-    consorcio_id = request.session.get('consorcio_activo_id')
-    
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
-        return redirect('bienvenida')
-
-    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
-
-    # Permisos
-    if not _administra(request.user, consorcio_id):
-        messages.error(request, "No tenés permisos para gestionar este consorcio.")
         return redirect('bienvenida')
 
 
@@ -348,13 +307,10 @@ def configurar_columnas(request):
     """
     Pantalla principal: lista los rubros del consorcio activo.
     """
-    consorcio_id = request.session.get('consorcio_activo_id')
-    
-    if not consorcio_id:
+    consorcio = consorcio_activo(request)
+    if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
-
-    consorcio = get_object_or_404(Consorcio, id=consorcio_id)
 
     if request.method == 'POST':
         accion = request.POST.get('accion', '')
