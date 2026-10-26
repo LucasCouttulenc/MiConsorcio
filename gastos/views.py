@@ -769,11 +769,13 @@ def listar_pagos_pendientes(request):
         'consorcio': consorcio
     })
 
+
+
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 @require_POST
 def procesar_pago(request, pago_id):
-    """Aprueba o rechaza un pago."""
+    """Aprueba o rechaza un pago, y si se aprueba, lo registra en la Caja."""
     pago = get_object_or_404(Pago, pk=pago_id)
     
     if pago.detalle_liquidacion.liquidacion.consorcio not in consorcios_permitidos(request.user):
@@ -790,17 +792,62 @@ def procesar_pago(request, pago_id):
         if not Pago.objects.filter(pk=pago.pk, estado='pendiente').update(estado=estados[accion]):
             messages.error(request, 'Este pago ya fue procesado.')
             return redirect('pagos_pendientes')
+        
         if accion == 'validar':
             pago.estado = 'validado'
-            imputar_pago(pago)
+            
+            # 1. Imputamos el pago a las deudas correspondientes
+            imputaciones = imputar_pago(pago)
+            
+            # 2. Calculamos cuánto de ese pago corresponde a Ordinario y cuánto a Extraordinario
+            consorcio = pago.detalle_liquidacion.liquidacion.consorcio
+            concepto_base = f"Pago validado: Piso {pago.detalle_liquidacion.unidad_funcional.piso} {pago.detalle_liquidacion.unidad_funcional.departamento or ''}"
+            
+            monto_ord = Decimal('0')
+            monto_ext = Decimal('0')
+            
+            for imp in imputaciones:
+                det = imp.detalle_liquidacion
+                if det and det.monto_total > 0:
+                    # Separamos proporcionalmente el monto imputado según el detalle de la UF
+                    monto_ord += det.monto_ordinario * (imp.monto / det.monto_total)
+                    monto_ext += det.monto_extraordinario * (imp.monto / det.monto_total)
+                else:
+                    monto_ord += imp.monto # Si es un excedente, lo mandamos a ordinario
+            
+            monto_ord = monto_ord.quantize(Decimal('0.01'))
+            monto_ext = monto_ext.quantize(Decimal('0.01'))
+            
+            # Ajuste por redondeo (para que la suma de exactamente igual al pago)
+            diferencia = pago.monto_pagado - (monto_ord + monto_ext)
+            if diferencia != 0:
+                monto_ord += diferencia
+
+            # 3. Creamos los movimientos en la Caja
+            if monto_ord > 0:
+                MovimientoCaja.objects.create(
+                    consorcio=consorcio,
+                    fecha=pago.fecha_pago,
+                    concepto=f"{concepto_base} (Expensas)",
+                    monto=monto_ord,
+                    tipo='ordinario',
+                    medio_pago='transferencia'
+                )
+            if monto_ext > 0:
+                MovimientoCaja.objects.create(
+                    consorcio=consorcio,
+                    fecha=pago.fecha_pago,
+                    concepto=f"{concepto_base} (Extraordinario)",
+                    monto=monto_ext,
+                    tipo='extraordinario',
+                    medio_pago='transferencia'
+                )
 
     if accion == 'validar':
-        messages.success(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} validado.')
+        messages.success(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} validado y registrado en Caja.')
     else:
         messages.error(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} rechazado. La deuda vuelve a estar activa.')
     return redirect('pagos_pendientes')
-
-
 
 
 @login_required

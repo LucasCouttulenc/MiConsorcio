@@ -46,7 +46,7 @@
         {% if detalle %}
         <div class="portal-info-periodo">
             <div><strong>{{ consorcio.nombre }}</strong><span>Piso {{ unidad.piso }}{% if unidad.departamento %} · Departamento {{ unidad.departamento }}{% endif %}</span></div>
-            <div><strong>Alícuota aplicada</strong><span>{{ detalle.alicuota }}%</span></div>
+            <div><strong>Alícuota aplicada</strong><span>{{detalle.alicuota|floatformat:"-2" }}%</span></div>
             <div><strong>Cierre de liquidación</strong><span>{{ detalle.liquidacion.fecha_cierre|date:"d/m/Y"|default:"Sin fecha informada" }}</span></div>
             <div><strong>Vencimiento</strong><span>{{ detalle.liquidacion.fecha_vencimiento_1|date:"d/m/Y"|default:"Sin fecha informada" }}</span></div>
         </div>
@@ -123,7 +123,7 @@
                 <thead><tr><th>Concepto</th><th>Rubro / tipo</th><th>Edificio</th><th>Coef. UF</th><th>Tu parte</th></tr></thead>
                 <tbody>
                 {% for item in gastos %}
-                    <tr><td>{{ item.gasto.concepto }}{% if item.particular %} <span class="portal-etiqueta-particular">Tu unidad</span>{% endif %}</td><td>{{ item.rubro }} · {{ item.gasto.get_tipo_display }}</td><td>$ {{ item.gasto.monto|floatformat:"2g" }}</td><td>{% if item.distribucion %}{{ item.distribucion.porcentaje_aplicado|floatformat:"2g" }}{% else %}{{ detalle.alicuota|floatformat:"2g" }}{% endif %}%</td><td>$ {{ item.monto_asignado|floatformat:"2g" }}</td></tr>
+                    <tr><td>{{ item.gasto.concepto }}{% if item.particular %} <span class="portal-etiqueta-particular">Tu unidad</span>{% endif %}</td><td>{{ item.rubro }} · {{ item.gasto.get_tipo_display }}</td><td>$ {{ item.gasto.monto|floatformat:"2g" }}</td><td>{% if item.distribucion %}{{ item.distribucion.porcentaje_aplicado|floatformat:"2g" }}{% else %}{{ detalle.alicuota|floatformat:"-2" }}{% endif %}%</td><td>$ {{ item.monto_asignado|floatformat:"2g" }}</td></tr>
                 {% empty %}<tr><td colspan="5" class="portal-mensaje-vacio">No hay gastos cargados para este período.</td></tr>{% endfor %}
                 </tbody>
                 <tfoot><tr><th colspan="4">Total correspondiente a tu unidad</th><th>$ {{ detalle.monto_total|floatformat:"2g" }}</th></tr></tfoot>

@@ -31,17 +31,24 @@
                 {% csrf_token %}
                 <div class="consorcio-select-wrapper">
                     <span class="consorcio-icono" title="{{ consorcio_activo.nombre }}">🏢</span>
-                    <select name="consorcio_id" id="consorcio-activo-select" onchange="this.form.submit()" class="consorcio-select sin-select2">
+                    
+                    <!-- Le cambiamos el onchange para llamar a una función propia -->
+                    <select name="consorcio_id" id="consorcio-activo-select" onchange="cambiarConsorcio(this)" class="consorcio-select sin-select2">
                         {% for c in consorcios_disponibles %}
                             <option value="{{ c.pk }}" {% if consorcio_activo.pk == c.pk %}selected{% endif %}>
                                 {{ c.nombre }}
                             </option>
                         {% endfor %}
+                        
+                        <!-- NUEVA OPCIÓN -->
+                        <option value="NUEVO" style="font-weight: 700; color: #60A5FA; border-top: 1px solid #334155;">
+                            Crear nuevo consorcio
+                        </option>
                     </select>
                 </div>
             </form>
         </div>
-    {% endif %}  
+    {% endif %}
 
     {% if user.is_authenticated %}
         <!-- Menú -->
@@ -281,4 +288,18 @@ $(document).ready(function() {
         }
     });
 });
+
+
+    function cambiarConsorcio(selectElement) {
+        if (selectElement.value === 'NUEVO') {
+            // Si elige crear uno nuevo, lo mandamos a la vista de creación
+            window.location.href = "{% url 'crear_consorcio' %}";
+        } else {
+            // Si elige un consorcio normal, enviamos el formulario
+            selectElement.form.submit();
+        }
+    }
+
+
+
 </script>

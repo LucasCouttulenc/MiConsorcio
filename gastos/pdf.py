@@ -257,6 +257,12 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
                 totales[gid] = totales.get(gid, Decimal("0.00")) + valor
         story.append(_tabla_total_general(totales, nombres_grupos, est))
         
+    # ---RESUMEN DE CAJA ---    
+    story.append(Spacer(1, 8 * mm))
+    story.append(Paragraph("Resumen de Caja del Período", est["titulo"]))
+    story.append(Spacer(1, 2 * mm))
+    story.append(_tabla_resumen_caja(liquidacion, est))
+        
     # --- Detalle por UF ---
     story.append(Spacer(1, 8 * mm))
     story.append(Paragraph("Estado de Cuentas y Prorrateo", est["titulo"]))
@@ -414,3 +420,104 @@ def generar_recibo_pago_pdf(pago):
     )
     doc.build(story)
     return buffer.getvalue()
+
+
+
+def _tabla_resumen_caja(liquidacion, est):
+    """
+    Genera una tabla con el resumen de caja del período de la liquidación.
+    Calcula saldos iniciales, finales, ingresos y egresos.
+    """
+    from django.db.models import Sum
+    from datetime import date
+    from .models import MovimientoCaja
+
+    # Rango de fechas del período de la liquidación
+    anio, mes = liquidacion.periodo.split('-')
+    fecha_inicio = date(int(anio), int(mes), 1)
+    fecha_fin = liquidacion.fecha_cierre or date.today()
+
+    movs = MovimientoCaja.objects.filter(consorcio=liquidacion.consorcio)
+
+    # Saldos
+    s_ini = movs.filter(fecha__lt=fecha_inicio).aggregate(t=Sum('monto'))['t'] or Decimal('0')
+    s_fin = movs.filter(fecha__lte=fecha_fin).aggregate(t=Sum('monto'))['t'] or Decimal('0')
+
+    # Movimientos dentro del período (mes)
+    periodo_movs = movs.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
+    ing = periodo_movs.filter(monto__gt=0)
+    egr = periodo_movs.filter(monto__lt=0)
+
+    def get_sum(qs):
+        return qs.aggregate(t=Sum('monto'))['t'] or Decimal('0')
+
+    # Desglose de Ingresos (positivos)
+    i_ord = get_sum(ing.filter(tipo='ordinario'))
+    i_ext = get_sum(ing.filter(tipo='extraordinario'))
+    i_efvo = get_sum(ing.filter(medio_pago='efectivo'))
+    i_trans = get_sum(ing.filter(medio_pago='transferencia'))
+    i_total = i_ord + i_ext
+
+    # Desglose de Egresos de Caja (negativos, los pasamos a positivo para mostrar)
+    e_ord = abs(get_sum(egr.filter(tipo='ordinario')))
+    e_ext = abs(get_sum(egr.filter(tipo='extraordinario')))
+    e_efvo = abs(get_sum(egr.filter(medio_pago='efectivo')))
+    e_trans = abs(get_sum(egr.filter(medio_pago='transferencia')))
+    e_total = e_ord + e_ext
+
+    # Armado de la tabla
+    encabezado = [
+        Paragraph("Resumen de Caja (Movimientos del mes)", est["th_left"]),
+        Paragraph("Ordinario", est["th"]),
+        Paragraph("Extraordinario", est["th"]),
+        Paragraph("Efectivo", est["th"]),
+        Paragraph("Transferencia", est["th"]),
+        Paragraph("Total", est["th"]),
+    ]
+
+    filas = [
+        encabezado,
+        [
+            Paragraph("<b>Ingresos del mes</b>", est["normal"]),
+            Paragraph(_money(i_ord), est["num"]),
+            Paragraph(_money(i_ext), est["num"]),
+            Paragraph(_money(i_efvo), est["num"]),
+            Paragraph(_money(i_trans), est["num"]),
+            Paragraph(_money(i_total), est["num_b"]),
+        ],
+        [
+            Paragraph("<b>Egresos del mes</b>", est["normal"]),
+            Paragraph(_money(e_ord), est["num"]),
+            Paragraph(_money(e_ext), est["num"]),
+            Paragraph(_money(e_efvo), est["num"]),
+            Paragraph(_money(e_trans), est["num"]),
+            Paragraph(_money(e_total), est["num_b"]),
+        ],
+        [
+            Paragraph(f"<b>Saldo Inicial (al {fecha_inicio.strftime('%d/%m/%Y')})</b>", est["normal"]),
+            "", "", "", "",
+            Paragraph(_money(s_ini), est["num_b"]),
+        ],
+        [
+            Paragraph(f"<b>Saldo Final (al {fecha_fin.strftime('%d/%m/%Y')})</b>", est["normal"]),
+            "", "", "", "",
+            Paragraph(_money(s_fin), est["num_b"]),
+        ]
+    ]
+
+    # Ajustamos los anchos: un poco más al concepto, y distribuimos el resto
+    anchos = [ANCHO_UTIL * 0.30, ANCHO_UTIL * 0.13, ANCHO_UTIL * 0.14, ANCHO_UTIL * 0.13, ANCHO_UTIL * 0.15, ANCHO_UTIL * 0.15]
+    
+    tabla = Table(filas, colWidths=anchos)
+    tabla.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), GRIS_HEADER),
+        ("GRID", (0, 0), (-1, -1), 0.5, BORDE),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("SPAN", (0, 3), (4, 3)), 
+        ("SPAN", (0, 4), (4, 4)), 
+        ("BACKGROUND", (0, 3), (-1, 3), GRIS_SUBTOTAL),
+        ("BACKGROUND", (0, 4), (-1, 4), GRIS_TOTAL),
+    ]))
+    return tabla

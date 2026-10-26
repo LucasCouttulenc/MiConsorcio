@@ -127,14 +127,19 @@ class ListarUnidadesFuncionales(Lista):
 @permission_required('consorcios.add_unidadfuncional', raise_exception=True)
 def crear_unidad_funcional(request):
     """
-    Vista para crear una nueva unidad funcional en alguno de los consorcios que administra el usuario.
+    Vista para crear una nueva unidad funcional en el consorcio activo.
     """
+    consorcio = consorcio_activo(request)
+    if not consorcio or not _administra(request.user, consorcio.pk):
+        messages.error(request, "Seleccioná un consorcio válido para crear una unidad funcional.")
+        return redirect('bienvenida')
+
     return crear_modelo(
         request=request,
         formulario_modelo=FormularioUnidadFuncional,
         template="crear_unidad_funcional.html",
-        vista_exito="listar_unidades_funcionales",
-        modelo_secundario=request.user
+        vista_exito="definir_alicuotas", # Redirige directo a Alícuotas
+        modelo_secundario=consorcio # Pasa el consorcio para bloquear el campo en el form
     )
 
 @login_required
