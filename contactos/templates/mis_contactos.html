@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Teléfonos de contacto{% endblock %}
+{% block content %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div><p class="portal-eyebrow">PANEL PROPIETARIO</p><h1>Teléfonos de contacto</h1><p>Cómo comunicarte con la administración y los servicios de tu edificio.</p></div>
+    </header>
+    {% for consorcio in consorcios %}
+        <section class="portal-card">
+            <div class="portal-card-titulo"><div><h2>{{ consorcio.nombre }}</h2><p>{{ consorcio.calle }} {{ consorcio.altura }}</p></div></div>
+            <div class="contacto-columnas">
+                <div class="contacto-columna">
+                    <h3 class="contacto-subtitulo">{% include "componentes/icono_contacto.html" with icono="edificio" %} Administración</h3>
+                    {% with contacto=consorcio.contacto_administracion %}
+                    {% if contacto and not contacto.esta_vacio %}
+                        <ul class="contacto-lista">
+                            {% if contacto.nombre %}<li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="maletin" %}</span><div><strong>{{ contacto.nombre }}</strong><small>Administración</small></div></li>{% endif %}
+                            {% if contacto.direccion or contacto.localidad %}<li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="ubicacion" %}</span><div><strong>{{ contacto.direccion|default:contacto.localidad }}</strong>{% if contacto.direccion and contacto.localidad %}<small>{{ contacto.localidad }}</small>{% else %}<small>Dirección</small>{% endif %}</div></li>{% endif %}
+                            {% if contacto.telefono %}<li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="telefono" %}</span><div><a class="contacto-link" href="tel:{{ contacto.telefono }}">{{ contacto.telefono }}</a><small>Teléfono</small></div></li>{% endif %}
+                            {% if contacto.horario %}<li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="reloj" %}</span><div><strong>{{ contacto.horario }}</strong><small>Horario de atención</small></div></li>{% endif %}
+                            {% if contacto.email %}<li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="mail" %}</span><div><a class="contacto-link" href="mailto:{{ contacto.email }}">{{ contacto.email }}</a><small>Email</small></div></li>{% endif %}
+                            {% if contacto.sitio_web %}<li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="web" %}</span><div><a class="contacto-link" href="{{ contacto.sitio_web }}" target="_blank" rel="noopener">{{ contacto.sitio_web }}</a><small>Sitio web</small></div></li>{% endif %}
+                        </ul>
+                    {% else %}
+                        <div class="contacto-vacio"><span class="contacto-vacio-icono">{% include "componentes/icono_contacto.html" with icono="sin-telefono" %}</span><strong>Sin información</strong><small>La administración todavía no cargó sus datos de contacto.</small></div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="contacto-columna">
+                    <h3 class="contacto-subtitulo">{% include "componentes/icono_contacto.html" with icono="telefono" %} Teléfonos útiles</h3>
+                    <ul class="contacto-lista">
+                    {% for telefono in consorcio.telefonos_utiles.all %}
+                        <li><span class="contacto-icono">{% include "componentes/icono_contacto.html" with icono="telefono" %}</span><div><strong>{{ telefono.nombre }}</strong><a class="contacto-link" href="tel:{{ telefono.telefono }}">{{ telefono.telefono }}</a>{% if telefono.detalle %}<small>{{ telefono.detalle }}</small>{% endif %}</div></li>
+                    {% empty %}
+                        <li class="contacto-vacio"><span class="contacto-vacio-icono">{% include "componentes/icono_contacto.html" with icono="sin-telefono" %}</span><strong>Sin información adicional</strong><small>No se cargaron teléfonos útiles para este consorcio.</small></li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </section>
+    {% empty %}
+        <div class="portal-card portal-vacio"><h2>Todavía no tenés unidades asignadas</h2></div>
+    {% endfor %}
+</section>
+{% endblock %}

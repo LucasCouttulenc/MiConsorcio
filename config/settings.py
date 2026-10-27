@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'usuarios',
     'consultas',
     'documentos',
+    'contactos',
     # Acá agregamos cualquier otra app que creemos
 ]
 

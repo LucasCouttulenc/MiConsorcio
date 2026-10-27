@@ -25,6 +25,7 @@ from gastos import morosidad as views_morosidad
 from consorcios import views as views_consorcios
 from consultas import views as views_consultas
 from documentos import views as views_documentos
+from contactos import views as views_contactos
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -72,6 +73,9 @@ urlpatterns = [
     path('documentos/', views_documentos.mis_documentos, name='mis_documentos'),
     path('administracion/documentos/', views_documentos.documentos_consorcio, name='documentos_consorcio'),
     path('administracion/documentos/<int:documento_id>/borrar/', views_documentos.borrar_documento, name='borrar_documento'),
+    path('contactos/', views_contactos.mis_contactos, name='mis_contactos'),
+    path('administracion/contactos/', views_contactos.contactos_consorcio, name='contactos_consorcio'),
+    path('administracion/contactos/<int:telefono_id>/borrar/', views_contactos.borrar_telefono, name='borrar_telefono'),
     path('consultas/nueva/', views_consultas.nueva_consulta, name='nueva_consulta'),
     path('consultas/<int:consulta_id>/', views_consultas.ver_consulta, name='ver_consulta'),
     path('administracion/consultas/', views_consultas.bandeja_consultas, name='bandeja_consultas'),

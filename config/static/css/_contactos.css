@@ -1,0 +1,36 @@
+/* Teléfonos de contacto */
+
+.contacto-admin { display: grid; gap: 16px; }
+.contacto-bloque { padding: 16px 18px; border: 1px solid #466588; border-radius: 12px; background: #d3deea; color: #142947; }
+.contacto-bloque-titulo { margin-bottom: 12px; }
+.contacto-bloque-titulo h2 { color: #16365e; font: 700 1.1rem 'Exo 2', sans-serif; }
+.contacto-bloque-titulo p { margin-top: 3px; color: #455e7b; font-size: .85rem; }
+.contacto-campos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.contacto-pie { display: flex; justify-content: flex-end; margin-top: 14px; }
+.contacto-telefono-form { display: grid; grid-template-columns: 1fr 1fr 1.5fr auto; align-items: end; gap: 10px; margin-bottom: 14px; }
+.contacto-telefono-form .pp-btn, .contacto-pie .pp-btn { min-height: 38px; }
+.contacto-telefono-form .pp-btn { padding-left: 22px; padding-right: 22px; }
+.contacto-bloque .contenedor-tabla { margin: 0; color: var(--colorTextoPrincipal); }
+
+.contacto-columnas { display: grid; grid-template-columns: 1fr 1fr; }
+.contacto-columna { padding: 16px 22px 20px; }
+.contacto-columna + .contacto-columna { border-left: 1px dashed #9fb3cb; }
+.contacto-subtitulo { display: flex; align-items: center; gap: 8px; padding-bottom: 10px; margin-bottom: 6px; border-bottom: 1px solid #b6c6d8; color: #16365e; font: 700 .9rem 'Exo 2', sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.contacto-lista { list-style: none; }
+.contacto-lista > li { display: flex; gap: 14px; padding: 12px 0; }
+.contacto-lista > li + li { border-top: 1px solid #c5d3e2; }
+.contacto-svg { width: 20px; height: 20px; flex: none; }
+.contacto-icono { display: flex; padding-top: 2px; color: #1c65bd; }
+.contacto-subtitulo .contacto-svg { color: #1c65bd; }
+.contacto-lista div { display: flex; flex-direction: column; gap: 2px; }
+.contacto-lista strong { color: #102e54; }
+.contacto-lista small { color: #455e7b; font-size: .8rem; }
+.contacto-link, .contacto-link:visited { color: #1c65bd; font-weight: 800; text-decoration: none; }
+.contacto-link:hover { text-decoration: underline; }
+.contacto-lista > li.contacto-vacio, .contacto-vacio { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 36px 0; border: 0; text-align: center; }
+.contacto-vacio-icono .contacto-svg { width: 44px; height: 44px; color: #7f9bbd; margin-bottom: 6px; }
+
+@media (max-width: 1000px) {
+    .contacto-admin, .contacto-columnas, .contacto-campos, .contacto-telefono-form { grid-template-columns: 1fr; }
+    .contacto-columna + .contacto-columna { border-left: 0; border-top: 1px dashed #9fb3cb; }
+}

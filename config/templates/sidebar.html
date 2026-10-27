@@ -141,6 +141,15 @@
                                 <span class="item-texto">Documentos</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'contactos_consorcio' %}active{% endif %}">
+                            <a href="{% url 'contactos_consorcio' %}" title="Teléfonos de contacto">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/telefono.svg' %}" class="svg-icono default-icon" alt="Teléfonos de contacto">
+                                    <img src="{% static 'imagenes/telefono_blanco.svg' %}" class="svg-icono hover-icon" alt="Teléfonos de contacto">
+                                </span>
+                                <span class="item-texto">Teléfonos de contacto</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'bandeja_consultas' or request.resolver_match.url_name == 'gestionar_consulta' %}active{% endif %}">
                             <a href="{% url 'bandeja_consultas' %}" title="Consultas">
                                 <span class="item-icono">
@@ -190,6 +199,15 @@
                                     <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Documentos">
                                 </span>
                                 <span class="item-texto">Documentos</span>
+                            </a>
+                        </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'mis_contactos' %}active{% endif %}">
+                            <a href="{% url 'mis_contactos' %}" title="Teléfonos de contacto">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/telefono.svg' %}" class="svg-icono default-icon" alt="Teléfonos de contacto">
+                                    <img src="{% static 'imagenes/telefono_blanco.svg' %}" class="svg-icono hover-icon" alt="Teléfonos de contacto">
+                                </span>
+                                <span class="item-texto">Teléfonos de contacto</span>
                             </a>
                         </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_consultas' or request.resolver_match.url_name == 'nueva_consulta' or request.resolver_match.url_name == 'ver_consulta' %}active{% endif %}">
