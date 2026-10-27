@@ -260,6 +260,15 @@
 </nav>
 
 <script>
+
+    if (localStorage.getItem('miConsorcioSidebarExpandedV2') !== 'false') {
+        document.getElementById('appLayout').classList.add('sidebar-expanded');
+        document.getElementById('sidebar').classList.add('open');
+    } else {
+        document.getElementById('appLayout').classList.remove('sidebar-expanded');
+        document.getElementById('sidebar').classList.remove('open');
+    }
+    
 $(document).ready(function() {
     const layout = document.getElementById('appLayout');
     const sidebar = document.getElementById('sidebar');

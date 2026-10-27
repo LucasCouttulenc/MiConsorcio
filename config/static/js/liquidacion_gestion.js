@@ -304,3 +304,23 @@ function actualizarFechasYVista() {
     if (typeof sincronizarServiciosRecurrentes === 'function') sincronizarServiciosRecurrentes();
     sincronizarVistaPrevia();
 }
+
+
+
+// Interceptar la tecla Enter dentro de los modales para que no se envíe el formulario de atrás
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.closest('.gl-modal')) {
+        e.preventDefault(); // Evita que el formulario principal se envíe
+        
+        // Detectamos qué modal está abierto y guardamos
+        const modal = e.target.closest('.gl-modal');
+        if (modal.id === 'modal-monto') {
+            guardarMontoModal();
+        } else if (modal.id === 'modal-concepto') {
+            // Solo guardamos si no se está usando Shift+Enter (por si quieren hacer saltos de línea)
+            if (!e.shiftKey) {
+                guardarConceptoModal();
+            }
+        }
+    }
+});
