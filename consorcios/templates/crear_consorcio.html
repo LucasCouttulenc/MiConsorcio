@@ -7,7 +7,7 @@
 
 {% include "componentes/mensajes.html" %}
 
-<link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+<link rel="stylesheet" href="{% static 'css/_formulario.css' %}?v=20261027-secciones">
 <link rel="stylesheet" href="{% static 'css/_alicuotas.css' %}"> {# Asegura los estilos del botón volver #}
 
 <div style="margin-bottom: 1.5rem;">
@@ -19,8 +19,8 @@
 
 <div class="flex around">
     <div>
-        {% include "formulario.html" with formulario=formulario %}
+        <div class="form-secciones">{% include "formulario.html" with formulario=formulario %}</div>
     </div>
 </div>
 
-{% endblock %}
+{% endblock %}

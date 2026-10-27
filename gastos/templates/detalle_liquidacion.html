@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'css/_detalle_liquidacion.css' %}?v=20261023-visibilidad">
+<link rel="stylesheet" href="{% static 'css/_detalle_liquidacion.css' %}?v=20261027-fondo-reserva">
 
 {% include "componentes/mensajes.html" %}
 
@@ -37,6 +37,12 @@
         <span class="dl-card-etiqueta">Total Extraordinario</span>
         <span class="dl-card-monto">$ {{ liquidacion.total_extraordinario|floatformat:"2g" }}</span>
     </div>
+    {% if liquidacion.total_fondo_reserva %}
+    <div class="dl-card dl-card-fondo">
+        <span class="dl-card-etiqueta">{{ liquidacion.fondo_reserva_nombre }} ({{ liquidacion.fondo_reserva_porcentaje|floatformat:"-2" }}%)</span>
+        <span class="dl-card-monto">$ {{ liquidacion.total_fondo_reserva|floatformat:"2g" }}</span>
+    </div>
+    {% endif %}
     <div class="dl-card dl-card-total">
         <span class="dl-card-etiqueta">Total General</span>
         <span class="dl-card-monto">$ {{ liquidacion.total|floatformat:"2g" }}</span>
@@ -60,6 +66,7 @@
                     <th class="col-num">%UF general</th>
                     <th class="col-num">Ordinario</th>
                     <th class="col-num">Extraordinario</th>
+                    {% if liquidacion.total_fondo_reserva %}<th class="col-num">F. reserva</th>{% endif %}
                     <th class="col-num">Total</th>
                     <th class="col-resumen">Resumen</th>
                 </tr>
@@ -73,6 +80,7 @@
                         <td class="col-num">{{ detalle.alicuota|floatformat:0 }}%</td>
                         <td class="col-num">$ {{ detalle.monto_ordinario|floatformat:"2g" }}</td>
                         <td class="col-num">$ {{ detalle.monto_extraordinario|floatformat:"2g" }}</td>
+                        {% if liquidacion.total_fondo_reserva %}<td class="col-num">$ {{ detalle.monto_fondo_reserva|floatformat:"2g" }}</td>{% endif %}
                         <td class="col-num col-total">$ {{ detalle.monto_total|floatformat:"2g" }}</td>
                         <td class="col-resumen">
                             <a href="{% url 'descargar_resumen_uf' detalle.id %}"
@@ -83,7 +91,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="8" class="dl-vacio">No hay unidades funcionales registradas en este consorcio.</td>
+                        <td colspan="9" class="dl-vacio">No hay unidades funcionales registradas en este consorcio.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -94,6 +102,7 @@
                         <td class="col-num">100.0000</td>
                         <td class="col-num">$ {{ liquidacion.total_ordinario|floatformat:"2g" }}</td>
                         <td class="col-num">$ {{ liquidacion.total_extraordinario|floatformat:"2g" }}</td>
+                        {% if liquidacion.total_fondo_reserva %}<td class="col-num">$ {{ liquidacion.total_fondo_reserva|floatformat:"2g" }}</td>{% endif %}
                         <td class="col-num col-total">$ {{ liquidacion.total|floatformat:"2g" }}</td>
                         <td></td> 
                     </tr>

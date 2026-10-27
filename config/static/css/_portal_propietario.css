@@ -216,3 +216,8 @@
 .portal-card-particular { border-color: #f29b08; }
 .portal-card-particular .portal-card-titulo { background: #f6e3c2; border-bottom-color: #e8c98f; }
 .portal-etiqueta-particular { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: #f29b08; color: #fff; font-size: .7rem; font-weight: 800; vertical-align: 1px; }
+
+/* Fondo de reserva */
+.portal-cuenta .portal-cuenta-fondo dt small { color: #8fb0d4; }
+.portal-resumen-rubros .portal-resumen-fondo span small { display: block; color: #455e7b; font-size: .78rem; }
+.portal-fila-fondo td { background: #e3f1ec; }

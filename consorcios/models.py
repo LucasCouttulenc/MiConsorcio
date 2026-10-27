@@ -27,6 +27,16 @@ class Consorcio(models.Model):
         verbose_name="Interés por mora (% mensual)",
         help_text="Se cobra sobre el capital adeudado por cada mes o fracción de atraso.",
     )
+    fondo_reserva_nombre = models.CharField(
+        max_length=60, blank=True, default='Fondo de reserva',
+        verbose_name="Nombre del fondo de reserva",
+    )
+    fondo_reserva_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        verbose_name="Fondo de reserva (% de las ordinarias)",
+        help_text="Se suma a cada liquidación como un concepto aparte. 0 = sin fondo de reserva.",
+    )
 
     def __str__(self):
         return f"{self.nombre} - {self.calle} {self.altura}, CP {self.codigo_postal}"
@@ -180,4 +190,4 @@ class CoeficienteUF(models.Model):
         unique_together = ('unidad_funcional', 'grupo')
 
     def __str__(self):
-        return f"{self.unidad_funcional} - {self.grupo.codigo}: {self.porcentaje}%"
+        return f"{self.unidad_funcional} - {self.grupo.codigo}: {self.porcentaje}%"

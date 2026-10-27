@@ -292,6 +292,9 @@ def _tabla_detalle_uf(liquidacion, est):
         Paragraph("Extraord.", est["subtipo"]),
         Paragraph("Total", est["subtipo"]),
     ]
+    con_fondo = bool(liquidacion.total_fondo_reserva)
+    if con_fondo:
+        encabezado.insert(6, Paragraph("F. reserva", est["subtipo"]))
 
     filas = [encabezado]
     total_ord = Decimal("0.00")
@@ -315,6 +318,7 @@ def _tabla_detalle_uf(liquidacion, est):
             Paragraph(f"{detalle.alicuota:.2f}", est["num"]),
             Paragraph(_money(detalle.monto_ordinario), est["num"]),
             Paragraph(_money(detalle.monto_extraordinario), est["num"]),
+            *([Paragraph(_money(detalle.monto_fondo_reserva), est["num"])] if con_fondo else []),
             Paragraph(_money(detalle.monto_total), est["num_b"]),
         ])
         total_ord += detalle.monto_ordinario
@@ -329,10 +333,11 @@ def _tabla_detalle_uf(liquidacion, est):
         Paragraph("100.00", est["th"]),
         Paragraph(_money(total_ord), est["num_b"]),
         Paragraph(_money(total_ext), est["num_b"]),
+        *([Paragraph(_money(liquidacion.total_fondo_reserva), est["num_b"])] if con_fondo else []),
         Paragraph(_money(total_gen), est["num_b"]),
     ])
 
-    anchos = [30, 45, 180, 45, 80, 80, 85]
+    anchos = [30, 45, 120, 45, 75, 75, 70, 85] if con_fondo else [30, 45, 180, 45, 80, 80, 85]
     tabla = Table(filas, colWidths=anchos, repeatRows=1)
     ultima = len(filas) - 1
     tabla.setStyle(TableStyle([
@@ -520,4 +525,4 @@ def _tabla_resumen_caja(liquidacion, est):
         ("BACKGROUND", (0, 3), (-1, 3), GRIS_SUBTOTAL),
         ("BACKGROUND", (0, 4), (-1, 4), GRIS_TOTAL),
     ]))
-    return tabla
+    return tabla

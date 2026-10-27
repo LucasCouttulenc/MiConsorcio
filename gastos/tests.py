@@ -689,3 +689,95 @@ class MorosidadTests(TestCase):
     def test_propietario_no_entra(self):
         self.client.force_login(User.objects.get(username='moroso'))
         self.assertEqual(self.client.get(reverse('morosidad')).status_code, 403)
+
+
+class FondoDeReservaTests(TestCase):
+    """El fondo de reserva es un % de las ordinarias que se suma aparte a la expensa de cada UF."""
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        from django.conf import settings
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.consorcio, self.columna = crear_consorcio()
+        self.consorcio.fondo_reserva_porcentaje = Decimal('5')
+        self.consorcio.save()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=self.usuario), consorcio=self.consorcio,
+            piso=1, departamento='A', alicuota=Decimal('60'))
+        self.vecina = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=User.objects.create_user('vecino', password='clave')),
+            consorcio=self.consorcio, piso=2, departamento='A', alicuota=Decimal('40'))
+
+    def liquidar(self, periodo='2026-09'):
+        from .services import procesar_liquidacion_periodo
+        liquidacion = Liquidacion.objects.create(consorcio=self.consorcio, periodo=periodo, cerrada=True)
+        for posicion, (concepto, tipo, monto) in enumerate([
+            ('Sueldo encargado', 'ordinario', '80000'), ('Luz', 'ordinario', '20000'),
+            ('Pintura del hall', 'extraordinario', '50000'),
+        ]):
+            Gasto.objects.create(liquidacion=liquidacion, consorcio=self.consorcio, periodo=periodo,
+                                 fecha_comprobante=date(2026, 9, 30), posicion=posicion, concepto=concepto,
+                                 tipo=tipo, grupo=self.columna, monto=Decimal(monto))
+        procesar_liquidacion_periodo(liquidacion)
+        liquidacion.refresh_from_db()
+        return liquidacion
+
+    def test_se_calcula_sobre_las_ordinarias_y_se_reparte_por_alicuota(self):
+        liquidacion = self.liquidar()
+        self.assertEqual(liquidacion.total_fondo_reserva, Decimal('5000.00'))  # 5% de 100.000, sin la pintura
+        self.assertEqual(liquidacion.total, Decimal('155000.00'))
+        detalle = liquidacion.detalles_uf.get(unidad_funcional=self.uf)
+        self.assertEqual(detalle.monto_fondo_reserva, Decimal('3000.00'))
+        self.assertEqual(detalle.monto_total, Decimal('60000') + Decimal('30000') + Decimal('3000'))
+        self.assertEqual(sum(d.monto_fondo_reserva for d in liquidacion.detalles_uf.all()), Decimal('5000.00'))
+
+    def test_con_cero_por_ciento_no_hay_fondo(self):
+        self.consorcio.fondo_reserva_porcentaje = Decimal('0')
+        self.consorcio.save()
+        liquidacion = self.liquidar()
+        self.assertEqual(liquidacion.total_fondo_reserva, Decimal('0'))
+        self.client.force_login(self.usuario)
+        self.assertNotContains(self.client.get(reverse('mis_expensas'), {'periodo': '2026-09'}), 'Fondo de reserva')
+
+    def test_cambiar_el_porcentaje_no_recalcula_liquidaciones_cerradas(self):
+        liquidacion = self.liquidar()
+        self.consorcio.fondo_reserva_porcentaje = Decimal('10')
+        self.consorcio.save()
+        liquidacion.refresh_from_db()
+        self.assertEqual(liquidacion.fondo_reserva_porcentaje, Decimal('5'))
+        self.assertEqual(liquidacion.total_fondo_reserva, Decimal('5000.00'))
+
+    def test_el_propietario_ve_su_aporte_aparte(self):
+        self.liquidar()
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse('mis_expensas'), {'periodo': '2026-09'})
+        self.assertContains(respuesta, 'Fondo de reserva')
+        self.assertContains(respuesta, '5% de las ordinarias')
+        self.assertContains(respuesta, '3.000,00')
+
+    def test_en_caja_el_fondo_entra_como_extraordinario(self):
+        from .models import MovimientoCaja
+        liquidacion = self.liquidar()
+        detalle = liquidacion.detalles_uf.get(unidad_funcional=self.uf)
+        pago = Pago.objects.create(detalle_liquidacion=detalle, fecha_pago=date.today(),
+                                   monto_pagado=detalle.monto_total, comprobante=archivo())
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        self.client.post(reverse('procesar_pago', args=[pago.pk]), {'accion': 'validar'})
+        movimientos = {m.tipo: m.monto for m in MovimientoCaja.objects.filter(consorcio=self.consorcio)}
+        self.assertEqual(movimientos['ordinario'], Decimal('60000.00'))
+        self.assertEqual(movimientos['extraordinario'], Decimal('33000.00'))
+
+    def test_el_admin_configura_el_fondo_en_datos_del_consorcio(self):
+        from consorcios.forms import FormularioConsorcio
+        datos = {campo: getattr(self.consorcio, campo) for campo in FormularioConsorcio._meta.fields}
+        datos.update(fondo_reserva_nombre='Fondo para obras', fondo_reserva_porcentaje='7.5', clave_suterh='')
+        formulario = FormularioConsorcio(datos, instance=self.consorcio)
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        formulario.save()
+        self.consorcio.refresh_from_db()
+        self.assertEqual(self.consorcio.fondo_reserva_porcentaje, Decimal('7.5'))
+        self.assertEqual(self.consorcio.fondo_reserva_nombre, 'Fondo para obras')

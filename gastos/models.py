@@ -119,6 +119,10 @@ class Liquidacion(models.Model):
     fecha_vencimiento_1 = models.DateField(null=True, blank=True, verbose_name="Primer Vencimiento")
     total_ordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_extraordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    # Fondo de reserva: % de las ordinarias, guardado al finalizar para que no cambie si después se edita el consorcio.
+    fondo_reserva_nombre = models.CharField(max_length=60, blank=True, default='')
+    fondo_reserva_porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    total_fondo_reserva = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     cerrada = models.BooleanField(default=False, verbose_name="¿Cerrada?")
     datos_borrador = models.JSONField(default=dict, blank=True)
     documento = models.BinaryField(null=True, blank=True)
@@ -134,7 +138,7 @@ class Liquidacion(models.Model):
 
     @property
     def total(self):
-        return self.total_ordinario + self.total_extraordinario
+        return self.total_ordinario + self.total_extraordinario + self.total_fondo_reserva
 
     @property
     def cantidad_gastos_borrador(self):
@@ -150,6 +154,7 @@ class DetalleLiquidacionUF(models.Model):
     )
     monto_ordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_extraordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    monto_fondo_reserva = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     class Meta:
@@ -353,4 +358,4 @@ class MovimientoCaja(models.Model):
         ordering = ['-fecha', '-id']
 
     def __str__(self):
-        return f"{self.fecha} - {self.concepto} ({self.monto})"
+        return f"{self.fecha} - {self.concepto} ({self.monto})"

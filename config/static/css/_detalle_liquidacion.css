@@ -80,6 +80,8 @@
 
 .dl-card-extra { border-left: 4px solid #cd4a11 }
 .dl-card-extra .dl-card-monto { color: #bb3c0a; }
+.dl-card-fondo { border-left: 4px solid #0f8a6a }
+.dl-card-fondo .dl-card-monto { color: #0b7a5c; }
 
 .dl-card-total {
     border-left: 4px solid #1f6feb;

@@ -67,6 +67,7 @@
                     {% endif %}
                     <div class="portal-cuenta-sub"><dt>Expensas ordinarias</dt><dd>$ {{ detalle.monto_ordinario|floatformat:"2g" }}</dd></div>
                     <div class="portal-cuenta-sub"><dt>Expensas extraordinarias</dt><dd>$ {{ detalle.monto_extraordinario|floatformat:"2g" }}</dd></div>
+                    {% if detalle.monto_fondo_reserva %}<div class="portal-cuenta-sub portal-cuenta-fondo"><dt>{{ detalle.liquidacion.fondo_reserva_nombre }} <small>{{ detalle.liquidacion.fondo_reserva_porcentaje|floatformat:"-2" }}% de las ordinarias</small></dt><dd>$ {{ detalle.monto_fondo_reserva|floatformat:"2g" }}</dd></div>{% endif %}
                     <div class="portal-cuenta-subtotal"><dt>Capital original <small>Liquidación cerrada el {{ detalle.liquidacion.fecha_cierre|default:detalle.liquidacion.fecha_emision|date:"d/m/Y" }}</small></dt><dd>$ {{ detalle.monto_total|floatformat:"2g" }}</dd></div>
                     {% if interes_devengado %}
                     <div class="portal-cuenta-interes"><dt>Intereses por mora{% if saldo_anterior %} del período{% endif %} <small>{{ tasa_interes|floatformat:"-2" }}% mensual · {{ meses_atraso }} mes{{ meses_atraso|pluralize:"es" }} de atraso desde el vencimiento ({{ detalle.liquidacion.fecha_vencimiento_1|date:"d/m/Y" }})</small></dt><dd>+ $ {{ interes_devengado|floatformat:"2g" }}</dd></div>
@@ -99,6 +100,7 @@
             {% if resumen_rubros %}
             <div class="portal-resumen-rubros">
                 {% for rubro in resumen_rubros %}<div><span>{{ rubro.nombre }}</span><strong>$ {{ rubro.total_edificio|floatformat:"2g" }}</strong><small>Tu parte: $ {{ rubro.tu_parte|floatformat:"2g" }}</small></div>{% endfor %}
+                {% if detalle.liquidacion.total_fondo_reserva %}<div class="portal-resumen-fondo"><span>{{ detalle.liquidacion.fondo_reserva_nombre }} <small>{{ detalle.liquidacion.fondo_reserva_porcentaje|floatformat:"-2" }}% de las ordinarias</small></span><strong>$ {{ detalle.liquidacion.total_fondo_reserva|floatformat:"2g" }}</strong><small>Tu parte: $ {{ detalle.monto_fondo_reserva|floatformat:"2g" }}</small></div>{% endif %}
                 <div class="portal-resumen-total"><span>Total de gastos del edificio</span><strong>$ {{ detalle.liquidacion.total|floatformat:"2g" }}</strong></div>
             </div>
             {% else %}<p class="portal-mensaje-vacio">Esta liquidación no tiene gastos detallados.</p>{% endif %}
@@ -125,6 +127,7 @@
                 {% for item in gastos %}
                     <tr><td>{{ item.gasto.concepto }}{% if item.particular %} <span class="portal-etiqueta-particular">Tu unidad</span>{% endif %}</td><td>{{ item.rubro }} · {{ item.gasto.get_tipo_display }}</td><td>$ {{ item.gasto.monto|floatformat:"2g" }}</td><td>{% if item.distribucion %}{{ item.distribucion.porcentaje_aplicado|floatformat:"2g" }}{% else %}{{ detalle.alicuota|floatformat:"-2" }}{% endif %}%</td><td>$ {{ item.monto_asignado|floatformat:"2g" }}</td></tr>
                 {% empty %}<tr><td colspan="5" class="portal-mensaje-vacio">No hay gastos cargados para este período.</td></tr>{% endfor %}
+                {% if detalle.monto_fondo_reserva %}<tr class="portal-fila-fondo"><td>{{ detalle.liquidacion.fondo_reserva_nombre }}</td><td>{{ detalle.liquidacion.fondo_reserva_porcentaje|floatformat:"-2" }}% de las ordinarias</td><td>$ {{ detalle.liquidacion.total_fondo_reserva|floatformat:"2g" }}</td><td>{{ detalle.alicuota|floatformat:"2g" }}%</td><td>$ {{ detalle.monto_fondo_reserva|floatformat:"2g" }}</td></tr>{% endif %}
                 </tbody>
                 <tfoot><tr><th colspan="4">Total correspondiente a tu unidad</th><th>$ {{ detalle.monto_total|floatformat:"2g" }}</th></tr></tfoot>
             </table></div>

@@ -7,7 +7,7 @@
 
 {% include "componentes/mensajes.html" %}
 
-<link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+<link rel="stylesheet" href="{% static 'css/_formulario.css' %}?v=20261027-secciones">
 
 <div style="margin-bottom: 1.5rem;">
     <h1 class="titulo" style="margin-bottom: 0.5rem;">Datos del consorcio</h1>
@@ -46,8 +46,8 @@
 <div style="background: #173252; padding:1.5rem;border-radius: 10px;border: 1px solid #034297;box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
     <h2 style="font-size: 1.2rem; margin-bottom: 1rem; color: #b3b3b3;">Editar información</h2>
     <div class="contenedor-formulario-custom" style="background: transparent; padding: 0; box-shadow: none; border: none;">
-        {% include "formulario.html" with formulario=formulario %}
+        <div class="form-secciones">{% include "formulario.html" with formulario=formulario %}</div>
     </div>
 </div>
 
-{% endblock %}
+{% endblock %}

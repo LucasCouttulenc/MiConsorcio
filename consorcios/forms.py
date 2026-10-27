@@ -24,6 +24,8 @@ class FormularioConsorcio(forms.ModelForm):
             "localidad",
             "horario_atencion",
             "tasa_interes_mensual",
+            "fondo_reserva_nombre",
+            "fondo_reserva_porcentaje",
         ]
         widgets = {
             "fecha_creacion": DatePickerInput(),
@@ -34,33 +36,36 @@ class FormularioConsorcio(forms.ModelForm):
         self.helper = FormHelper()
         self.helper.form_method = 'POST'
 
-        # Reorganizamos las columnas para que queden 3 por fila
+        # Agrupamos los campos en secciones para que el formulario se lea más fácil
         self.helper.layout = Layout(
+            HTML('<h3 class="form-seccion-titulo">Datos generales</h3>'),
             Row(
                 Column('nombre'),
                 Column('cuit'),
                 Column('clave_suterh'),
+                Column('fecha_creacion'),
                 css_class = 'row'
             ),
+            HTML('<h3 class="form-seccion-titulo">Dirección y atención</h3>'),
             Row(
-                Column('fecha_creacion'),
                 Column('calle'),
                 Column('altura'),
+                Column('codigo_postal'),
+                Column('localidad'),
                 css_class = 'row'
             ),
             Row(
-                Column('codigo_postal'),
-                Column('localidad'),
                 Column('horario_atencion'),
                 css_class = 'row'
             ),
+            HTML('<h3 class="form-seccion-titulo">Cobranza</h3>'),
             Row(
                 Column('tasa_interes_mensual'),
-                Column(),
-                Column(),
+                Column('fondo_reserva_nombre'),
+                Column('fondo_reserva_porcentaje'),
                 css_class = 'row'
             ),
-            Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')
+            Div(Submit('submit', 'Guardar cambios', css_class='boton-primario'), css_class='flex wrap center')
         )
 class FormularioPersonal(forms.ModelForm):
     """
@@ -227,4 +232,4 @@ class FormularioUnidadFuncional(forms.ModelForm):
         if commit:
             instance.save()
             
-        return instance
+        return instance

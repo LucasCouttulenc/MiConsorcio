@@ -811,7 +811,8 @@ def procesar_pago(request, pago_id):
                 if det and det.monto_total > 0:
                     # Separamos proporcionalmente el monto imputado según el detalle de la UF
                     monto_ord += det.monto_ordinario * (imp.monto / det.monto_total)
-                    monto_ext += det.monto_extraordinario * (imp.monto / det.monto_total)
+                    # El fondo de reserva lo paga el propietario: en caja entra como extraordinario.
+                    monto_ext += (det.monto_extraordinario + det.monto_fondo_reserva) * (imp.monto / det.monto_total)
                 else:
                     monto_ord += imp.monto # Si es un excedente, lo mandamos a ordinario
             
@@ -934,4 +935,4 @@ def caja(request):
         'saldo_trans': trans,
         'saldo_cierre': saldo_cierre,
         'fecha_cierre': fecha_cierre,
-    })
+    })

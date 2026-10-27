@@ -180,3 +180,20 @@
     cursor: not-allowed !important;
     box-shadow: none !important;
 }
+/***************** FORMULARIO POR SECCIONES (Datos del consorcio) *****************/
+.form-secciones .contenedor-formulario-custom { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.form-secciones .form-seccion-titulo {
+    margin: 1.4rem 0 .9rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid var(--colorBordeBlancoTransparente, rgba(255, 255, 255, 0.12));
+    color: #61b7ff;
+    font: 800 .78rem var(--fuenteCuerpo);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+.form-secciones .form-seccion-titulo:first-of-type { margin-top: 0; }
+.form-secciones .row, .form-secciones .form-row { margin-bottom: 0; }
+.form-secciones [class*="col-"], .form-secciones .col-md { min-width: 180px; }
+.form-secciones .form-group { border: 0; padding: 0; background: transparent; margin-bottom: .9rem; }
+.form-secciones .form-group:focus-within { background: transparent; }
+.form-secciones .form-text, .form-secciones small { color: var(--colorTextoSecundario); }

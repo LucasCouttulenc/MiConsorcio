@@ -94,9 +94,32 @@ def procesar_liquidacion_periodo(liquidacion):
             else:
                 acum[uf.pk]['ext'] += parte
 
+    # Fondo de reserva: % de las ordinarias del período, repartido entre todas las UF por alícuota.
+    consorcio = liquidacion.consorcio
+    porcentaje_fondo = consorcio.fondo_reserva_porcentaje or Decimal('0')
+    total_fondo = dinero(total_ordinario * porcentaje_fondo / Decimal('100'))
+    fondo = {uf.pk: Decimal('0.00') for uf in ufs}
+    if total_fondo > 0 and ufs:
+        pesos = [uf.alicuota for uf in ufs]
+        suma = sum(pesos)
+        if suma <= 0:
+            pesos = [Decimal('1')] * len(ufs)
+            suma = Decimal(len(ufs))
+        asignado = Decimal('0.00')
+        for i, uf in enumerate(ufs):
+            parte = dinero(total_fondo * pesos[i] / suma) if i < len(ufs) - 1 else total_fondo - asignado
+            asignado += parte
+            fondo[uf.pk] = parte
+
     liquidacion.total_ordinario = dinero(total_ordinario)
     liquidacion.total_extraordinario = dinero(total_extraordinario)
-    liquidacion.save(update_fields=['total_ordinario', 'total_extraordinario'])
+    liquidacion.fondo_reserva_nombre = consorcio.fondo_reserva_nombre or 'Fondo de reserva'
+    liquidacion.fondo_reserva_porcentaje = porcentaje_fondo
+    liquidacion.total_fondo_reserva = total_fondo
+    liquidacion.save(update_fields=[
+        'total_ordinario', 'total_extraordinario',
+        'fondo_reserva_nombre', 'fondo_reserva_porcentaje', 'total_fondo_reserva',
+    ])
 
     liquidacion.detalles_uf.all().delete()
     DetalleGastoUF.objects.filter(gasto__liquidacion=liquidacion).delete()
@@ -107,7 +130,8 @@ def procesar_liquidacion_periodo(liquidacion):
             alicuota=uf.alicuota,
             monto_ordinario=acum[uf.pk]['ord'],
             monto_extraordinario=acum[uf.pk]['ext'],
-            monto_total=acum[uf.pk]['ord'] + acum[uf.pk]['ext'],
+            monto_fondo_reserva=fondo[uf.pk],
+            monto_total=acum[uf.pk]['ord'] + acum[uf.pk]['ext'] + fondo[uf.pk],
         )
         for uf in ufs
     ]
@@ -422,6 +446,14 @@ def calcular_detalle_uf(detalle):
             'tipo_reparto': columna.get_tipo_reparto_display(),
             'tipo_gasto': gasto.get_tipo_display(),
             'monto': monto_uf,
+        })
+
+    if detalle.monto_fondo_reserva:
+        filas.append({
+            'concepto': f'{liquidacion.fondo_reserva_nombre} ({liquidacion.fondo_reserva_porcentaje:g}% de las ordinarias)',
+            'tipo_reparto': 'General',
+            'tipo_gasto': 'Fondo de reserva',
+            'monto': detalle.monto_fondo_reserva,
         })
 
     return filas
