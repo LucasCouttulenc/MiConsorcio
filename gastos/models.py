@@ -169,8 +169,13 @@ class DetalleLiquidacionUF(models.Model):
 
     @property
     def total_pagado(self):
-        """Capital cancelado por los pagos validados (lo imputado a intereses no cuenta)."""
-        return sum((imp.monto for imp in self._imputaciones('capital')), Decimal('0'))
+        """Capital cancelado por los pagos validados y los adelantos (lo imputado a intereses no cuenta)."""
+        return sum((imp.monto for imp in self._imputaciones('capital') + self._imputaciones('adelanto')), Decimal('0'))
+
+    @property
+    def adelanto_aplicado(self):
+        """Parte de la expensa que se cubrió con saldo a favor de pagos anteriores."""
+        return sum((imp.monto for imp in self._imputaciones('adelanto')), Decimal('0'))
 
     @property
     def intereses_pagados(self):
@@ -200,7 +205,8 @@ class DetalleLiquidacionUF(models.Model):
     def capital_adeudado_al(self, fecha):
         """Capital que seguía impago en esa fecha, según los pagos hechos hasta entonces."""
         return self.monto_total - sum(
-            (imp.monto for imp in self._imputaciones('capital') if imp.pago.fecha_pago <= fecha), Decimal('0')
+            (imp.monto for imp in self._imputaciones('capital') + self._imputaciones('adelanto')
+             if imp.pago.fecha_pago <= fecha), Decimal('0')
         )
 
     def interes_devengado(self, hoy=None):
@@ -252,6 +258,39 @@ def imputar_pago(pago):
         imputaciones.append(ImputacionPago(pago=pago, concepto='excedente', monto=restante))
     return ImputacionPago.objects.bulk_create(imputaciones)
 
+
+def saldo_a_favor(unidad_funcional):
+    """Excedente de pagos validados de la UF que todavía no se aplicó a ninguna expensa."""
+    return ImputacionPago.objects.filter(
+        concepto='excedente', pago__estado='validado', pago__detalle_liquidacion__unidad_funcional=unidad_funcional,
+    ).aggregate(total=models.Sum('monto'))['total'] or Decimal('0')
+
+
+def aplicar_saldo_a_favor(liquidacion):
+    """
+    Al cerrar una liquidación, descuenta el saldo a favor de cada UF de sus expensas ordinarias
+    (el excedente se toma como adelanto de las ordinarias futuras). Lo que no alcanza a usarse
+    queda a favor para la próxima.
+    """
+    for detalle in liquidacion.detalles_uf.select_related('unidad_funcional'):
+        tope = detalle.monto_ordinario
+        excedentes = ImputacionPago.objects.filter(
+            concepto='excedente', pago__estado='validado',
+            pago__detalle_liquidacion__unidad_funcional=detalle.unidad_funcional,
+        ).order_by('pk')
+        for excedente in excedentes:
+            if tope <= 0:
+                break
+            monto = min(excedente.monto, tope)
+            ImputacionPago.objects.create(
+                pago=excedente.pago, detalle_liquidacion=detalle, concepto='adelanto', monto=monto)
+            tope -= monto
+            excedente.monto -= monto
+            if excedente.monto > 0:
+                excedente.save(update_fields=['monto'])
+            else:
+                excedente.delete()
+
 class Pago(models.Model):
     ESTADOS = (
         ('pendiente', 'Pendiente de Validación'),
@@ -285,6 +324,7 @@ class ImputacionPago(models.Model):
         ('interes', 'Interés'),
         ('capital', 'Capital'),
         ('excedente', 'Saldo a favor'),
+        ('adelanto', 'Saldo a favor aplicado'),
     )
     pago = models.ForeignKey(Pago, on_delete=models.CASCADE, related_name='imputaciones')
     detalle_liquidacion = models.ForeignKey(
@@ -358,4 +398,4 @@ class MovimientoCaja(models.Model):
         ordering = ['-fecha', '-id']
 
     def __str__(self):
-        return f"{self.fecha} - {self.concepto} ({self.monto})"
+        return f"{self.fecha} - {self.concepto} ({self.monto})"

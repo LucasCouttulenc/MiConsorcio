@@ -68,6 +68,7 @@
                         <strong>$ {{ saldo|floatformat:"2g" }}</strong>
                         {% if intereses %}<small>Capital $ {{ capital|floatformat:"2g" }}</small><small class="inicio-cuenta-interes">Intereses $ {{ intereses|floatformat:"2g" }}</small>{% endif %}
                         {% if periodos_impagos > 1 %}<small>{{ periodos_impagos }} períodos impagos</small>{% endif %}
+                        {% if saldo_a_favor %}<small class="inicio-cuenta-favor">Saldo a favor $ {{ saldo_a_favor|floatformat:"2g" }}</small>{% endif %}
                     </div>
                     <div>
                         <span>VENCIMIENTO</span>

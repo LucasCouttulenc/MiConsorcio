@@ -4,12 +4,12 @@
 @import "_tabla.css";
 @import "_componentes.css?v=20261020-toast-layout";
 @import "_liquidaciones.css";
-@import "_portal_propietario.css?v=20261027-fondo-reserva";
+@import "_portal_propietario.css?v=20261027-saldo-favor";
 @import "_pagos_pendientes.css";
 @import "_consultas.css?v=20261024-consultas-3";
 @import "_documentos.css?v=20261024-documentos-2";
 @import "_contactos.css?v=20261027-contactos";
-@import "_morosidad.css?v=20261024-morosidad-2";
+@import "_morosidad.css?v=20261027-saldo-favor-2";
 @import "_utilidades.css";
 
 @import "_login.css";

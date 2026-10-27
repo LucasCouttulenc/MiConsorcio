@@ -221,3 +221,9 @@
 .portal-cuenta .portal-cuenta-fondo dt small { color: #8fb0d4; }
 .portal-resumen-rubros .portal-resumen-fondo span small { display: block; color: #455e7b; font-size: .78rem; }
 .portal-fila-fondo td { background: #e3f1ec; }
+
+/* Saldo a favor */
+.portal-cuenta .portal-cuenta-adelanto dt, .portal-cuenta .portal-cuenta-adelanto dd { color: #6ee7b7; }
+.portal-saldo-favor { margin-bottom: 12px; padding: 10px 14px; border: 1px solid #2f8f6f; border-radius: 10px; background: rgba(16, 185, 129, .12); color: #c9f3e3 !important; text-align: left; }
+.portal-saldo-favor strong { color: #6ee7b7; }
+.inicio-cuenta-favor { color: #6ee7b7 !important; font-weight: 800; }

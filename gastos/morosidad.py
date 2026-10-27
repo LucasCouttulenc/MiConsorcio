@@ -6,19 +6,21 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib import messages
+from django.db.models import Sum
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from consorcios.models import UnidadFuncional
 from consorcios.permisos import consorcio_activo
 
-from .models import DetalleLiquidacionUF, Liquidacion, Pago
+from .models import DetalleLiquidacionUF, ImputacionPago, Liquidacion, Pago, saldo_a_favor
 from .views import periodo_legible
 
 FILTROS = {
     'con_deuda': ('Con deuda', lambda fila: fila['total'] > 0),
     'mas_30': ('Más de 30 días', lambda fila: fila['dias_atraso'] > 30),
     'mas_60': ('Más de 60 días', lambda fila: fila['dias_atraso'] > 60),
+    'a_favor': ('Con saldo a favor', lambda fila: fila['saldo_a_favor'] > 0),
     'todas': ('Todas', lambda fila: True),
 }
 
@@ -71,11 +73,16 @@ def morosidad(request):
     por_unidad = {unidad.pk: [] for unidad in unidades}
     for detalle in detalles_cerrados(unidades):
         por_unidad[detalle.unidad_funcional_id].append(detalle)
-        
+    # Excedentes de pagos validados que todavía no se aplicaron, por UF.
+    a_favor = dict(ImputacionPago.objects.filter(
+        concepto='excedente', pago__estado='validado', pago__detalle_liquidacion__unidad_funcional__in=unidades,
+    ).values_list('pago__detalle_liquidacion__unidad_funcional').annotate(total=Sum('monto')))
+
     filas = []
     for unidad in unidades:
         fila = deuda_de_unidad(unidad, por_unidad[unidad.pk], hoy)
         fila['nivel'] = nivel_atraso(fila['dias_atraso'])
+        fila['saldo_a_favor'] = a_favor.get(unidad.pk, Decimal('0'))
         fila['pagos_en_revision'] = sum(
             1 for detalle in por_unidad[unidad.pk] for pago in detalle.pagos.all() if pago.estado == 'pendiente'
         )
@@ -134,7 +141,8 @@ def morosidad_unidad(request, unidad_id):
         'label': periodo_legible(detalle.liquidacion.periodo),
         'interes_devengado': detalle.interes_devengado(hoy),
         'meses': detalle.meses_de_atraso(hoy),
-        'capital_pagado': detalle.total_pagado,
+        'capital_pagado': detalle.total_pagado - detalle.adelanto_aplicado,
+        'adelanto': detalle.adelanto_aplicado,
         'intereses_pagados': detalle.intereses_pagados,
         'adeuda': detalle.deuda_total_actualizada + detalle.interes(hoy),
     } for detalle in resumen['impagos']]
@@ -150,6 +158,11 @@ def morosidad_unidad(request, unidad_id):
         'titulo': 'Pago validado' if pago.estado == 'validado' else 'Pago en revisión',
         'monto': pago.monto_pagado, 'tipo': pago.estado, 'pago': pago,
     } for pago in pagos]
+    movimientos += [{
+        'fecha': detalle.liquidacion.fecha_cierre or detalle.liquidacion.fecha_emision,
+        'titulo': f'Saldo a favor aplicado a {periodo_legible(detalle.liquidacion.periodo)}',
+        'monto': detalle.adelanto_aplicado, 'tipo': 'adelanto',
+    } for detalle in detalles if detalle.adelanto_aplicado]
     movimientos.sort(key=lambda movimiento: movimiento['fecha'], reverse=True)
 
     return render(request, 'morosidad_unidad.html', {
@@ -158,4 +171,5 @@ def morosidad_unidad(request, unidad_id):
         'nivel': nivel_atraso(resumen['dias_atraso']),
         'periodos': periodos, 'movimientos': movimientos,
         'tasa': unidad.consorcio.tasa_interes_mensual,
-    })
+        'saldo_a_favor': saldo_a_favor(unidad),
+    })

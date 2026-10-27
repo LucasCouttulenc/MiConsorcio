@@ -75,11 +75,13 @@
                     {% for pago in pagos_del_periodo %}
                     {% if pago.interes %}<div class="portal-cuenta-resta"><dt>Pago {{ pago.fecha|date:"d/m" }} · Interés <span class="portal-info" tabindex="0" role="note" aria-label="Parte de tu pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. Cada pago cancela primero los intereses y después el capital, del mes más viejo al más nuevo." data-tip="Parte de tu pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. Cada pago cancela primero los intereses y después el capital, del mes más viejo al más nuevo.">i</span></dt><dd>− $ {{ pago.interes|floatformat:"2g" }}</dd></div>{% endif %}
                     {% if pago.capital %}<div class="portal-cuenta-resta"><dt>Pago {{ pago.fecha|date:"d/m" }} · Capital <span class="portal-info" tabindex="0" role="note" aria-label="Parte de tu pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. Cada pago cancela primero los intereses y después el capital, del mes más viejo al más nuevo." data-tip="Parte de tu pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. Cada pago cancela primero los intereses y después el capital, del mes más viejo al más nuevo.">i</span></dt><dd>− $ {{ pago.capital|floatformat:"2g" }}</dd></div>{% endif %}
+                    {% if pago.adelanto %}<div class="portal-cuenta-resta portal-cuenta-adelanto"><dt>Saldo a favor aplicado <span class="portal-info" tabindex="0" role="note" aria-label="Te sobró plata del pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. El excedente se descuenta de tus próximas expensas ordinarias." data-tip="Te sobró plata del pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. El excedente se descuenta de tus próximas expensas ordinarias.">i</span></dt><dd>− $ {{ pago.adelanto|floatformat:"2g" }}</dd></div>{% endif %}
                     {% endfor %}
                     <div class="portal-cuenta-total"><dt>Total a pagar</dt><dd>$ {{ total_a_pagar|floatformat:"2g" }}</dd></div>
                 </dl>
             </div>
             <div class="portal-pago-estado">
+                {% if saldo_a_favor %}<p class="portal-saldo-favor">Tenés <strong>$ {{ saldo_a_favor|floatformat:"2g" }}</strong> a favor. Se descuenta de tus próximas expensas ordinarias.</p>{% endif %}
                 {% if detalle.esta_pagado %}
                     <span class="portal-estado estado-pagado">Pagado</span>
                     <p>Tu cuenta está al día para este período.</p>

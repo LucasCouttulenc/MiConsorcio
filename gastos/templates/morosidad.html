@@ -38,6 +38,7 @@
                 <td>{{ fila.periodos_impagos }}{% if fila.desde %}<small>desde {{ fila.desde }}</small>{% endif %}</td>
                 <td>
                     {% if fila.total %}<span class="mor-badge mor-{{ fila.nivel }}">{% if fila.dias_atraso %}{{ fila.dias_atraso }} día{{ fila.dias_atraso|pluralize }}{% else %}Sin vencer{% endif %}</span>{% else %}<span class="mor-badge mor-al-dia">Al día</span>{% endif %}
+                    {% if fila.saldo_a_favor %}<span class="mor-badge mor-a-favor">A favor $ {{ fila.saldo_a_favor|floatformat:"2g" }}</span>{% endif %}
                     {% if fila.pagos_en_revision %}<span class="mor-badge mor-revision">{{ fila.pagos_en_revision }} pago{{ fila.pagos_en_revision|pluralize }} en revisión</span>{% endif %}
                 </td>
                 <td class="mor-num">$ {{ fila.capital|floatformat:"2g" }}</td>
@@ -58,4 +59,4 @@
     <p class="mor-vacio">No administrás ningún consorcio.</p>
     {% endif %}
 </section>
-{% endblock %}
+{% endblock %}

@@ -18,7 +18,7 @@ from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
 from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
-from .models import imputar_pago, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja
+from .models import aplicar_saldo_a_favor, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
@@ -321,6 +321,7 @@ def finalizar_liquidacion(request):
                     grupo=columna, monto=Decimal(str(gasto['monto']).replace(',', '.')),
                     servicio=servicios.get(str(gasto.get('servicio') or '')))
             procesar_liquidacion_periodo(liquidacion)
+            aplicar_saldo_a_favor(liquidacion)
             liquidacion.documento = generar_pdf_liquidacion(liquidacion)
             liquidacion.cerrada = True
             liquidacion.save(update_fields=['documento', 'cerrada', 'actualizada'])
@@ -523,6 +524,7 @@ def inicio_propietario(request):
         'periodos_impagos': len(impagos),
         'proximo_vencimiento': min((v['fecha'] for v in vencimientos), default=None),
         'pagos_en_revision': len(pagos_en_revision),
+        'saldo_a_favor': saldo_a_favor(unidad),
         'a_pagar': a_pagar,
         'periodo_destino': (impagos[0] if impagos else ultima).liquidacion.periodo if ultima else None,
         'vencimientos': sorted(vencimientos, key=lambda v: v['fecha']),
@@ -607,7 +609,7 @@ def mis_expensas(request):
     for imputacion in (detalle.imputaciones.all() if detalle else []):
         item = pagos_del_periodo.setdefault(imputacion.pago_id, {
             'fecha': imputacion.pago.fecha_pago, 'monto_pagado': imputacion.pago.monto_pagado, 'total': Decimal('0'),
-            'interes': Decimal('0'), 'capital': Decimal('0'),
+            'interes': Decimal('0'), 'capital': Decimal('0'), 'adelanto': Decimal('0'),
         })
         item[imputacion.concepto] += imputacion.monto
         item['total'] += imputacion.monto
@@ -638,6 +640,7 @@ def mis_expensas(request):
         'meses_atraso': detalle.meses_de_atraso() if detalle else 0,
         'interes_devengado': detalle.interes_devengado() if detalle else Decimal('0'),
         'pagos_del_periodo': pagos_del_periodo,
+        'saldo_a_favor': saldo_a_favor(unidad) if unidad else Decimal('0'),
         'saldo_anterior': saldo_anterior,
         'total_saldo_anterior': total_saldo_anterior,
         'total_a_pagar': (total_saldo_anterior + detalle.deuda_total_actualizada + interes) if detalle else Decimal('0'),
@@ -935,4 +938,4 @@ def caja(request):
         'saldo_trans': trans,
         'saldo_cierre': saldo_cierre,
         'fecha_cierre': fecha_cierre,
-    })
+    })

@@ -781,3 +781,85 @@ class FondoDeReservaTests(TestCase):
         self.consorcio.refresh_from_db()
         self.assertEqual(self.consorcio.fondo_reserva_porcentaje, Decimal('7.5'))
         self.assertEqual(self.consorcio.fondo_reserva_nombre, 'Fondo para obras')
+
+
+class SaldoAFavorTests(TestCase):
+    """Lo que sobra de un pago queda a favor y se descuenta de las ordinarias de la próxima liquidación."""
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        from django.conf import settings
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.consorcio, self.columna = crear_consorcio()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=self.usuario), consorcio=self.consorcio,
+            piso=1, departamento='A', alicuota=Decimal('50'))
+        UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=User.objects.create_user('vecino', password='clave')),
+            consorcio=self.consorcio, piso=2, departamento='A', alicuota=Decimal('50'))
+
+    def liquidar(self, periodo, ordinario, extraordinario='0'):
+        from .models import aplicar_saldo_a_favor
+        from .services import procesar_liquidacion_periodo
+        liquidacion = Liquidacion.objects.create(consorcio=self.consorcio, periodo=periodo, cerrada=True)
+        for posicion, (tipo, monto) in enumerate([('ordinario', ordinario), ('extraordinario', extraordinario)]):
+            if Decimal(monto):
+                Gasto.objects.create(liquidacion=liquidacion, consorcio=self.consorcio, periodo=periodo,
+                                     fecha_comprobante=date(2026, 9, 30), posicion=posicion, concepto=tipo,
+                                     tipo=tipo, grupo=self.columna, monto=Decimal(monto) * 2)  # la mitad es de esta UF
+        procesar_liquidacion_periodo(liquidacion)
+        aplicar_saldo_a_favor(liquidacion)
+        return liquidacion.detalles_uf.get(unidad_funcional=self.uf)
+
+    def pagar(self, detalle, monto):
+        pago = Pago.objects.create(detalle_liquidacion=detalle, fecha_pago=date(2026, 9, 1),
+                                   monto_pagado=Decimal(monto), comprobante=archivo())
+        pago.estado = 'validado'
+        pago.save()
+        return pago
+
+    def test_lo_que_sobra_se_descuenta_de_la_proxima_liquidacion(self):
+        from .models import saldo_a_favor
+        self.pagar(self.liquidar('2026-09', '1000'), '1300')
+        self.assertEqual(saldo_a_favor(self.uf), Decimal('300'))
+        octubre = self.liquidar('2026-10', '1000')
+        self.assertEqual(octubre.adelanto_aplicado, Decimal('300'))
+        self.assertEqual(octubre.deuda_total_actualizada, Decimal('700'))
+        self.assertEqual(saldo_a_favor(self.uf), Decimal('0'))
+
+    def test_solo_cubre_las_ordinarias(self):
+        from .models import saldo_a_favor
+        self.pagar(self.liquidar('2026-09', '1000'), '1600')
+        octubre = self.liquidar('2026-10', '400', extraordinario='500')
+        self.assertEqual(octubre.adelanto_aplicado, Decimal('400'))
+        self.assertEqual(octubre.deuda_total_actualizada, Decimal('500'))  # la extraordinaria se paga igual
+        self.assertEqual(saldo_a_favor(self.uf), Decimal('200'))  # el resto queda para el mes siguiente
+        noviembre = self.liquidar('2026-11', '1000')
+        self.assertEqual(noviembre.adelanto_aplicado, Decimal('200'))
+
+    def test_sin_excedente_no_se_aplica_nada(self):
+        self.pagar(self.liquidar('2026-09', '1000'), '1000')
+        self.assertEqual(self.liquidar('2026-10', '1000').adelanto_aplicado, Decimal('0'))
+
+    def test_el_propietario_ve_su_saldo_y_lo_aplicado(self):
+        self.pagar(self.liquidar('2026-09', '1000'), '1300')
+        self.client.force_login(self.usuario)
+        self.assertContains(self.client.get(reverse('inicio_propietario')), 'Saldo a favor $ 300,00')
+        self.liquidar('2026-10', '1000')
+        respuesta = self.client.get(reverse('mis_expensas'), {'periodo': '2026-10'})
+        self.assertContains(respuesta, 'Saldo a favor aplicado')
+        self.assertContains(respuesta, '− $ 300,00')
+
+    def test_morosidad_filtra_las_uf_con_saldo_a_favor(self):
+        self.pagar(self.liquidar('2026-09', '1000'), '1300')
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        activar_consorcio(self.client, self.consorcio)
+        respuesta = self.client.get(reverse('morosidad'), {'filtro': 'a_favor'})
+        self.assertEqual([fila['unidad'] for fila in respuesta.context['filas']], [self.uf])
+        self.assertContains(respuesta, 'A favor $ 300,00')
+        detalle = self.client.get(reverse('morosidad_unidad', args=[self.uf.pk]))
+        self.assertContains(detalle, 'Saldo a favor disponible')

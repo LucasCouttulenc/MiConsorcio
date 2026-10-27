@@ -62,3 +62,10 @@
     .mor-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .mor-detalle { grid-template-columns: 1fr; }
 }
+
+/* Saldo a favor */
+.mor-fila-adelanto { color: #6ee7b7; }
+.mor-saldo-favor { margin: 10px 0; padding: 10px 12px; border: 1px solid #2f8f6f; border-radius: 8px; background: rgba(16, 185, 129, .12); font-weight: 700; }
+.mor-saldo-favor small { display: block; color: #a7d9c6; font-weight: 400; font-size: .78rem; }
+.mor-movimiento-adelanto span { color: #6ee7b7; }
+.mor-a-favor { background: rgba(16, 185, 129, .16); color: #6ee7b7; border: 1px solid #2f8f6f; }

@@ -21,12 +21,14 @@
                     <div class="mor-fila"><span>Capital original</span><span>$ {{ periodo.detalle.monto_total|floatformat:"2g" }}</span></div>
                     {% if periodo.interes_devengado %}<div class="mor-fila mor-fila-interes"><span>Intereses ({{ tasa|floatformat:"-2" }}% × {{ periodo.meses }} mes{{ periodo.meses|pluralize:"es" }})</span><span>+ $ {{ periodo.interes_devengado|floatformat:"2g" }}</span></div>{% endif %}
                     {% if periodo.intereses_pagados %}<div class="mor-fila mor-fila-pago"><span>Pagado a intereses</span><span>− $ {{ periodo.intereses_pagados|floatformat:"2g" }}</span></div>{% endif %}
+                    {% if periodo.adelanto %}<div class="mor-fila mor-fila-adelanto"><span>Saldo a favor aplicado</span><span>− $ {{ periodo.adelanto|floatformat:"2g" }}</span></div>{% endif %}
                     {% if periodo.capital_pagado %}<div class="mor-fila mor-fila-pago"><span>Pagado a capital</span><span>− $ {{ periodo.capital_pagado|floatformat:"2g" }}</span></div>{% endif %}
                     <div class="mor-fila mor-fila-sub"><span>Adeuda</span><span>$ {{ periodo.adeuda|floatformat:"2g" }}</span></div>
                 </div>
             {% empty %}
                 <p class="mor-vacio">No tiene deuda.</p>
             {% endfor %}
+            {% if saldo_a_favor %}<div class="mor-fila mor-fila-adelanto mor-saldo-favor"><span>Saldo a favor disponible <small>Se descuenta de las ordinarias de la próxima liquidación</small></span><span>$ {{ saldo_a_favor|floatformat:"2g" }}</span></div>{% endif %}
             <div class="mor-gran-total"><span>Total adeudado</span><span>$ {{ resumen.total|floatformat:"2g" }}</span></div>
         </div>
         <div class="mor-card">
@@ -45,4 +47,4 @@
         </div>
     </div>
 </section>
-{% endblock %}
+{% endblock %}
