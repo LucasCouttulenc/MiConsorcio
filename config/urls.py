@@ -26,6 +26,7 @@ from consorcios import views as views_consorcios
 from consultas import views as views_consultas
 from documentos import views as views_documentos
 from contactos import views as views_contactos
+from obras import views as views_obras
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -51,6 +52,16 @@ urlpatterns = [
     path('consorcios/personal/agregar/', views_consorcios.crear_personal, name='crear_personal'),
     path('consorcios/personal/<int:personal_id>/gestionar/', views_consorcios.gestionar_personal, name='gestionar_personal'),
     
+    # Obras y proveedores
+    path('obras/', views_obras.ListarObras.as_view(), name='listar_obras'),
+    path('obras/registrar/', views_obras.crear_obra, name='crear_obra'),
+    path('obras/<int:obra_id>/', views_obras.gestionar_obra, name='gestionar_obra'),
+    path('obras/<int:obra_id>/asignar/', views_obras.asignar_proveedor, name='asignar_proveedor'),
+    path('obras/asignaciones/<int:asignacion_id>/quitar/', views_obras.quitar_asignacion, name='quitar_asignacion'),
+    path('proveedores/', views_obras.ListarProveedores.as_view(), name='listar_proveedores'),
+    path('proveedores/registrar/', views_obras.crear_proveedor, name='crear_proveedor'),
+    path('proveedores/<int:proveedor_id>/', views_obras.gestionar_proveedor, name='gestionar_proveedor'),
+
     # Alícuotas y Rubros
     path('consorcios/alicuotas/', views_consorcios.definir_alicuotas, name='definir_alicuotas'),
     path('consorcios/columnas/', views_consorcios.configurar_columnas, name='configurar_columnas'),

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gestionar obra{% endblock %}
+
+{% block content %}
+
+{% include "componentes/mensajes.html" %}
+
+<link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
+
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">{{ obra.concepto }}</h1>
+    <p style="color: #64748b; font-size: 1.1rem; margin: 0;">{{ obra.consorcio.nombre }} · <a href="{% url 'listar_obras' %}" class="contacto-link">Volver a obras</a></p>
+</div>
+
+<div class="flex around">
+    <div>
+        {% include "formulario.html" with formulario=formulario %}
+    </div>
+</div>
+
+<div class="contacto-bloque" style="margin-top: 1.5rem;">
+    <div class="contacto-bloque-titulo">
+        <h2>Proveedores asignados</h2>
+        <p>Asigná proveedores a la obra e indicá qué tarea realiza cada uno. Los proveedores se cargan en <a href="{% url 'listar_proveedores' %}" class="contacto-link">Proveedores</a>.</p>
+    </div>
+    <form method="post" action="{% url 'asignar_proveedor' obra.pk %}" class="contacto-telefono-form" style="grid-template-columns: 1fr 1.5fr auto;">
+        {% csrf_token %}
+        {% for campo in formulario_asignacion %}
+            <label class="doc-campo">
+                <span>{{ campo.label }} *</span>
+                {{ campo }}
+            </label>
+        {% endfor %}
+        <button type="submit" class="pp-btn pp-btn-validar">Asignar</button>
+    </form>
+    <div class="contenedor-tabla">
+        <table class="tabla">
+            <thead><tr><th>Proveedor</th><th>Tarea</th><th>Teléfono</th><th>Mail</th><th class="col-acciones">Acciones</th></tr></thead>
+            <tbody>
+            {% for asignacion in asignaciones %}
+                <tr>
+                    <td><strong>{{ asignacion.proveedor.nombre }}</strong></td>
+                    <td>{{ asignacion.tarea }}</td>
+                    <td>{{ asignacion.proveedor.telefono|default:"—" }}</td>
+                    <td>{{ asignacion.proveedor.email|default:"—" }}</td>
+                    <td class="col-acciones">
+                        <form method="post" action="{% url 'quitar_asignacion' asignacion.pk %}" onsubmit="return confirm('¿Quitar a «{{ asignacion.proveedor.nombre|escapejs }}» de la obra?');">
+                            {% csrf_token %}
+                            <button type="submit" class="pp-btn pp-btn-rechazar">Quitar</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5">Todavía no hay proveedores asignados.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

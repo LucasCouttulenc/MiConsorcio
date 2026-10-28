@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores{% endblock %}
+
+{% block content %}
+
+{% include "componentes/mensajes.html" %}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">Proveedores</h1>
+    <p style="color: #64748b; font-size: 1.1rem; margin: 0;">Los proveedores son de la administración: se pueden asignar a obras de cualquiera de tus consorcios.</p>
+</div>
+
+{% include "componentes/tabla.html" %}
+
+{% endblock %}

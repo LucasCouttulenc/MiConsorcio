@@ -114,6 +114,24 @@
                                 <span class="item-texto">Servicios recurrentes</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name in 'listar_obras crear_obra gestionar_obra' %}active{% endif %}">
+                            <a href="{% url 'listar_obras' %}" title="Obras">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/consorcios.svg' %}" class="svg-icono default-icon" alt="Obras">
+                                    <img src="{% static 'imagenes/consorcios_blanco.svg' %}" class="svg-icono hover-icon" alt="Obras">
+                                </span>
+                                <span class="item-texto">Obras</span>
+                            </a>
+                        </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name in 'listar_proveedores crear_proveedor gestionar_proveedor' %}active{% endif %}">
+                            <a href="{% url 'listar_proveedores' %}" title="Proveedores">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/personal.svg' %}" class="svg-icono default-icon" alt="Proveedores">
+                                    <img src="{% static 'imagenes/personal_blanco.svg' %}" class="svg-icono hover-icon" alt="Proveedores">
+                                </span>
+                                <span class="item-texto">Proveedores</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'pagos_pendientes' %}active{% endif %}">
                             <a href="{% url 'pagos_pendientes' %}" title="Pagos Pendientes">
                                 <span class="item-icono">
