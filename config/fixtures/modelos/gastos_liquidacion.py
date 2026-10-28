@@ -28,6 +28,7 @@ class FixtureDeLiquidacion(Fixture):
                 'total_extraordinario': '0.00',
                 'cerrada': True,
                 'datos_borrador': {},
+                'fecha_emision': str(vencimiento - timedelta(days=5)),
             }
             for consorcio_id in consorcios
             for periodo, vencimiento in periodos
