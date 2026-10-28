@@ -46,14 +46,27 @@
     <h2 style="margin: 0; font-size: 1.2rem; color: #adccff;">Historial de Movimientos</h2>
 </div>
 
+<!-- Barra de Filtros -->
+<div class="caja-filtros" id="filtros-caja" style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 1.5rem; background: var(--colorFondoSecundario, #1e293b); padding: 1rem; border-radius: 8px;">
+    
+    <!-- Filtros por Tipo y Medio -->
+    <div style="display: flex; gap: 8px;">
+        <button class="btn-filtro activo" data-filtro="tipo" data-valor="ordinario" onclick="toggleFiltro(this)">Ordinario</button>
+        <button class="btn-filtro activo" data-filtro="tipo" data-valor="extraordinario" onclick="toggleFiltro(this)">Extraordinario</button>
+        <button class="btn-filtro activo" data-filtro="medio" data-valor="efectivo" onclick="toggleFiltro(this)">Efectivo</button>
+        <button class="btn-filtro activo" data-filtro="medio" data-valor="transferencia" onclick="toggleFiltro(this)">Transferencia</button>
+    </div>
 
-
-<!-- Botones Filtro -->
-<div class="caja-filtros" id="filtros-caja">
-    <button class="btn-filtro activo" data-filtro="tipo" data-valor="ordinario" onclick="toggleFiltro(this)">Ordinario</button>
-    <button class="btn-filtro activo" data-filtro="tipo" data-valor="extraordinario" onclick="toggleFiltro(this)">Extraordinario</button>
-    <button class="btn-filtro activo" data-filtro="medio" data-valor="efectivo" onclick="toggleFiltro(this)">Efectivo</button>
-    <button class="btn-filtro activo" data-filtro="medio" data-valor="transferencia" onclick="toggleFiltro(this)">Transferencia</button>
+    <!-- Filtros por Fecha -->
+    <div style="display: flex; align-items: center; gap: 10px; margin-left: auto; flex-wrap: wrap;">
+        <label style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin: 0;">Desde:</label>
+        <input type="date" id="filtro-fecha-desde" class="gl-input" style="padding: 0.4rem; font-size: 0.85rem; height: 34px; width: 140px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 6px;">
+        
+        <label style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin: 0 0 0 5px;">Hasta:</label>
+        <input type="date" id="filtro-fecha-hasta" class="gl-input" style="padding: 0.4rem; font-size: 0.85rem; height: 34px; width: 140px; background: #0f172a; color: white; border: 1px solid #334155; border-radius: 6px;">
+        
+        <button class="btn-filtro" onclick="limpiarFechas()" style="padding: 0 10px; height: 34px; font-size: 0.85rem;">Limpiar Fechas</button>
+    </div>
 </div>
 
 <div class="contenedor-tabla">
@@ -69,7 +82,8 @@
         </thead>
         <tbody>
             {% for mov in movimientos %}
-                <tr class="fila-mov" data-tipo="{{ mov.tipo }}" data-medio="{{ mov.medio_pago }}">
+                <!-- AGREGAMOS data-fecha CON FORMATO YYYY-MM-DD PARA EL FILTRO -->
+                <tr class="fila-mov" data-tipo="{{ mov.tipo }}" data-medio="{{ mov.medio_pago }}" data-fecha="{{ mov.fecha|date:'Y-m-d' }}">
                     <td>{{ mov.fecha|date:"d/m/Y" }}</td>
                     <td>{{ mov.concepto }}</td>
                     <td>{{ mov.get_tipo_display }}</td>
@@ -86,25 +100,58 @@
 </div>
 
 <script>
+// Función para los botones de Tipo/Medio
 function toggleFiltro(btn) {
     btn.classList.toggle('activo');
     aplicarFiltros();
 }
 
+// Función que evalúa ambos filtros (Botones + Fechas)
 function aplicarFiltros() {
     const botones = document.querySelectorAll('.btn-filtro');
     const activosTipo = Array.from(botones).filter(b => b.classList.contains('activo') && b.dataset.filtro === 'tipo').map(b => b.dataset.valor);
     const activosMedio = Array.from(botones).filter(b => b.classList.contains('activo') && b.dataset.filtro === 'medio').map(b => b.dataset.valor);
+
+    const fechaDesde = document.getElementById('filtro-fecha-desde').value;
+    const fechaHasta = document.getElementById('filtro-fecha-hasta').value;
 
     const filas = document.querySelectorAll('.fila-mov');
     
     filas.forEach(fila => {
         const tipo = fila.dataset.tipo;
         const medio = fila.dataset.medio;
+        const fechaMov = fila.dataset.fecha; // Ej: "2026-10-28"
         
-        const visible = activosTipo.includes(tipo) && activosMedio.includes(medio);
+        // 1. Verificamos los botones
+        let visible = activosTipo.includes(tipo) && activosMedio.includes(medio);
+
+        // 2. Verificamos la fecha desde (si está seleccionada)
+        if (visible && fechaDesde) {
+            if (fechaMov < fechaDesde) {
+                visible = false;
+            }
+        }
+
+        // 3. Verificamos la fecha hasta (si está seleccionada)
+        if (visible && fechaHasta) {
+            if (fechaMov > fechaHasta) {
+                visible = false;
+            }
+        }
+        
         fila.style.display = visible ? '' : 'none';
     });
+}
+
+// Escuchamos los cambios en los inputs de fecha para que filtre al instante
+document.getElementById('filtro-fecha-desde').addEventListener('input', aplicarFiltros);
+document.getElementById('filtro-fecha-hasta').addEventListener('input', aplicarFiltros);
+
+// Función para limpiar solo las fechas
+function limpiarFechas() {
+    document.getElementById('filtro-fecha-desde').value = '';
+    document.getElementById('filtro-fecha-hasta').value = '';
+    aplicarFiltros();
 }
 </script>
 {% endblock %}
