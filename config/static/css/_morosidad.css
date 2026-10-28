@@ -69,3 +69,54 @@
 .mor-saldo-favor small { display: block; color: #a7d9c6; font-weight: 400; font-size: .78rem; }
 .mor-movimiento-adelanto span { color: #6ee7b7; }
 .mor-a-favor { background: rgba(16, 185, 129, .16); color: #6ee7b7; border: 1px solid #2f8f6f; }
+
+/* Convenio de pago */
+.mor-convenio { background: rgba(167, 139, 250, .16); color: #c4b5fd; border: 1px solid #7c6bd6; }
+.mor-incluye { color: #c4b5fd; font-size: .74rem; }
+.mor-boton-convenio { background: #6d5bd0; }
+.mor-movimiento-convenio span { color: #c4b5fd; }
+.mor-convenio-card { margin-bottom: 16px; border-color: #7c6bd6; }
+.mor-convenio-cabecera { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.mor-convenio-cabecera h2 { margin-bottom: 0; }
+.mor-estado-convenio-vigente { background: rgba(167, 139, 250, .2); color: #ddd6fe; }
+.mor-estado-convenio-cumplido { background: #d9f6e9; color: #086744; }
+.mor-estado-convenio-caido { background: #ffe2e2; color: #a52525; }
+.mor-convenio-resumen { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.mor-convenio-resumen span { display: block; color: #9fc9ff; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.mor-convenio-resumen strong { display: block; margin-top: 2px; color: #fff; font: 700 1.05rem 'Exo 2', sans-serif; }
+.mor-convenio-resumen small { color: #b7cbe3; font-size: .74rem; }
+.mor-convenio-aviso { margin-bottom: 12px; padding: 10px 12px; border: 1px solid #a54848; border-radius: 8px; background: rgba(239, 68, 68, .12); color: #ffc9c9; font-size: .84rem; }
+.mor-cuotas { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 8px; }
+.mor-cuota { padding: 9px 10px; border: 1px solid #35577f; border-radius: 10px; background: #13294a; font-size: .8rem; }
+.mor-cuota div { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.mor-cuota strong { color: #cfe0f7; font-size: .74rem; }
+.mor-cuota span { display: block; margin-top: 4px; color: #fff; font-weight: 800; font-size: .92rem; white-space: nowrap; }
+.mor-cuota small { display: block; margin-top: 2px; color: #9fb7d6; }
+.mor-cuota em { font-style: normal; font-weight: 800; font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: #9fb7d6; }
+.mor-cuota-pagada { border-color: #2f8f6f; }
+.mor-cuota-pagada em { color: #6ee7b7; }
+.mor-cuota-a_pagar { border-color: #6d5bd0; }
+.mor-cuota-a_pagar em { color: #c4b5fd; }
+.mor-cuota-vencida { border-color: #a54848; }
+.mor-cuota-vencida em { color: #ff9b9b; }
+
+.conv-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.conv-campos label { display: flex; flex-direction: column; gap: 5px; color: #cfe0f7; font-size: .8rem; font-weight: 700; }
+.conv-campos input, .conv-campos select { padding: 9px 11px; border: 1px solid #52739e; border-radius: 8px; background: #142b4b; color: #fff; font-size: .9rem; font-weight: 700; }
+.conv-campos small { color: #9fb7d6; font-weight: 400; font-size: .74rem; }
+.conv-campos .conv-error { color: #ff9b9b; font-weight: 700; }
+.conv-inline { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.conv-inline input { width: 72px; }
+.conv-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 6px; padding: 14px 16px; border: 1px solid #7c6bd6; border-radius: 10px; background: rgba(109, 91, 208, .14); }
+.conv-preview span { display: block; color: #c4b5fd; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.conv-preview strong { color: #fff; font: 700 1.3rem 'Exo 2', sans-serif; }
+.conv-boton { width: 100%; border: 0; cursor: pointer; background: #6d5bd0; font-size: .9rem; }
+.conv-al { margin: -6px 0 10px; }
+.conv-int { color: #ffb3b3; font-size: .76rem; }
+
+@media (max-width: 1100px) {
+    .mor-convenio-resumen, .conv-campos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .mor-convenio-resumen, .conv-campos { grid-template-columns: 1fr; }
+}

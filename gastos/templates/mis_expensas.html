@@ -67,6 +67,7 @@
                     {% endif %}
                     <div class="portal-cuenta-sub"><dt>Expensas ordinarias</dt><dd>$ {{ detalle.monto_ordinario|floatformat:"2g" }}</dd></div>
                     <div class="portal-cuenta-sub"><dt>Expensas extraordinarias</dt><dd>$ {{ detalle.monto_extraordinario|floatformat:"2g" }}</dd></div>
+                    {% for cuota in detalle.cuotas_convenio.all %}<div class="portal-cuenta-sub portal-cuenta-convenio"><dt>Convenio de pago <small>cuota {{ cuota.numero }} de {{ cuota.convenio.cantidad_cuotas }}</small></dt><dd>$ {{ cuota.monto|floatformat:"2g" }}</dd></div>{% endfor %}
                     {% if detalle.monto_fondo_reserva %}<div class="portal-cuenta-sub portal-cuenta-fondo"><dt>{{ detalle.liquidacion.fondo_reserva_nombre }} <small>{{ detalle.liquidacion.fondo_reserva_porcentaje|floatformat:"-2" }}% de las ordinarias</small></dt><dd>$ {{ detalle.monto_fondo_reserva|floatformat:"2g" }}</dd></div>{% endif %}
                     <div class="portal-cuenta-subtotal"><dt>Capital original <small>Liquidación cerrada el {{ detalle.liquidacion.fecha_cierre|default:detalle.liquidacion.fecha_emision|date:"d/m/Y" }}</small></dt><dd>$ {{ detalle.monto_total|floatformat:"2g" }}</dd></div>
                     {% if interes_devengado %}
@@ -77,12 +78,17 @@
                     {% if pago.capital %}<div class="portal-cuenta-resta"><dt>Pago {{ pago.fecha|date:"d/m" }} · Capital <span class="portal-info" tabindex="0" role="note" aria-label="Parte de tu pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. Cada pago cancela primero los intereses y después el capital, del mes más viejo al más nuevo." data-tip="Parte de tu pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. Cada pago cancela primero los intereses y después el capital, del mes más viejo al más nuevo.">i</span></dt><dd>− $ {{ pago.capital|floatformat:"2g" }}</dd></div>{% endif %}
                     {% if pago.adelanto %}<div class="portal-cuenta-resta portal-cuenta-adelanto"><dt>Saldo a favor aplicado <span class="portal-info" tabindex="0" role="note" aria-label="Te sobró plata del pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. El excedente se descuenta de tus próximas expensas ordinarias." data-tip="Te sobró plata del pago de $ {{ pago.monto_pagado|floatformat:"2g" }} del {{ pago.fecha|date:"d/m/Y" }}. El excedente se descuenta de tus próximas expensas ordinarias.">i</span></dt><dd>− $ {{ pago.adelanto|floatformat:"2g" }}</dd></div>{% endif %}
                     {% endfor %}
+                    {% if pasado_a_convenio %}<div class="portal-cuenta-resta portal-cuenta-convenio"><dt>Pasó a tu convenio de pago <small>el {{ detalle.convenio.fecha_alta|date:"d/m/Y" }}, junto con sus intereses</small></dt><dd>− $ {{ pasado_a_convenio|floatformat:"2g" }}</dd></div>{% endif %}
                     <div class="portal-cuenta-total"><dt>Total a pagar</dt><dd>$ {{ total_a_pagar|floatformat:"2g" }}</dd></div>
                 </dl>
             </div>
             <div class="portal-pago-estado">
                 {% if saldo_a_favor %}<p class="portal-saldo-favor">Tenés <strong>$ {{ saldo_a_favor|floatformat:"2g" }}</strong> a favor. Se descuenta de tus próximas expensas ordinarias.</p>{% endif %}
-                {% if detalle.esta_pagado %}
+                {% if detalle.convenio_id %}
+                    <span class="portal-estado estado-convenio">En convenio de pago</span>
+                    <p>La deuda de este período pasó a tu convenio y ya no genera intereses.</p>
+                    <a class="portal-boton portal-boton-secundario" href="{% url 'mi_convenio' %}?unidad={{ detalle.unidad_funcional_id }}">Ver mis cuotas</a>
+                {% elif detalle.esta_pagado %}
                     <span class="portal-estado estado-pagado">Pagado</span>
                     <p>Tu cuenta está al día para este período.</p>
                 {% elif pagos_pendientes %}

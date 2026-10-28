@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'css/_detalle_liquidacion.css' %}?v=20261027-fondo-reserva">
+<link rel="stylesheet" href="{% static 'css/_detalle_liquidacion.css' %}?v=20261028-convenio">
 
 {% include "componentes/mensajes.html" %}
 
@@ -67,6 +67,7 @@
                     <th class="col-num">Ordinario</th>
                     <th class="col-num">Extraordinario</th>
                     {% if liquidacion.total_fondo_reserva %}<th class="col-num">F. reserva</th>{% endif %}
+                    {% if total_convenio %}<th class="col-num">Convenio</th>{% endif %}
                     <th class="col-num">Total</th>
                     <th class="col-resumen">Resumen</th>
                 </tr>
@@ -81,6 +82,7 @@
                         <td class="col-num">$ {{ detalle.monto_ordinario|floatformat:"2g" }}</td>
                         <td class="col-num">$ {{ detalle.monto_extraordinario|floatformat:"2g" }}</td>
                         {% if liquidacion.total_fondo_reserva %}<td class="col-num">$ {{ detalle.monto_fondo_reserva|floatformat:"2g" }}</td>{% endif %}
+                        {% if total_convenio %}<td class="col-num">{% if detalle.monto_convenio %}$ {{ detalle.monto_convenio|floatformat:"2g" }}{% for cuota in detalle.cuotas_convenio.all %}<small class="dl-cuota">cuota {{ cuota.numero }}/{{ cuota.convenio.cantidad_cuotas }}</small>{% endfor %}{% else %}—{% endif %}</td>{% endif %}
                         <td class="col-num col-total">$ {{ detalle.monto_total|floatformat:"2g" }}</td>
                         <td class="col-resumen">
                             <a href="{% url 'descargar_resumen_uf' detalle.id %}"
@@ -91,7 +93,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="9" class="dl-vacio">No hay unidades funcionales registradas en este consorcio.</td>
+                        <td colspan="10" class="dl-vacio">No hay unidades funcionales registradas en este consorcio.</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -103,7 +105,8 @@
                         <td class="col-num">$ {{ liquidacion.total_ordinario|floatformat:"2g" }}</td>
                         <td class="col-num">$ {{ liquidacion.total_extraordinario|floatformat:"2g" }}</td>
                         {% if liquidacion.total_fondo_reserva %}<td class="col-num">$ {{ liquidacion.total_fondo_reserva|floatformat:"2g" }}</td>{% endif %}
-                        <td class="col-num col-total">$ {{ liquidacion.total|floatformat:"2g" }}</td>
+                        {% if total_convenio %}<td class="col-num">$ {{ total_convenio|floatformat:"2g" }}</td>{% endif %}
+                        <td class="col-num col-total">$ {{ total_a_cobrar|floatformat:"2g" }}</td>
                         <td></td> 
                     </tr>
                 </tfoot>

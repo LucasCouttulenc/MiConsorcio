@@ -487,3 +487,8 @@
     cursor: pointer;
     background: none !important;
 }
+/* Opción del menú sin contenido para este usuario (ej. Mi convenio sin convenio) */
+.submenu-item-bloqueado a,
+.submenu-item-bloqueado a:hover { opacity: .45; cursor: not-allowed; background: transparent; color: var(--colorTextoInactivo); }
+.submenu-item-bloqueado a:hover .item-icono .default-icon { display: block; opacity: 1; }
+.submenu-item-bloqueado a:hover .item-icono .hover-icon { display: none; opacity: 0; }

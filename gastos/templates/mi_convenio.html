@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Mi convenio de pago{% endblock %}
+{% block content %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div>
+            <p class="portal-eyebrow">PANEL PROPIETARIO</p>
+            <h1>Mi convenio de pago</h1>
+            {% if unidad %}<p>{{ unidad.consorcio.nombre }} · Piso {{ unidad.piso }}{% if unidad.departamento %} · Depto. {{ unidad.departamento }}{% endif %}</p>{% endif %}
+        </div>
+        {% if convenio %}<span class="portal-estado estado-convenio-{{ convenio.estado }}">{{ convenio.get_estado_display }}</span>{% endif %}
+    </header>
+
+    {% if not convenio %}
+        <div class="portal-card portal-vacio"><h2>No tenés un convenio de pago</h2><p>Si tenés deuda acumulada, podés consultar con la administración para pagarla en cuotas.</p></div>
+    {% else %}
+        {% if convenio.estado == "caido" %}
+            <p class="conv-portal-aviso">Tu convenio caducó el {{ convenio.fecha_caida|date:"d/m/Y" }} por tener {{ convenio.cuotas_para_caducidad }} cuota{{ convenio.cuotas_para_caducidad|pluralize }} vencida{{ convenio.cuotas_para_caducidad|pluralize }} sin pagar. Lo que faltaba se suma a tu próxima expensa y vuelve a generar intereses por mora.</p>
+        {% elif convenio.estado == "cumplido" %}
+            <p class="conv-portal-ok">¡Terminaste de pagar tu convenio!</p>
+        {% endif %}
+
+        <div class="conv-portal-resumen">
+            <div><span>DEUDA REFINANCIADA</span><strong>$ {{ convenio.deuda_consolidada|floatformat:"2g" }}</strong><small>{{ convenio.periodos_label|join:", " }}</small></div>
+            <div><span>TOTAL EN CUOTAS</span><strong>$ {{ convenio.total_financiado|floatformat:"2g" }}</strong><small>{% if convenio.interes_porcentaje %}Con {{ convenio.interes_porcentaje|floatformat:"-2" }}% de interés{% else %}Sin interés{% endif %}</small></div>
+            <div><span>AVANCE</span><strong>{{ convenio.cuotas_pagadas }} de {{ convenio.cantidad_cuotas }} cuotas</strong>
+                <div class="conv-portal-barra">{% for fila in convenio.filas_cuotas %}<i class="conv-portal-{{ fila.estado }}"></i>{% endfor %}</div></div>
+        </div>
+
+        <section class="portal-card">
+            <div class="portal-card-titulo"><div><h2>Cuotas</h2><p>Cada cuota se suma a tu expensa del mes y se paga junto con ella.</p></div></div>
+            <div class="portal-tabla-wrap"><table class="portal-tabla">
+                <thead><tr><th>Cuota</th><th>Se paga con la expensa de</th><th>Vencimiento</th><th>Estado</th><th>Importe</th></tr></thead>
+                <tbody>
+                {% for fila in convenio.filas_cuotas %}
+                    <tr>
+                        <td><strong>{{ fila.cuota.numero }} de {{ convenio.cantidad_cuotas }}</strong></td>
+                        <td>{{ fila.periodo }}{% if not fila.liquidada %}<small class="portal-celda-secundaria">Todavía no se liquidó</small>{% endif %}</td>
+                        <td>{% if fila.liquidada %}{{ fila.cuota.vencimiento|date:"d/m/Y"|default:"—" }}{% else %}<span class="portal-celda-secundaria">Se informa al liquidar</span>{% endif %}</td>
+                        <td><span class="portal-estado estado-cuota-{{ fila.estado }}">{% if fila.estado == "pagada" %}Pagada{% elif fila.estado == "vencida" %}Vencida{% elif fila.estado == "a_pagar" %}A pagar{% else %}Sin liquidar{% endif %}</span></td>
+                        <td>$ {{ fila.cuota.monto|floatformat:"2g" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </section>
+        {% if convenio.estado == "vigente" %}<p class="conv-portal-nota">Mientras pagues las cuotas, la deuda refinanciada no genera intereses. Si quedan {{ convenio.cuotas_para_caducidad }} cuota{{ convenio.cuotas_para_caducidad|pluralize }} vencida{{ convenio.cuotas_para_caducidad|pluralize }} sin pagar, el convenio se cae.</p>{% endif %}
+    {% endif %}
+</section>
+{% endblock %}

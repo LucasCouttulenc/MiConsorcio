@@ -22,6 +22,7 @@ from django.contrib.auth import views as auth_views
 from usuarios import views as views_usuarios
 from gastos import views as views_gastos
 from gastos import morosidad as views_morosidad
+from gastos import convenios as views_convenios
 from consorcios import views as views_consorcios
 from consultas import views as views_consultas
 from documentos import views as views_documentos
@@ -94,6 +95,7 @@ urlpatterns = [
     path('administracion/consultas/<int:consulta_id>/', views_consultas.gestionar_consulta, name='gestionar_consulta'),
     path('mis-expensas/', views_gastos.mis_expensas, name='mis_expensas'),
     path('historial-pagos/', views_gastos.historial_pagos, name='historial_pagos'),
+    path('mi-convenio/', views_convenios.mi_convenio, name='mi_convenio'),
     path('pagos/<int:pago_id>/recibo/', views_gastos.descargar_recibo_pago, name='recibo_pago'),
     path('notificaciones/liquidacion/<int:notificacion_id>/', views_gastos.abrir_notificacion_liquidacion, name='abrir_notificacion_liquidacion'),
     path('mis-expensas/liquidacion/<int:liquidacion_id>/documento/', views_gastos.descargar_documento_propietario, name='documento_liquidacion_propietario'),
@@ -101,6 +103,7 @@ urlpatterns = [
     path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),
     path('administracion/morosidad/', views_morosidad.morosidad, name='morosidad'),
     path('administracion/morosidad/uf/<int:unidad_id>/', views_morosidad.morosidad_unidad, name='morosidad_unidad'),
+    path('administracion/morosidad/uf/<int:unidad_id>/convenio/', views_convenios.armar_convenio, name='armar_convenio'),
     path('pagos/<int:pago_id>/procesar/', views_gastos.procesar_pago, name='procesar_pago'),
     path('liquidaciones/detalle-uf/<int:detalle_id>/resumen/',views_gastos.descargar_resumen_uf,name='descargar_resumen_uf'),
     path('liquidaciones/<int:liquidacion_id>/eliminar/', views_gastos.eliminar_borrador, name='eliminar_borrador'),

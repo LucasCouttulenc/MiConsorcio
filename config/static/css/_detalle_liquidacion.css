@@ -330,3 +330,6 @@
     background: var(--colorPrincipal);
     color: var(--colorTextoBlanco);
 }
+
+/* Cuota de convenio de pago dentro de la expensa de la UF */
+.dl-cuota { display: block; color: #6d5bd0; font-size: .72rem; font-weight: 700; }

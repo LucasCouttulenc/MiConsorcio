@@ -9,8 +9,38 @@
             <p class="mor-sub">{{ unidad.consorcio.nombre }} · Alícuota {{ unidad.alicuota|floatformat:"-2" }}%</p>
         </div>
         {% if resumen.total %}<span class="mor-badge mor-{{ nivel }} mor-badge-grande">{% if resumen.dias_atraso %}{{ resumen.dias_atraso }} día{{ resumen.dias_atraso|pluralize }} de atraso{% else %}Sin vencer{% endif %}</span>
+        {% elif convenio.estado == "vigente" %}<span class="mor-badge mor-convenio mor-badge-grande">En convenio</span>
         {% else %}<span class="mor-badge mor-al-dia mor-badge-grande">Al día</span>{% endif %}
     </div>
+
+    {% include "componentes/mensajes.html" %}
+    {% if convenio %}
+    <div class="mor-card mor-convenio-card mor-convenio-{{ convenio.estado }}">
+        <div class="mor-convenio-cabecera">
+            <div>
+                <h2>CONVENIO DE PAGO</h2>
+                <p class="mor-sub">Firmado el {{ convenio.fecha_alta|date:"d/m/Y" }} · incluye {{ convenio.periodos_label|join:", " }}</p>
+            </div>
+            <span class="mor-badge mor-badge-grande mor-estado-convenio-{{ convenio.estado }}">{{ convenio.get_estado_display }}{% if convenio.estado == "caido" %} el {{ convenio.fecha_caida|date:"d/m/Y" }}{% endif %}</span>
+        </div>
+        <div class="mor-convenio-resumen">
+            <div><span>Deuda consolidada</span><strong>$ {{ convenio.deuda_consolidada|floatformat:"2g" }}</strong><small>Capital $ {{ convenio.capital|floatformat:"2g" }} · Intereses $ {{ convenio.intereses|floatformat:"2g" }}</small></div>
+            <div><span>Interés del convenio</span><strong>{{ convenio.interes_porcentaje|floatformat:"-2" }} %</strong><small>Total a pagar $ {{ convenio.total_financiado|floatformat:"2g" }}</small></div>
+            <div><span>Cuotas</span><strong>{{ convenio.cuotas_pagadas }} de {{ convenio.cantidad_cuotas }} pagas</strong><small>Desde {{ convenio.periodo_inicio_label }}</small></div>
+            <div><span>Caducidad</span><strong>{{ convenio.cuotas_para_caducidad }} cuota{{ convenio.cuotas_para_caducidad|pluralize }} vencida{{ convenio.cuotas_para_caducidad|pluralize }}</strong><small>sin pagar</small></div>
+        </div>
+        {% if convenio.estado == "caido" %}<p class="mor-convenio-aviso">El convenio se cayó por falta de pago. Lo que faltaba liquidar se suma de una vez a la próxima liquidación y vuelve a generar interés por mora.</p>{% endif %}
+        <div class="mor-cuotas">
+        {% for fila in convenio.filas_cuotas %}
+            <div class="mor-cuota mor-cuota-{{ fila.estado }}">
+                <div><strong>Cuota {{ fila.cuota.numero }}</strong><em>{% if fila.estado == "pagada" %}Pagada{% elif fila.estado == "vencida" %}Vencida{% elif fila.estado == "a_pagar" %}A pagar{% else %}Sin liquidar{% endif %}</em></div>
+                <span>$ {{ fila.cuota.monto|floatformat:"2g" }}</span>
+                <small>Expensa {{ fila.periodo }}{% if not fila.liquidada %} · sin liquidar{% endif %}</small>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <div class="mor-detalle">
         <div class="mor-card">
@@ -18,7 +48,7 @@
             {% for periodo in periodos %}
                 <div class="mor-periodo">
                     <h3>{{ periodo.label|upper }}{% if periodo.detalle.liquidacion.fecha_vencimiento_1 %} · {% if periodo.meses %}venció{% else %}vence{% endif %} {{ periodo.detalle.liquidacion.fecha_vencimiento_1|date:"d/m/Y" }}{% endif %}</h3>
-                    <div class="mor-fila"><span>Capital original</span><span>$ {{ periodo.detalle.monto_total|floatformat:"2g" }}</span></div>
+                    <div class="mor-fila"><span>Capital original{% if periodo.cuota_convenio %} <small class="mor-incluye">incluye cuota de convenio $ {{ periodo.cuota_convenio|floatformat:"2g" }}</small>{% endif %}</span><span>$ {{ periodo.detalle.monto_total|floatformat:"2g" }}</span></div>
                     {% if periodo.interes_devengado %}<div class="mor-fila mor-fila-interes"><span>Intereses ({{ tasa|floatformat:"-2" }}% × {{ periodo.meses }} mes{{ periodo.meses|pluralize:"es" }})</span><span>+ $ {{ periodo.interes_devengado|floatformat:"2g" }}</span></div>{% endif %}
                     {% if periodo.intereses_pagados %}<div class="mor-fila mor-fila-pago"><span>Pagado a intereses</span><span>− $ {{ periodo.intereses_pagados|floatformat:"2g" }}</span></div>{% endif %}
                     {% if periodo.adelanto %}<div class="mor-fila mor-fila-adelanto"><span>Saldo a favor aplicado</span><span>− $ {{ periodo.adelanto|floatformat:"2g" }}</span></div>{% endif %}
@@ -30,6 +60,7 @@
             {% endfor %}
             {% if saldo_a_favor %}<div class="mor-fila mor-fila-adelanto mor-saldo-favor"><span>Saldo a favor disponible <small>Se descuenta de las ordinarias de la próxima liquidación</small></span><span>$ {{ saldo_a_favor|floatformat:"2g" }}</span></div>{% endif %}
             <div class="mor-gran-total"><span>Total adeudado</span><span>$ {{ resumen.total|floatformat:"2g" }}</span></div>
+            {% if puede_armar_convenio and perms.consorcios.change_consorcio %}<a class="mor-boton mor-boton-convenio" href="{% url 'armar_convenio' unidad.pk %}">Armar convenio de pago</a>{% endif %}
         </div>
         <div class="mor-card">
             <h2>MOVIMIENTOS</h2>
@@ -37,7 +68,7 @@
             {% for movimiento in movimientos %}
                 <div class="mor-movimiento mor-movimiento-{{ movimiento.tipo }}">
                     <span>{{ movimiento.titulo }}</span>
-                    <small>{{ movimiento.fecha|date:"d/m/Y" }} · {% if movimiento.tipo != "liquidacion" %}− {% endif %}$ {{ movimiento.monto|floatformat:"2g" }}</small>
+                    <small>{{ movimiento.fecha|date:"d/m/Y" }} · {% if movimiento.tipo != "liquidacion" and movimiento.tipo != "convenio" %}− {% endif %}$ {{ movimiento.monto|floatformat:"2g" }}</small>
                 </div>
             {% empty %}
                 <p class="mor-vacio">Sin movimientos.</p>
@@ -47,4 +78,4 @@
         </div>
     </div>
 </section>
-{% endblock %}
+{% endblock %}

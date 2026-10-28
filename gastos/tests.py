@@ -863,3 +863,155 @@ class SaldoAFavorTests(TestCase):
         self.assertContains(respuesta, 'A favor $ 300,00')
         detalle = self.client.get(reverse('morosidad_unidad', args=[self.uf.pk]))
         self.assertContains(detalle, 'Saldo a favor disponible')
+
+
+class ConvenioDePagoTests(TestCase):
+    """La deuda vencida se congela en cuotas que se cobran junto con las próximas expensas."""
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        from django.conf import settings
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.consorcio, self.columna = crear_consorcio()
+        self.consorcio.tasa_interes_mensual = Decimal('3')
+        self.consorcio.save()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=self.usuario), consorcio=self.consorcio,
+            piso=1, departamento='A', alicuota=Decimal('50'))
+        UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=User.objects.create_user('vecino', password='clave')),
+            consorcio=self.consorcio, piso=2, departamento='A', alicuota=Decimal('50'))
+        self.hoy = date.today()
+
+    def liquidar(self, periodo, monto, vence_hace_dias):
+        from .models import cobrar_cuotas_convenio
+        from .services import procesar_liquidacion_periodo
+        liquidacion = Liquidacion.objects.create(
+            consorcio=self.consorcio, periodo=periodo, cerrada=True,
+            fecha_vencimiento_1=self.hoy - timedelta(days=vence_hace_dias))
+        Gasto.objects.create(liquidacion=liquidacion, consorcio=self.consorcio, periodo=periodo,
+                             fecha_comprobante=date(2026, 1, 1), concepto='Expensa', tipo='ordinario',
+                             grupo=self.columna, monto=Decimal(monto) * 2)  # la mitad es de esta UF
+        procesar_liquidacion_periodo(liquidacion)
+        cobrar_cuotas_convenio(liquidacion)
+        return liquidacion.detalles_uf.get(unidad_funcional=self.uf)
+
+    def pagar(self, detalle, monto):
+        pago = Pago.objects.create(detalle_liquidacion=detalle, fecha_pago=self.hoy,
+                                   monto_pagado=Decimal(monto), comprobante=archivo())
+        pago.estado = 'validado'
+        pago.save()
+        return pago
+
+    def convenio_de_tres_cuotas(self, **extra):
+        from .models import crear_convenio
+        self.liquidar('2026-01', '1000', vence_hace_dias=20)  # vencida: 1 mes de interés (30)
+        self.liquidar('2026-02', '2000', vence_hace_dias=5)   # vencida: 1 mes de interés (60)
+        return crear_convenio(self.uf, 3, '2026-03', **extra)
+
+    def test_consolida_capital_e_intereses_de_lo_vencido(self):
+        self.liquidar('2026-03', '500', vence_hace_dias=-10)  # todavía no vence: queda afuera
+        convenio = self.convenio_de_tres_cuotas()
+        self.assertEqual((convenio.capital, convenio.intereses), (Decimal('3000'), Decimal('90')))
+        self.assertEqual([c.monto for c in convenio.cuotas.all()], [Decimal('1030'), Decimal('1030'), Decimal('1030')])
+        self.assertEqual(convenio.periodos_incluidos.count(), 2)
+        for detalle in convenio.periodos_incluidos.all():
+            self.assertEqual((detalle.deuda_total_actualizada, detalle.interes()), (Decimal('0'), Decimal('0')))
+        marzo = DetalleLiquidacionUF.objects.get(unidad_funcional=self.uf, liquidacion__periodo='2026-03')
+        self.assertIsNone(marzo.convenio)
+
+    def test_el_interes_del_convenio_se_suma_una_vez(self):
+        convenio = self.convenio_de_tres_cuotas(interes_porcentaje=Decimal('10'))
+        self.assertEqual(convenio.total_financiado, Decimal('3399.00'))
+        self.assertEqual(sum(c.monto for c in convenio.cuotas.all()), Decimal('3399.00'))
+
+    def test_cada_liquidacion_cobra_una_cuota(self):
+        convenio = self.convenio_de_tres_cuotas()
+        marzo = self.liquidar('2026-03', '500', vence_hace_dias=-10)
+        self.assertEqual((marzo.monto_convenio, marzo.monto_total), (Decimal('1030'), Decimal('1530')))
+        self.assertEqual([c.estado for c in convenio.cuotas.all()], ['a_pagar', 'pendiente', 'pendiente'])
+        abril = self.liquidar('2026-04', '500', vence_hace_dias=-40)
+        self.assertEqual(abril.monto_convenio, Decimal('1030'))
+
+    def test_un_pago_parcial_cancela_primero_la_cuota(self):
+        convenio = self.convenio_de_tres_cuotas()
+        marzo = self.liquidar('2026-03', '500', vence_hace_dias=-10)
+        self.pagar(marzo, '1100')
+        self.assertEqual(convenio.cuotas.get(numero=1).estado, 'pagada')
+        self.assertEqual(DetalleLiquidacionUF.objects.get(pk=marzo.pk).deuda_total_actualizada, Decimal('430'))
+
+    def test_con_dos_cuotas_vencidas_se_cae_y_se_cobra_lo_que_falta(self):
+        from .models import ConvenioPago
+        convenio = crear_convenio_desde(self, cuotas=4)
+        self.liquidar('2026-03', '500', vence_hace_dias=40)
+        self.liquidar('2026-04', '500', vence_hace_dias=10)
+        mayo = self.liquidar('2026-05', '500', vence_hace_dias=-20)
+        convenio = ConvenioPago.objects.get(pk=convenio.pk)
+        self.assertEqual(convenio.estado, 'caido')
+        self.assertEqual(mayo.monto_convenio, Decimal('1545'))  # las dos cuotas que faltaban, juntas
+        self.assertEqual(mayo.cuotas_convenio.count(), 2)
+
+    def test_el_admin_arma_el_convenio_desde_morosidad(self):
+        self.liquidar('2026-01', '1000', vence_hace_dias=20)
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        activar_consorcio(self.client, self.consorcio)
+        self.assertContains(self.client.get(reverse('morosidad_unidad', args=[self.uf.pk])), 'Armar convenio de pago')
+        respuesta = self.client.post(reverse('armar_convenio', args=[self.uf.pk]), {
+            'cantidad_cuotas': '2', 'periodo_inicio': '2026-02', 'interes_porcentaje': '0', 'cuotas_para_caducidad': '2',
+        })
+        self.assertRedirects(respuesta, reverse('morosidad_unidad', args=[self.uf.pk]))
+        self.assertEqual(self.uf.convenios.get().cuotas.count(), 2)
+        lista = self.client.get(reverse('morosidad'), {'filtro': 'convenio'})
+        self.assertEqual([fila['unidad'] for fila in lista.context['filas']], [self.uf])
+
+    def test_el_admin_no_puede_poner_cero_cuotas(self):
+        self.liquidar('2026-01', '1000', vence_hace_dias=20)
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        activar_consorcio(self.client, self.consorcio)
+        respuesta = self.client.post(reverse('armar_convenio', args=[self.uf.pk]), {
+            'cantidad_cuotas': '0', 'periodo_inicio': '2026-02', 'interes_porcentaje': '0', 'cuotas_para_caducidad': '2',
+        })
+        self.assertContains(respuesta, 'Elegí entre 1 y 36 cuotas.')
+        self.assertFalse(self.uf.convenios.exists())
+
+    def test_el_propietario_pide_y_sigue_su_convenio(self):
+        self.liquidar('2026-01', '1000', vence_hace_dias=20)
+        self.client.force_login(self.usuario)
+        inicio = self.client.get(reverse('inicio_propietario'))
+        self.assertContains(inicio, 'Pedí un convenio de pago')
+        self.assertFalse(inicio.context['tiene_convenio'])  # "Mi convenio" aparece bloqueado en el menú
+        from .models import crear_convenio
+        crear_convenio(self.uf, 2, '2026-02')
+        self.liquidar('2026-02', '500', vence_hace_dias=-10)
+        inicio = self.client.get(reverse('inicio_propietario'))
+        self.assertContains(inicio, 'Cuota 1 de 2')
+        self.assertTrue(inicio.context['tiene_convenio'])
+        mi_convenio = self.client.get(reverse('mi_convenio'))
+        self.assertContains(mi_convenio, 'Marzo 2026')  # la cuota 2 todavía sin liquidar, con su mes previsto
+        self.assertContains(mi_convenio, 'Se informa al liquidar')
+        expensas = self.client.get(reverse('mis_expensas'), {'periodo': '2026-01'})
+        self.assertContains(expensas, 'En convenio de pago')
+
+    def test_la_liquidacion_muestra_la_columna_convenio(self):
+        from .models import crear_convenio
+        from .pdf import generar_pdf_liquidacion
+        self.liquidar('2026-01', '1000', vence_hace_dias=20)
+        crear_convenio(self.uf, 2, '2026-02')
+        febrero = self.liquidar('2026-02', '500', vence_hace_dias=-10)
+        self.assertTrue(generar_pdf_liquidacion(febrero.liquidacion).startswith(b'%PDF'))
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        activar_consorcio(self.client, self.consorcio)
+        respuesta = self.client.get(reverse('detalle_liquidacion', args=[febrero.liquidacion.pk]))
+        self.assertContains(respuesta, 'cuota 1/2')
+
+
+def crear_convenio_desde(test, cuotas):
+    """Convenio sobre enero y febrero (vencidos) que empieza a cobrarse en marzo."""
+    from .models import crear_convenio
+    test.liquidar('2026-01', '1000', vence_hace_dias=90)
+    test.liquidar('2026-02', '2000', vence_hace_dias=80)
+    return crear_convenio(test.uf, cuotas, '2026-03', hoy=test.hoy - timedelta(days=70))

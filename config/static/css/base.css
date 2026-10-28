@@ -1,16 +1,16 @@
 @import "_constantes.css";
 @import "_footer.css";
-@import "_sidebar.css?v=20261020-sidebar-width";
+@import "_sidebar.css?v=20261028-convenio";
 @import "_tabla.css";
 @import "_componentes.css?v=20261020-toast-layout";
 @import "_liquidaciones.css";
-@import "_portal_propietario.css?v=20261027-saldo-favor";
+@import "_portal_propietario.css?v=20261028-convenio-2";
 @import "_pagos_pendientes.css";
 @import "_consultas.css?v=20261024-consultas-3";
 @import "_documentos.css?v=20261024-documentos-2";
 @import "_contactos.css?v=20261027-contactos";
 @import "_invitaciones.css?v=20261027-uf-invitaciones-2";
-@import "_morosidad.css?v=20261027-saldo-favor-2";
+@import "_morosidad.css?v=20261028-convenio-2";
 @import "_utilidades.css";
 
 @import "_login.css";

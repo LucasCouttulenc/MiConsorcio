@@ -227,3 +227,40 @@
 .portal-saldo-favor { margin-bottom: 12px; padding: 10px 14px; border: 1px solid #2f8f6f; border-radius: 10px; background: rgba(16, 185, 129, .12); color: #c9f3e3 !important; text-align: left; }
 .portal-saldo-favor strong { color: #6ee7b7; }
 .inicio-cuenta-favor { color: #6ee7b7 !important; font-weight: 800; }
+
+/* Convenio de pago */
+.estado-convenio, .estado-convenio-vigente, .estado-cuota-a_pagar { background: #ede9fe; color: #5b21b6; }
+.estado-convenio-cumplido, .estado-cuota-pagada { background: #d9f6e9; color: #086744; }
+.estado-convenio-caido, .estado-cuota-vencida { background: #ffe2e2; color: #a52525; }
+.estado-cuota-pendiente { background: #e2e8f0; color: #475569; }
+.portal-cuenta .portal-cuenta-convenio dt, .portal-cuenta .portal-cuenta-convenio dd { color: #c4b5fd; }
+.portal-cuenta .portal-cuenta-convenio dt small { color: #a99be8; }
+
+.inicio-convenio { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 18px; margin-top: 14px; padding: 14px 16px; border: 1px solid #7c6bd6; border-radius: 12px; background: linear-gradient(120deg, rgba(109, 91, 208, .28), rgba(16, 39, 70, .6)); color: #eaf2ff; }
+.inicio-convenio:hover { border-color: #a78bfa; }
+.inicio-convenio span { display: block; color: #c4b5fd; font-size: .7rem; font-weight: 800; letter-spacing: .1em; }
+.inicio-convenio strong { display: block; margin-top: 2px; color: #fff; font: 700 1.05rem 'Exo 2', sans-serif; }
+.inicio-convenio small { color: #c5d5ec; font-size: .8rem; }
+.inicio-convenio em { grid-column: 2; grid-row: 1; align-self: start; color: #c4b5fd; font-style: normal; font-weight: 800; font-size: .8rem; }
+.inicio-convenio-progreso { grid-column: 1 / -1; display: flex; gap: 4px; }
+.inicio-convenio-progreso i, .conv-portal-barra i { flex: 1; height: 7px; border-radius: 4px; background: #2a4670; }
+.inicio-convenio-progreso .inicio-convenio-pagada, .conv-portal-barra .conv-portal-pagada { background: #6ee7b7; }
+.inicio-convenio-progreso .inicio-convenio-a_pagar, .conv-portal-barra .conv-portal-a_pagar { background: #a78bfa; }
+.inicio-convenio-progreso .inicio-convenio-vencida, .conv-portal-barra .conv-portal-vencida { background: #ff9b9b; }
+.inicio-convenio-caido { border-color: #a54848; background: linear-gradient(120deg, rgba(239, 68, 68, .2), rgba(16, 39, 70, .6)); }
+.inicio-convenio-caido span, .inicio-convenio-caido em { color: #ffb3b3; }
+
+.conv-portal-resumen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.conv-portal-resumen > div { padding: 14px 16px; border: 1px solid #466588; border-radius: 12px; background: linear-gradient(120deg, #193a68, #102746); }
+.conv-portal-resumen span { display: block; color: #9fc9ff; font-size: .7rem; font-weight: 800; letter-spacing: .1em; }
+.conv-portal-resumen strong { display: block; margin: 3px 0; color: #fff; font: 700 1.35rem 'Exo 2', sans-serif; }
+.conv-portal-resumen small { color: #c5d5ec; font-size: .8rem; }
+.conv-portal-barra { display: flex; gap: 4px; margin-top: 8px; }
+.conv-portal-aviso, .conv-portal-ok { margin-bottom: 14px; padding: 12px 16px; border-radius: 10px; font-weight: 700; }
+.conv-portal-aviso { border: 1px solid #a54848; background: rgba(239, 68, 68, .14); color: #ffc9c9; }
+.conv-portal-ok { border: 1px solid #2f8f6f; background: rgba(16, 185, 129, .14); color: #c9f3e3; }
+.conv-portal-nota { color: #9fb7d6; font-size: .8rem; }
+@media (max-width: 850px) { .conv-portal-resumen { grid-template-columns: 1fr; } }
+
+.inicio-pedir-convenio { margin-top: 12px; color: #c5d5ec; font-size: .86rem; }
+.inicio-pedir-convenio a { color: #c4b5fd; font-weight: 800; text-decoration: underline; }

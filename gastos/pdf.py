@@ -306,6 +306,10 @@ def _tabla_detalle_uf(liquidacion, est):
     con_fondo = bool(liquidacion.total_fondo_reserva)
     if con_fondo:
         encabezado.insert(6, Paragraph("F. reserva", est["subtipo"]))
+    total_convenio = liquidacion.total_convenio
+    con_convenio = bool(total_convenio)
+    if con_convenio:
+        encabezado.insert(-1, Paragraph("Convenio", est["subtipo"]))
 
     filas = [encabezado]
     total_ord = Decimal("0.00")
@@ -330,6 +334,7 @@ def _tabla_detalle_uf(liquidacion, est):
             Paragraph(_money(detalle.monto_ordinario), est["num"]),
             Paragraph(_money(detalle.monto_extraordinario), est["num"]),
             *([Paragraph(_money(detalle.monto_fondo_reserva), est["num"])] if con_fondo else []),
+            *([Paragraph(_money(detalle.monto_convenio) if detalle.monto_convenio else "-", est["num"])] if con_convenio else []),
             Paragraph(_money(detalle.monto_total), est["num_b"]),
         ])
         total_ord += detalle.monto_ordinario
@@ -344,10 +349,17 @@ def _tabla_detalle_uf(liquidacion, est):
         Paragraph(_money(total_ord), est["num_b"]),
         Paragraph(_money(total_ext), est["num_b"]),
         *([Paragraph(_money(liquidacion.total_fondo_reserva), est["num_b"])] if con_fondo else []),
+        *([Paragraph(_money(total_convenio), est["num_b"])] if con_convenio else []),
         Paragraph(_money(total_gen), est["num_b"]),
     ])
 
-    anchos = [30, 45, 120, 45, 75, 75, 70, 85] if con_fondo else [30, 45, 180, 45, 80, 80, 85]
+    # Las columnas opcionales le sacan ancho a la de propietario.
+    extras = int(con_fondo) + int(con_convenio)
+    anchos = {
+        0: [30, 45, 180, 45, 80, 80, 85],
+        1: [30, 45, 120, 45, 75, 75, 70, 85],
+        2: [30, 36, 68, 40, 72, 64, 58, 62, 80],
+    }[extras]
     tabla = Table(filas, colWidths=anchos, repeatRows=1)
     ultima = len(filas) - 1
     tabla.setStyle(TableStyle([

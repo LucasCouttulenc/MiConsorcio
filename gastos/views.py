@@ -18,7 +18,7 @@ from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
 from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante, FormularioLibroDiario
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
-from .models import aplicar_saldo_a_favor, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja, ClaseGasto
+from .models import aplicar_saldo_a_favor, cobrar_cuotas_convenio, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja, ClaseGasto
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
@@ -489,6 +489,7 @@ def finalizar_liquidacion(request):
                     
                     
             procesar_liquidacion_periodo(liquidacion)
+            cobrar_cuotas_convenio(liquidacion)
             aplicar_saldo_a_favor(liquidacion)
             liquidacion.documento = generar_pdf_liquidacion(liquidacion)
             liquidacion.cerrada = True
@@ -520,8 +521,11 @@ def detalle_liquidacion(request, liquidacion_id):
     liquidacion = liquidacion_permitida(request, liquidacion_id)
     if not liquidacion.cerrada:
         return redirect('editar_liquidacion', liquidacion_id=liquidacion.pk)
+    total_convenio = liquidacion.total_convenio
     return render(request, 'detalle_liquidacion.html', {
         'liquidacion': liquidacion,
+        'total_convenio': total_convenio,
+        'total_a_cobrar': liquidacion.total + total_convenio,
         'detalles': liquidacion.detalles_uf.select_related('unidad_funcional__propietario__usuario'),
         'gastos': liquidacion.gastos_cargados.select_related('grupo').order_by('posicion'),
     })
@@ -611,6 +615,13 @@ def dias_hasta(fecha, hoy):
 CLAVE_UNIDAD_PROPIETARIO = 'unidad_propietario'
 
 
+def convenio_para_portal(unidad):
+    """Convenio a mostrar en el portal: el vigente o uno caído (los cumplidos ya no hace falta mostrarlos)."""
+    from .convenios import convenio_actual
+    convenio = convenio_actual(unidad)
+    return convenio if convenio and convenio.estado != 'cumplido' else None
+
+
 def unidad_recordada(request, propietario):
     """La última UF que eligió el propietario, para mantenerla al pasar entre Inicio y Mis Expensas."""
     pk = request.session.get(CLAVE_UNIDAD_PROPIETARIO)
@@ -694,6 +705,10 @@ def inicio_propietario(request):
         'proximo_vencimiento': min((v['fecha'] for v in vencimientos), default=None),
         'pagos_en_revision': len(pagos_en_revision),
         'saldo_a_favor': saldo_a_favor(unidad),
+        'convenio': convenio_para_portal(unidad),
+        'puede_pedir_convenio': any(
+            detalle.liquidacion.fecha_vencimiento_1 and detalle.liquidacion.fecha_vencimiento_1 < hoy for detalle in impagos
+        ),
         'a_pagar': a_pagar,
         'periodo_destino': (impagos[0] if impagos else ultima).liquidacion.periodo if ultima else None,
         'vencimientos': sorted(vencimientos, key=lambda v: v['fecha']),
@@ -807,7 +822,8 @@ def mis_expensas(request):
         'interes': interes,
         'tasa_interes': consorcio.tasa_interes_mensual,
         'meses_atraso': detalle.meses_de_atraso() if detalle else 0,
-        'interes_devengado': detalle.interes_devengado() if detalle else Decimal('0'),
+        'interes_devengado': detalle.interes_devengado() if detalle and not detalle.convenio_id else Decimal('0'),
+        'pasado_a_convenio': detalle.monto_total - detalle.total_pagado if detalle and detalle.convenio_id else Decimal('0'),
         'pagos_del_periodo': pagos_del_periodo,
         'saldo_a_favor': saldo_a_favor(unidad) if unidad else Decimal('0'),
         'saldo_anterior': saldo_anterior,
@@ -1208,4 +1224,4 @@ def borrar_gasto_libro(request, gasto_id):
     gasto = get_object_or_404(Gasto, pk=gasto_id, consorcio=consorcio, liquidacion__isnull=True)
     gasto.delete()
     messages.success(request, "Gasto eliminado del libro diario.")
-    return redirect('libro_diario')
+    return redirect('libro_diario')

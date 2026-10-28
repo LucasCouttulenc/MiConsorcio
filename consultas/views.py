@@ -37,8 +37,11 @@ def nueva_consulta(request):
     if not unidades.exists():
         messages.info(request, 'Necesitás tener una unidad funcional asignada para enviar consultas.')
         return redirect('mis_consultas')
+    # Algunas pantallas abren la consulta ya armada (ej. "Pedir convenio de pago" desde el Inicio).
     formulario = FormularioConsulta(request.POST or None, unidades=unidades, initial={
-        'unidad_funcional': request.session.get('unidad_propietario'),
+        'unidad_funcional': request.GET.get('unidad') or request.session.get('unidad_propietario'),
+        'asunto': request.GET.get('asunto', '')[:150],
+        'descripcion': request.GET.get('descripcion', '')[:3000],
     })
     if request.method == 'POST' and formulario.is_valid():
         with transaction.atomic():
@@ -147,4 +150,4 @@ def gestionar_consulta(request, consulta_id):
         'consulta': consulta, 
         'mensajes_consulta': consulta.mensajes.select_related('autor'), 
         'formulario': formulario,
-    })
+    })

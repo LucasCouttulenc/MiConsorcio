@@ -13,14 +13,16 @@ from django.shortcuts import get_object_or_404, redirect, render
 from consorcios.models import UnidadFuncional
 from consorcios.permisos import consorcio_activo
 
-from .models import DetalleLiquidacionUF, ImputacionPago, Liquidacion, Pago, saldo_a_favor
+from .models import ConvenioPago, DetalleLiquidacionUF, deuda_para_convenio, ImputacionPago, Liquidacion, Pago, saldo_a_favor
 from .views import periodo_legible
+from .convenios import convenio_actual
 
 FILTROS = {
     'con_deuda': ('Con deuda', lambda fila: fila['total'] > 0),
     'mas_30': ('Más de 30 días', lambda fila: fila['dias_atraso'] > 30),
     'mas_60': ('Más de 60 días', lambda fila: fila['dias_atraso'] > 60),
     'a_favor': ('Con saldo a favor', lambda fila: fila['saldo_a_favor'] > 0),
+    'convenio': ('En convenio', lambda fila: fila['en_convenio']),
     'todas': ('Todas', lambda fila: True),
 }
 
@@ -78,11 +80,14 @@ def morosidad(request):
         concepto='excedente', pago__estado='validado', pago__detalle_liquidacion__unidad_funcional__in=unidades,
     ).values_list('pago__detalle_liquidacion__unidad_funcional').annotate(total=Sum('monto')))
 
+    en_convenio = set(ConvenioPago.objects.filter(unidad_funcional__in=unidades, estado='vigente')
+                      .values_list('unidad_funcional_id', flat=True))
     filas = []
     for unidad in unidades:
         fila = deuda_de_unidad(unidad, por_unidad[unidad.pk], hoy)
         fila['nivel'] = nivel_atraso(fila['dias_atraso'])
         fila['saldo_a_favor'] = a_favor.get(unidad.pk, Decimal('0'))
+        fila['en_convenio'] = unidad.pk in en_convenio
         fila['pagos_en_revision'] = sum(
             1 for detalle in por_unidad[unidad.pk] for pago in detalle.pagos.all() if pago.estado == 'pendiente'
         )
@@ -145,7 +150,9 @@ def morosidad_unidad(request, unidad_id):
         'adelanto': detalle.adelanto_aplicado,
         'intereses_pagados': detalle.intereses_pagados,
         'adeuda': detalle.deuda_total_actualizada + detalle.interes(hoy),
+        'cuota_convenio': detalle.monto_convenio,
     } for detalle in resumen['impagos']]
+    convenio = convenio_actual(unidad)
 
     movimientos = [{
         'fecha': detalle.liquidacion.fecha_cierre or detalle.liquidacion.fecha_emision,
@@ -163,13 +170,21 @@ def morosidad_unidad(request, unidad_id):
         'titulo': f'Saldo a favor aplicado a {periodo_legible(detalle.liquidacion.periodo)}',
         'monto': detalle.adelanto_aplicado, 'tipo': 'adelanto',
     } for detalle in detalles if detalle.adelanto_aplicado]
+    movimientos += [{
+        'fecha': c.fecha_alta,
+        'titulo': f'Convenio de pago en {c.cantidad_cuotas} cuota{"s" if c.cantidad_cuotas > 1 else ""}',
+        'monto': c.deuda_consolidada, 'tipo': 'convenio',
+    } for c in unidad.convenios.all()]
     movimientos.sort(key=lambda movimiento: movimiento['fecha'], reverse=True)
 
     return render(request, 'morosidad_unidad.html', {
+        'convenio': convenio,
+        'puede_armar_convenio': (not convenio or convenio.estado != 'vigente')
+                                and bool(deuda_para_convenio(unidad, hoy)),
         'unidad': unidad,
         'resumen': resumen,
         'nivel': nivel_atraso(resumen['dias_atraso']),
         'periodos': periodos, 'movimientos': movimientos,
         'tasa': unidad.consorcio.tasa_interes_mensual,
         'saldo_a_favor': saldo_a_favor(unidad),
-    })
+    })

@@ -91,6 +91,27 @@
                     {% endif %}
                     <a class="portal-boton inicio-boton-borde" href="{% url 'historial_pagos' %}">Ver comprobantes</a>
                 </div>
+                {% if puede_pedir_convenio and not convenio or puede_pedir_convenio and convenio.estado == "caido" %}
+                <p class="inicio-pedir-convenio">¿No podés pagar todo junto? <a href="{% url 'nueva_consulta' %}?unidad={{ unidad.pk }}&asunto=Solicitud de convenio de pago&descripcion={% filter urlencode %}Hola, quisiera pagar mi deuda de $ {{ saldo|floatformat:"2g" }} en cuotas. ¿Me pueden ofrecer un convenio de pago? Podría pagar hasta $ ___ por mes.{% endfilter %}">Pedí un convenio de pago</a></p>
+                {% endif %}
+                {% if convenio %}
+                <a class="inicio-convenio inicio-convenio-{{ convenio.estado }}" href="{% url 'mi_convenio' %}?unidad={{ unidad.pk }}">
+                    <div>
+                        <span>CONVENIO DE PAGO</span>
+                        {% if convenio.estado == "caido" %}
+                            <strong>Tu convenio caducó por falta de pago</strong>
+                            <small>Lo que faltaba se suma a tu próxima expensa.</small>
+                        {% elif convenio.proxima_cuota %}
+                            <strong>Cuota {{ convenio.proxima_cuota.numero }} de {{ convenio.cantidad_cuotas }} · $ {{ convenio.proxima_cuota.monto|floatformat:"2g" }}</strong>
+                            <small>{% if convenio.proxima_cuota.vencimiento %}Vence {{ convenio.proxima_cuota.vencimiento|date:"d/m/Y" }} junto con tu expensa{% else %}Se suma a tu próxima expensa{% endif %}</small>
+                        {% endif %}
+                    </div>
+                    <div class="inicio-convenio-progreso" aria-label="{{ convenio.cuotas_pagadas }} de {{ convenio.cantidad_cuotas }} cuotas pagas">
+                        {% for fila in convenio.filas_cuotas %}<i class="inicio-convenio-{{ fila.estado }}"></i>{% endfor %}
+                    </div>
+                    <em>Ver cuotas →</em>
+                </a>
+                {% endif %}
                 {% else %}
                     <p class="inicio-sin-liquidaciones">Todavía no hay liquidaciones publicadas para esta unidad.</p>
                 {% endif %}

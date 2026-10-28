@@ -235,6 +235,15 @@
                                 <span class="item-texto">Historial de pagos</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'mi_convenio' %}active{% endif %}{% if not tiene_convenio %} submenu-item-bloqueado{% endif %}">
+                            {% if tiene_convenio %}<a href="{% url 'mi_convenio' %}" title="Mi convenio">{% else %}<a aria-disabled="true" title="No tenés un convenio de pago">{% endif %}
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/convenio.svg' %}" class="svg-icono default-icon" alt="Mi convenio">
+                                    <img src="{% static 'imagenes/convenio_blanco.svg' %}" class="svg-icono hover-icon" alt="Mi convenio">
+                                </span>
+                                <span class="item-texto">Mi convenio</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_documentos' %}active{% endif %}">
                             <a href="{% url 'mis_documentos' %}" title="Documentos">
                                 <span class="item-icono">
@@ -359,4 +368,4 @@ $(document).ready(function() {
             selectElement.form.submit();
         }
     }
-</script>
+</script>

@@ -159,6 +159,11 @@ class Liquidacion(models.Model):
         return self.total_ordinario + self.total_extraordinario + self.total_fondo_reserva
 
     @property
+    def total_convenio(self):
+        """Cuotas de convenios de pago que se sumaron a las expensas de este mes (no son gastos del edificio)."""
+        return self.detalles_uf.aggregate(total=models.Sum('monto_convenio'))['total'] or Decimal('0')
+
+    @property
     def cantidad_gastos_borrador(self):
         return sum(1 for gasto in self.datos_borrador.get('gastos', []) if gasto.get('concepto') or gasto.get('monto'))
 
@@ -173,7 +178,12 @@ class DetalleLiquidacionUF(models.Model):
     monto_ordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_extraordinario = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_fondo_reserva = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    monto_convenio = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     monto_total = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    # Si el período entró en un convenio de pago, su deuda pasó a las cuotas del convenio.
+    convenio = models.ForeignKey(
+        'ConvenioPago', on_delete=models.SET_NULL, related_name='periodos_incluidos', null=True, blank=True
+    )
 
     class Meta:
         verbose_name = "Detalle Expensa por UF"
@@ -201,6 +211,8 @@ class DetalleLiquidacionUF(models.Model):
 
     @property
     def deuda_total_actualizada(self):
+        if self.convenio_id:
+            return Decimal('0')
         return self.monto_total - self.total_pagado
 
     @property
@@ -244,6 +256,8 @@ class DetalleLiquidacionUF(models.Model):
 
     def interes(self, hoy=None):
         """Interés devengado que todavía no se pagó."""
+        if self.convenio_id:
+            return Decimal('0')
         return max(self.interes_devengado(hoy) - self.intereses_pagados, Decimal('0'))
 
 
@@ -424,3 +438,187 @@ class MovimientoCaja(models.Model):
 
 
 
+
+
+class ConvenioPago(models.Model):
+    """
+    Refinanciación de la deuda vencida de una UF: capital e intereses a la fecha se congelan
+    y se pagan en cuotas que se suman a las próximas expensas.
+    """
+    ESTADOS = (
+        ('vigente', 'Vigente'),
+        ('cumplido', 'Cumplido'),
+        ('caido', 'Caído'),
+    )
+    unidad_funcional = models.ForeignKey(UnidadFuncional, on_delete=models.CASCADE, related_name='convenios')
+    fecha_alta = models.DateField(default=date.today, verbose_name="Fecha del convenio")
+    capital = models.DecimalField(max_digits=12, decimal_places=2)
+    intereses = models.DecimalField(max_digits=12, decimal_places=2)
+    interes_porcentaje = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0, verbose_name="Interés del convenio (%)",
+        help_text="Se suma una sola vez sobre la deuda consolidada.",
+    )
+    cantidad_cuotas = models.PositiveSmallIntegerField(verbose_name="Cantidad de cuotas")
+    cuotas_para_caducidad = models.PositiveSmallIntegerField(
+        default=2, verbose_name="Caduca con cuotas vencidas impagas",
+    )
+    periodo_inicio = models.CharField(max_length=7, help_text="Formato AAAA-MM", verbose_name="Primera cuota en")
+    estado = models.CharField(max_length=10, choices=ESTADOS, default='vigente')
+    fecha_caida = models.DateField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Convenio de pago"
+        verbose_name_plural = "Convenios de pago"
+        ordering = ['-fecha_alta', '-pk']
+
+    def __str__(self):
+        return f"Convenio UF {self.unidad_funcional} - {self.cantidad_cuotas} cuotas"
+
+    @property
+    def deuda_consolidada(self):
+        return self.capital + self.intereses
+
+    @property
+    def total_financiado(self):
+        recargo = self.deuda_consolidada * self.interes_porcentaje / 100
+        return (self.deuda_consolidada + recargo).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    @property
+    def cuotas_pagadas(self):
+        return sum(1 for cuota in self.cuotas.all() if cuota.estado == 'pagada')
+
+    @property
+    def proxima_cuota(self):
+        return next((cuota for cuota in self.cuotas.all() if cuota.estado != 'pagada'), None)
+
+    def cuotas_vencidas(self, hoy=None):
+        return [cuota for cuota in self.cuotas.all() if cuota.estado_al(hoy) == 'vencida']
+
+    def actualizar_estado(self, hoy=None):
+        """Marca el convenio como cumplido o caído según cómo vienen sus cuotas."""
+        if self.estado != 'vigente':
+            return self.estado
+        cuotas = list(self.cuotas.all())
+        if cuotas and all(cuota.estado == 'pagada' for cuota in cuotas):
+            self.estado = 'cumplido'
+        elif len(self.cuotas_vencidas(hoy)) >= self.cuotas_para_caducidad:
+            self.estado = 'caido'
+            self.fecha_caida = hoy or date.today()
+        else:
+            return self.estado
+        self.save(update_fields=['estado', 'fecha_caida'])
+        return self.estado
+
+
+class CuotaConvenio(models.Model):
+    convenio = models.ForeignKey(ConvenioPago, on_delete=models.CASCADE, related_name='cuotas')
+    numero = models.PositiveSmallIntegerField()
+    monto = models.DecimalField(max_digits=12, decimal_places=2)
+    # Expensa en la que se cobró la cuota (vacío mientras no se liquidó).
+    detalle_liquidacion = models.ForeignKey(
+        DetalleLiquidacionUF, on_delete=models.SET_NULL, related_name='cuotas_convenio', null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = "Cuota de convenio"
+        verbose_name_plural = "Cuotas de convenio"
+        ordering = ['convenio', 'numero']
+
+    def __str__(self):
+        return f"Cuota {self.numero}/{self.convenio.cantidad_cuotas} - ${self.monto}"
+
+    @property
+    def vencimiento(self):
+        return self.detalle_liquidacion.liquidacion.fecha_vencimiento_1 if self.detalle_liquidacion else None
+
+    @property
+    def periodo(self):
+        return self.detalle_liquidacion.liquidacion.periodo if self.detalle_liquidacion else None
+
+    def estado_al(self, hoy=None):
+        """pendiente (todavía no se liquidó), a_pagar, vencida o pagada."""
+        if not self.detalle_liquidacion:
+            return 'pendiente'
+        # Dentro de su expensa, la cuota es la deuda más vieja: los pagos la cancelan antes que al resto del mes.
+        hasta_esta = sum(
+            (cuota.monto for cuota in self.detalle_liquidacion.cuotas_convenio.all() if cuota.numero <= self.numero),
+            Decimal('0'),
+        )
+        if self.detalle_liquidacion.total_pagado >= hasta_esta:
+            return 'pagada'
+        vencimiento = self.vencimiento
+        if vencimiento and (hoy or date.today()) > vencimiento:
+            return 'vencida'
+        return 'a_pagar'
+
+    @property
+    def estado(self):
+        return self.estado_al()
+
+
+def deuda_para_convenio(unidad_funcional, hoy=None):
+    """Períodos cerrados, vencidos e impagos de la UF que se pueden refinanciar, con su capital e interés a hoy."""
+    hoy = hoy or date.today()
+    detalles = DetalleLiquidacionUF.objects.filter(
+        unidad_funcional=unidad_funcional, liquidacion__cerrada=True, convenio__isnull=True,
+    ).select_related('liquidacion__consorcio').prefetch_related('imputaciones__pago').order_by('liquidacion__periodo')
+    return [
+        {'detalle': detalle, 'capital': detalle.deuda_total_actualizada, 'interes': detalle.interes(hoy)}
+        for detalle in detalles
+        if not detalle.esta_pagado and (not detalle.liquidacion.fecha_vencimiento_1 or detalle.liquidacion.fecha_vencimiento_1 < hoy)
+    ]
+
+
+def crear_convenio(unidad_funcional, cantidad_cuotas, periodo_inicio, interes_porcentaje=Decimal('0'),
+                   cuotas_para_caducidad=2, hoy=None):
+    """Congela la deuda vencida de la UF y la divide en cuotas iguales (la última absorbe el redondeo)."""
+    hoy = hoy or date.today()
+    deuda = deuda_para_convenio(unidad_funcional, hoy)
+    if not deuda:
+        raise ValueError("La unidad no tiene deuda para refinanciar.")
+    if unidad_funcional.convenios.filter(estado='vigente').exists():
+        raise ValueError("La unidad ya tiene un convenio vigente.")
+    convenio = ConvenioPago.objects.create(
+        unidad_funcional=unidad_funcional, fecha_alta=hoy,
+        capital=sum((fila['capital'] for fila in deuda), Decimal('0')),
+        intereses=sum((fila['interes'] for fila in deuda), Decimal('0')),
+        interes_porcentaje=interes_porcentaje, cantidad_cuotas=cantidad_cuotas,
+        cuotas_para_caducidad=cuotas_para_caducidad, periodo_inicio=periodo_inicio,
+    )
+    total = convenio.total_financiado
+    monto = (total / cantidad_cuotas).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    CuotaConvenio.objects.bulk_create([
+        CuotaConvenio(convenio=convenio, numero=numero,
+                      monto=monto if numero < cantidad_cuotas else total - monto * (cantidad_cuotas - 1))
+        for numero in range(1, cantidad_cuotas + 1)
+    ])
+    DetalleLiquidacionUF.objects.filter(pk__in=[fila['detalle'].pk for fila in deuda]).update(convenio=convenio)
+    return convenio
+
+
+def cobrar_cuotas_convenio(liquidacion):
+    """
+    Al cerrar una liquidación, suma a la expensa de cada UF la cuota que le toca de su convenio.
+    Si el convenio se cayó, se cobra de una vez todo lo que faltaba liquidar.
+    """
+    detalles = liquidacion.detalles_uf.all()
+    convenios = ConvenioPago.objects.filter(
+        unidad_funcional__in=[detalle.unidad_funcional_id for detalle in detalles],
+        estado__in=['vigente', 'caido'], periodo_inicio__lte=liquidacion.periodo,
+    ).prefetch_related('cuotas__detalle_liquidacion__liquidacion', 'cuotas__detalle_liquidacion__imputaciones__pago')
+    por_unidad = {}
+    for convenio in convenios:
+        convenio.actualizar_estado()
+        sin_cobrar = [cuota for cuota in convenio.cuotas.all() if not cuota.detalle_liquidacion_id]
+        a_cobrar = sin_cobrar if convenio.estado == 'caido' else sin_cobrar[:1]
+        if a_cobrar:
+            por_unidad.setdefault(convenio.unidad_funcional_id, []).extend(a_cobrar)
+    for detalle in detalles:
+        cuotas = por_unidad.get(detalle.unidad_funcional_id)
+        if not cuotas:
+            continue
+        monto = sum((cuota.monto for cuota in cuotas), Decimal('0'))
+        detalle.monto_convenio += monto
+        detalle.monto_total += monto
+        detalle.save(update_fields=['monto_convenio', 'monto_total'])
+        CuotaConvenio.objects.filter(pk__in=[cuota.pk for cuota in cuotas]).update(detalle_liquidacion=detalle)

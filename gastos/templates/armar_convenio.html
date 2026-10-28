@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Convenio de pago · Piso {{ unidad.piso }} {{ unidad.departamento }}{% endblock %}
+{% block content %}
+<section class="mor">
+    <div class="mor-cabecera">
+        <div>
+            <a class="mor-volver" href="{% url 'morosidad_unidad' unidad.pk %}">← Piso {{ unidad.piso }}{% if unidad.departamento %} · {{ unidad.departamento }}{% endif %}</a>
+            <h1 class="titulo">Armar convenio de pago</h1>
+            <p class="mor-sub">{{ unidad.consorcio.nombre }} · {% if unidad.propietario_id %}{{ unidad.propietario.usuario.get_full_name|default:unidad.propietario.usuario.username }}{% else %}Pendiente de propietario{% endif %}</p>
+        </div>
+    </div>
+
+    <div class="mor-detalle">
+        <form method="post" class="mor-card conv-form" novalidate>
+            {% csrf_token %}
+            <h2>CONDICIONES</h2>
+            <div class="conv-campos">
+                <label>Cantidad de cuotas
+                    <input type="number" name="cantidad_cuotas" min="1" max="36" value="{{ valores.cantidad_cuotas }}" id="conv-cuotas">
+                    {% if errores.cantidad_cuotas %}<small class="conv-error">{{ errores.cantidad_cuotas }}</small>{% endif %}
+                </label>
+                <label>Primera cuota en
+                    <select name="periodo_inicio" class="sin-select2">
+                        {% for valor, nombre in periodos %}<option value="{{ valor }}" {% if valor == valores.periodo_inicio %}selected{% endif %}>Liquidación {{ nombre }}</option>{% endfor %}
+                    </select>
+                    {% if errores.periodo_inicio %}<small class="conv-error">{{ errores.periodo_inicio }}</small>{% endif %}
+                </label>
+                <label>Interés del convenio (%)
+                    <input type="number" name="interes_porcentaje" min="0" max="100" step="0.01" value="{{ valores.interes_porcentaje }}" id="conv-interes">
+                    <small>Se suma una sola vez sobre la deuda. Dejalo en 0 si es sin interés.</small>
+                    {% if errores.interes_porcentaje %}<small class="conv-error">{{ errores.interes_porcentaje }}</small>{% endif %}
+                </label>
+                <label>Se cae con
+                    <span class="conv-inline"><input type="number" name="cuotas_para_caducidad" min="1" max="36" value="{{ valores.cuotas_para_caducidad }}"> cuotas vencidas sin pagar</span>
+                    <small>Si se cae, lo que falta se cobra de una vez en la próxima liquidación.</small>
+                    {% if errores.cuotas_para_caducidad %}<small class="conv-error">{{ errores.cuotas_para_caducidad }}</small>{% endif %}
+                </label>
+            </div>
+            <div class="conv-preview">
+                <div><span>Total a pagar</span><strong id="conv-total">$ {{ deuda|floatformat:"2g" }}</strong></div>
+                <div><span>Cada cuota</span><strong id="conv-cuota">—</strong></div>
+            </div>
+            <p class="mor-nota">Cada cuota se suma como una línea aparte a la expensa del mes. Mientras el convenio esté vigente, estos períodos dejan de generar interés por mora.</p>
+            <button type="submit" class="mor-boton conv-boton">Crear convenio</button>
+        </form>
+
+        <div class="mor-card">
+            <h2>DEUDA QUE SE CONSOLIDA</h2>
+            <p class="mor-sub conv-al">Calculada al {{ hoy|date:"d/m/Y" }}{% if tasa %} · interés por mora {{ tasa|floatformat:"-2" }}% mensual{% endif %}</p>
+            {% for fila in periodos_deuda %}
+                <div class="mor-fila"><span>{{ fila.label }}</span><span>$ {{ fila.capital|floatformat:"2g" }}{% if fila.interes %} <small class="conv-int">+ $ {{ fila.interes|floatformat:"2g" }}</small>{% endif %}</span></div>
+            {% endfor %}
+            <div class="mor-fila mor-fila-sub"><span>Capital</span><span>$ {{ capital|floatformat:"2g" }}</span></div>
+            <div class="mor-fila mor-fila-interes"><span>Intereses a hoy</span><span>$ {{ intereses|floatformat:"2g" }}</span></div>
+            <div class="mor-gran-total"><span>Deuda total</span><span>$ {{ deuda|floatformat:"2g" }}</span></div>
+        </div>
+    </div>
+</section>
+<script>
+(function () {
+    const deuda = {{ deuda|stringformat:"s" }};
+    const cuotas = document.getElementById('conv-cuotas');
+    const interes = document.getElementById('conv-interes');
+    const formato = (n) => '$ ' + n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    function actualizar() {
+        const n = parseInt(cuotas.value, 10);
+        const pct = parseFloat(String(interes.value).replace(',', '.')) || 0;
+        const total = Math.round(deuda * (1 + pct / 100) * 100) / 100;
+        document.getElementById('conv-total').textContent = formato(total);
+        document.getElementById('conv-cuota').textContent = n > 0 ? n + ' × ' + formato(Math.round(total / n * 100) / 100) : '—';
+    }
+    cuotas.addEventListener('input', actualizar);
+    interes.addEventListener('input', actualizar);
+    actualizar();
+})();
+</script>
+{% endblock %}
