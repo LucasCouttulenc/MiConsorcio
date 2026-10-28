@@ -81,6 +81,16 @@ class DocumentosTests(TestCase):
         self.client.force_login(self.usuario)
         self.assertNotContains(self.client.get(reverse('mis_documentos')), 'Reglamento Torre Dos')
 
+    def test_actas_de_asamblea_en_su_propia_seccion(self):
+        DocumentoConsorcio.objects.create(consorcio=self.consorcio, tipo='acta',
+                                          titulo='Asamblea ordinaria 2026', archivo=pdf())
+        DocumentoConsorcio.objects.create(consorcio=self.consorcio, tipo='reglamento',
+                                          titulo='Reglamento', archivo=pdf())
+        self.client.force_login(self.usuario)
+        consorcio = self.client.get(reverse('mis_documentos')).context['consorcios'][0]
+        self.assertEqual([d.titulo for d in consorcio.actas], ['Asamblea ordinaria 2026'])
+        self.assertEqual([d.titulo for d in consorcio.otros_documentos], ['Reglamento'])
+
     def test_admin_borra_documento(self):
         self.subir()
         documento = DocumentoConsorcio.objects.get()

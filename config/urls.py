@@ -84,6 +84,7 @@ urlpatterns = [
     path('inicio/', views_gastos.inicio_propietario, name='inicio_propietario'),
     path('consultas/', views_consultas.mis_consultas, name='mis_consultas'),
     path('documentos/', views_documentos.mis_documentos, name='mis_documentos'),
+    path('mis-obras/', views_obras.mis_obras, name='mis_obras'),
     path('administracion/documentos/', views_documentos.documentos_consorcio, name='documentos_consorcio'),
     path('administracion/documentos/<int:documento_id>/borrar/', views_documentos.borrar_documento, name='borrar_documento'),
     path('contactos/', views_contactos.mis_contactos, name='mis_contactos'),

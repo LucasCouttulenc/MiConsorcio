@@ -1,14 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 
 from config.views import Lista, crear_modelo, gestionar_modelo
+from consorcios.models import Consorcio
 from consorcios.permisos import consorcio_activo, consorcios_permitidos
+from usuarios.models import Propietario
 
 from .forms import FormularioAsignacion, FormularioObra, FormularioProveedor, proveedores_visibles
-from .models import AsignacionProveedor, Obra, Proveedor
+from .models import AsignacionProveedor, EstadoObra, Obra, Proveedor
 from .tables import FiltroObras, FiltroProveedores, TablaObras, TablaProveedores
 
 
@@ -147,3 +149,28 @@ def gestionar_proveedor(request, proveedor_id):
         template="gestionar_proveedor.html",
         contexto_adicional={'asignaciones': proveedor.asignaciones.select_related('obra__consorcio')},
     )
+
+
+#####################################################################
+#                       PORTAL DEL PROPIETARIO                      #
+#####################################################################
+
+@login_required
+def mis_obras(request):
+    """Obras de los edificios del propietario, separadas en próximas, en curso y finalizadas."""
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    consorcios = Consorcio.objects.filter(unidades_funcionales__propietario=propietario).distinct().order_by('nombre')
+    obras = Obra.objects.filter(consorcio__in=consorcios).exclude(estado=EstadoObra.CANCELADA).prefetch_related(
+        'asignaciones__proveedor')
+    por_consorcio = []
+    for consorcio in consorcios:
+        propias = [obra for obra in obras if obra.consorcio_id == consorcio.pk]
+        por_consorcio.append({'consorcio': consorcio, 'columnas': [
+            (estado, titulo, [obra for obra in propias if obra.estado == estado])
+            for estado, titulo in (
+                (EstadoObra.PLANIFICADA, 'Próximas'),
+                (EstadoObra.EN_CURSO, 'En curso'),
+                (EstadoObra.FINALIZADA, 'Finalizadas'),
+            )
+        ]})
+    return render(request, 'mis_obras.html', {'por_consorcio': por_consorcio})

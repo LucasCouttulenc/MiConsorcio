@@ -24,3 +24,23 @@
 @media (max-width: 1000px) {
     .doc-subir { grid-template-columns: 1fr 1fr; }
 }
+
+/* Portal propietario: actas aparte de los demás documentos */
+.doc-subtitulo { padding: 14px 20px 8px; color: #16365e; font: 700 .95rem 'Exo 2', sans-serif; }
+
+/* Portal propietario: seguimiento de obras */
+.obras-columnas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.obras-columna { padding: 14px; border: 1px solid #466588; border-radius: 12px; background: linear-gradient(160deg, #173560, #102746); }
+.obras-columna h2 { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; color: #fff; font: 700 1rem 'Exo 2', sans-serif; }
+.obras-columna h2 span { padding: 2px 9px; border-radius: 999px; background: #24466f; color: #cfe5ff; font-size: .78rem; }
+.obras-columna-planificada h2 { color: #fcd34d; }
+.obras-columna-en_curso h2 { color: #93c5fd; }
+.obras-columna-finalizada h2 { color: #6ee7b7; }
+.obra-card { margin-bottom: 10px; padding: 12px 14px; border-radius: 10px; background: #d3deea; color: #142947; }
+.obra-card strong { display: block; color: #102e54; font-size: .95rem; }
+.obra-card p { margin-top: 4px; color: #455e7b; font-size: .84rem; }
+.obra-card small { display: block; margin-top: 6px; color: #536a84; font-size: .78rem; }
+.obra-card ul { margin: 6px 0 0 16px; color: #455e7b; font-size: .8rem; }
+.obras-vacio { color: #9fb7d6; font-size: .85rem; }
+.obras-consorcio { margin: 18px 0 10px; color: #c5d5ec; font-weight: 700; }
+@media (max-width: 1000px) { .obras-columnas { grid-template-columns: 1fr; } }

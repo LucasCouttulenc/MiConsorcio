@@ -253,6 +253,15 @@
                                 <span class="item-texto">Documentos</span>
                             </a>
                         </div>
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'mis_obras' %}active{% endif %}">
+                            <a href="{% url 'mis_obras' %}" title="Obras del edificio">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/consorcios.svg' %}" class="svg-icono default-icon" alt="Obras del edificio">
+                                    <img src="{% static 'imagenes/consorcios_blanco.svg' %}" class="svg-icono hover-icon" alt="Obras del edificio">
+                                </span>
+                                <span class="item-texto">Obras del edificio</span>
+                            </a>
+                        </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'mis_contactos' %}active{% endif %}">
                             <a href="{% url 'mis_contactos' %}" title="Teléfonos de contacto">
                                 <span class="item-icono">
