@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.formats import number_format
-from django.utils.http import content_disposition_header
+from django.utils.http import content_disposition_header, url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from usuarios.models import Propietario
@@ -630,6 +630,27 @@ def unidad_recordada(request, propietario):
     return UnidadFuncional.objects.filter(pk=pk, propietario=propietario).select_related('consorcio').first()
 
 
+def unidad_activa(request, propietario):
+    """La unidad elegida en el selector del sidebar; si no eligió ninguna, la primera."""
+    return unidad_recordada(request, propietario) or UnidadFuncional.objects.filter(
+        propietario=propietario).select_related('consorcio').order_by('consorcio__nombre', 'piso', 'departamento').first()
+
+
+@login_required
+@require_POST
+def cambiar_unidad_propietario(request):
+    """Cambia la unidad activa del portal desde el selector del sidebar."""
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    unidad_id = request.POST.get('unidad_id', '')
+    unidad = UnidadFuncional.objects.filter(pk=unidad_id, propietario=propietario).first() if unidad_id.isdecimal() else None
+    if unidad:
+        request.session[CLAVE_UNIDAD_PROPIETARIO] = unidad.pk
+    destino = request.META.get('HTTP_REFERER', '')
+    if not url_has_allowed_host_and_scheme(destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        destino = 'inicio_propietario'
+    return redirect(destino)
+
+
 @login_required
 def inicio_propietario(request):
     """Inicio del propietario: estado de cuenta de una UF, novedades y próximos vencimientos."""
@@ -834,10 +855,10 @@ def mis_expensas(request):
 
 @login_required
 def historial_pagos(request):
-    """Historial de pagos y comprobantes informados por el propietario."""
+    """Historial de pagos y comprobantes informados por el propietario, de la unidad elegida en el sidebar."""
     propietario = get_object_or_404(Propietario, usuario=request.user)
     pagos = Pago.objects.filter(
-        detalle_liquidacion__unidad_funcional__propietario=propietario
+        detalle_liquidacion__unidad_funcional=unidad_activa(request, propietario)
     ).select_related(
         'detalle_liquidacion__liquidacion__consorcio', 'detalle_liquidacion__unidad_funcional'
     ).prefetch_related('imputaciones__detalle_liquidacion__liquidacion').order_by('-fecha_pago', '-fecha_registro')

@@ -81,6 +81,29 @@ class DocumentosTests(TestCase):
         self.client.force_login(self.usuario)
         self.assertNotContains(self.client.get(reverse('mis_documentos')), 'Reglamento Torre Dos')
 
+    def test_actas_de_asamblea_en_su_propia_seccion(self):
+        DocumentoConsorcio.objects.create(consorcio=self.consorcio, tipo='acta',
+                                          titulo='Asamblea ordinaria 2026', archivo=pdf())
+        DocumentoConsorcio.objects.create(consorcio=self.consorcio, tipo='reglamento',
+                                          titulo='Reglamento', archivo=pdf())
+        self.client.force_login(self.usuario)
+        consorcio = self.client.get(reverse('mis_documentos')).context['consorcios'][0]
+        self.assertEqual([d.titulo for d in consorcio.actas], ['Asamblea ordinaria 2026'])
+        self.assertEqual([d.titulo for d in consorcio.otros_documentos], ['Reglamento'])
+
+    def test_propietario_ve_los_del_consorcio_de_su_unidad_activa(self):
+        otra = UnidadFuncional.objects.create(
+            propietario=self.usuario.propietario, consorcio=self.otro_consorcio,
+            piso=1, departamento='A', alicuota=Decimal('50'))
+        DocumentoConsorcio.objects.create(consorcio=self.otro_consorcio, tipo='reglamento',
+                                          titulo='Reglamento Torre Dos', archivo=pdf())
+        self.client.force_login(self.usuario)
+        propia = UnidadFuncional.objects.get(consorcio=self.consorcio)
+        self.client.post(reverse('cambiar_unidad_propietario'), {'unidad_id': propia.pk})
+        self.assertNotContains(self.client.get(reverse('mis_documentos')), 'Reglamento Torre Dos')
+        self.client.post(reverse('cambiar_unidad_propietario'), {'unidad_id': otra.pk})
+        self.assertContains(self.client.get(reverse('mis_documentos')), 'Reglamento Torre Dos')
+
     def test_admin_borra_documento(self):
         self.subir()
         documento = DocumentoConsorcio.objects.get()

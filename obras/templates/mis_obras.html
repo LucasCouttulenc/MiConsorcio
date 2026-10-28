@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Obras del edificio{% endblock %}
+{% block content %}
+<section class="portal-propietario">
+    <header class="portal-cabecera">
+        <div><p class="portal-eyebrow">PANEL PROPIETARIO</p><h1>Obras del edificio</h1><p>Arreglos y obras que la administración tiene planificados, en marcha y terminados.</p></div>
+    </header>
+    {% for grupo in por_consorcio %}
+        {% if por_consorcio|length > 1 %}<p class="obras-consorcio">{{ grupo.consorcio.nombre }}</p>{% endif %}
+        <div class="obras-columnas">
+        {% for estado, titulo, obras in grupo.columnas %}
+            <div class="obras-columna obras-columna-{{ estado }}">
+                <h2>{{ titulo }} <span>{{ obras|length }}</span></h2>
+                {% for obra in obras %}
+                    <div class="obra-card">
+                        <strong>{{ obra.concepto }}</strong>
+                        {% if obra.descripcion %}<p>{{ obra.descripcion }}</p>{% endif %}
+                        <small>{% if estado == "planificada" %}Empieza el {{ obra.fecha_inicio|date:"d/m/Y" }} · fin estimado {{ obra.fecha_fin_estimada|date:"d/m/Y" }}{% elif estado == "en_curso" %}Empezó el {{ obra.fecha_inicio|date:"d/m/Y" }} · termina aprox. el {{ obra.fecha_fin_estimada|date:"d/m/Y" }}{% else %}Del {{ obra.fecha_inicio|date:"d/m/Y" }} al {{ obra.fecha_fin_estimada|date:"d/m/Y" }}{% endif %}</small>
+                        {% if obra.asignaciones.all %}<ul>{% for asignacion in obra.asignaciones.all %}<li>{{ asignacion.tarea }} · {{ asignacion.proveedor }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                {% empty %}
+                    <p class="obras-vacio">No hay obras {% if estado == "planificada" %}planificadas{% elif estado == "en_curso" %}en curso{% else %}terminadas{% endif %}.</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        </div>
+    {% empty %}
+        <div class="portal-card portal-vacio"><h2>Todavía no tenés unidades asignadas</h2></div>
+    {% endfor %}
+</section>
+{% endblock %}

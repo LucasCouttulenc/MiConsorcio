@@ -410,6 +410,27 @@ class InicioPropietarioTests(TestCase):
         self.assertEqual(contexto['unidad'], self.uf)
         self.assertEqual(list(contexto['unidades']), [self.uf])
 
+    def test_selector_del_sidebar_cambia_la_unidad_de_todo_el_portal(self):
+        otro_consorcio, _ = crear_consorcio(nombre='Torre Dos', cuit='30712345679')
+        otra = UnidadFuncional.objects.create(
+            propietario=self.propietario, consorcio=otro_consorcio,
+            piso=7, departamento='C', alicuota=Decimal('50'))
+        self.pago(self.detalle('2026-09', '12000'), '12000')
+        self.client.post(reverse('cambiar_unidad_propietario'), {'unidad_id': otra.pk})
+        self.assertEqual(self.contexto()['unidad'], otra)
+        self.assertEqual(self.client.get(reverse('mis_expensas')).context['unidad'], otra)
+        self.assertEqual(list(self.client.get(reverse('historial_pagos')).context['pagos']), [])
+        self.client.post(reverse('cambiar_unidad_propietario'), {'unidad_id': self.uf.pk})
+        self.assertEqual(len(self.client.get(reverse('historial_pagos')).context['pagos']), 1)
+
+    def test_selector_no_acepta_unidades_de_otro_propietario(self):
+        otro = Propietario.objects.create(usuario=User.objects.create_user('otro', password='clave'))
+        uf_ajena = UnidadFuncional.objects.create(
+            propietario=otro, consorcio=self.consorcio, piso=2, departamento='C', alicuota=Decimal('10'))
+        self.client.post(reverse('cambiar_unidad_propietario'), {'unidad_id': uf_ajena.pk})
+        self.assertEqual(self.contexto()['unidad'], self.uf)
+        self.assertEqual(self.contexto()['unidad_activa'], self.uf)
+
     def test_login_del_propietario_va_al_inicio(self):
         self.client.logout()
         respuesta = self.client.post(reverse('login'), {'username': 'prop', 'password': 'clave'})

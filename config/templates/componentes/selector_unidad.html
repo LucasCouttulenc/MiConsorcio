@@ -1,0 +1,16 @@
+<div class="sidebar-consorcio-selector">
+    <label class="consorcio-label" for="unidad-activa-select">Mi unidad</label>
+    <form method="POST" action="{% url 'cambiar_unidad_propietario' %}" class="consorcio-form">
+        {% csrf_token %}
+        <div class="consorcio-select-wrapper">
+            <span class="consorcio-icono" title="{{ unidad_activa.consorcio.nombre }}">🏢</span>
+            <select name="unidad_id" id="unidad-activa-select" onchange="this.form.submit()" class="consorcio-select sin-select2" {% if unidades_propietario|length == 1 %}disabled{% endif %}>
+                {% for u in unidades_propietario %}
+                    <option value="{{ u.pk }}" {% if unidad_activa.pk == u.pk %}selected{% endif %}>
+                        {{ u.consorcio.nombre }} · {{ u.piso }}°{% if u.departamento %} {{ u.departamento }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>

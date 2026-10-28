@@ -8,6 +8,7 @@ DIAS_AVISO_VENCIMIENTO = 30
 
 
 class TipoDocumento(models.TextChoices):
+    ACTA = 'acta', 'Acta de asamblea'
     REGLAMENTO = 'reglamento', 'Reglamento de copropiedad'
     POLIZA = 'poliza', 'Póliza de seguro'
     CERTIFICADO = 'certificado', 'Certificado'

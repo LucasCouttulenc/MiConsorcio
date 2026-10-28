@@ -1,12 +1,13 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import Group, Permission, User
 from django.test import TestCase
 from django.urls import reverse
 
 from config.comun import GRUPO_ADMINISTRADORES, PERMISOS_ADMINISTRADORES
-from consorcios.models import Consorcio
-from usuarios.models import Administrador
+from consorcios.models import Consorcio, UnidadFuncional
+from usuarios.models import Administrador, Propietario
 
 from .models import AsignacionProveedor, EstadoObra, Obra, Proveedor
 
@@ -117,6 +118,30 @@ class ObrasTests(TestCase):
         self.client.post(reverse('quitar_asignacion', args=[asignacion.pk]))
         self.assertFalse(AsignacionProveedor.objects.exists())
 
+
+    def test_propietario_ve_las_obras_de_su_edificio_por_estado(self):
+        propietario = User.objects.create_user('prop', password='clave')
+        UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=propietario), consorcio=self.consorcio,
+            piso=1, departamento='A', alicuota=Decimal('50'))
+        Obra.objects.create(consorcio=self.consorcio, concepto='Pintura del hall', estado=EstadoObra.PLANIFICADA,
+                            fecha_inicio=date(2026, 11, 1), fecha_fin_estimada=date(2026, 12, 1))
+        Obra.objects.create(consorcio=self.consorcio, concepto='Terraza', estado=EstadoObra.EN_CURSO,
+                            fecha_inicio=date(2026, 10, 1), fecha_fin_estimada=date(2026, 11, 1))
+        Obra.objects.create(consorcio=self.consorcio, concepto='Bomba', estado=EstadoObra.FINALIZADA,
+                            fecha_inicio=date(2026, 9, 1), fecha_fin_estimada=date(2026, 9, 3))
+        Obra.objects.create(consorcio=self.consorcio, concepto='Cancelada', estado=EstadoObra.CANCELADA,
+                            fecha_inicio=date(2026, 9, 1), fecha_fin_estimada=date(2026, 9, 3))
+        Obra.objects.create(consorcio=self.ajeno, concepto='Obra ajena', estado=EstadoObra.EN_CURSO,
+                            fecha_inicio=date(2026, 10, 1), fecha_fin_estimada=date(2026, 11, 1))
+        self.client.force_login(propietario)
+        respuesta = self.client.get(reverse('mis_obras'))
+        [edificio] = respuesta.context['por_consorcio']
+        self.assertEqual(edificio['consorcio'], self.consorcio)
+        self.assertEqual([[o.concepto for o in obras] for _, _, obras in edificio['columnas']],
+                         [['Pintura del hall'], ['Terraza'], ['Bomba']])
+        self.assertNotContains(respuesta, 'Obra ajena')
+        self.assertNotContains(respuesta, 'Cancelada')
 
 class ProveedoresTests(TestCase):
     def setUp(self):

@@ -1,3 +1,4 @@
+from consorcios.models import UnidadFuncional
 from usuarios.models import Propietario
 
 from .models import ConvenioPago
@@ -10,6 +11,8 @@ def notificaciones(request):
         'notificaciones_propietario': [],
         'notificaciones_propietario_total': 0,
         'tiene_convenio': False,
+        'unidades_propietario': [],
+        'unidad_activa': None,
     }
     usuario = getattr(request, 'user', None)
     if not usuario or not usuario.is_authenticated:
@@ -24,4 +27,10 @@ def notificaciones(request):
     contexto['tiene_convenio'] = ConvenioPago.objects.filter(
         unidad_funcional__propietario=propietario, estado__in=['vigente', 'caido'],
     ).exists()
+    # Unidad activa del portal: la elegida en el selector del sidebar (o la primera).
+    unidades = list(UnidadFuncional.objects.filter(propietario=propietario).select_related('consorcio').order_by(
+        'consorcio__nombre', 'piso', 'departamento'))
+    elegida = request.session.get('unidad_propietario')
+    contexto['unidades_propietario'] = unidades
+    contexto['unidad_activa'] = next((u for u in unidades if u.pk == elegida), unidades[0] if unidades else None)
     return contexto
