@@ -12,21 +12,6 @@
             <h1>Mis Expensas</h1>
             <p>Consultá tu liquidación, el estado de tu cuenta y el detalle de los gastos.</p>
         </div>
-        {% if consorcios %}
-        <form method="get" class="portal-filtros">
-            <label for="consorcio">Consorcio</label>
-            <select name="consorcio" id="consorcio" class="sin-select2 portal-select" onchange="this.form.submit()">
-                {% for opcion in consorcios %}<option value="{{ opcion.pk }}" {% if opcion.pk == consorcio.pk %}selected{% endif %}>{{ opcion.nombre }}</option>{% endfor %}
-            </select>
-            {% if unidades|length > 1 %}
-            <label for="unidad">Unidad funcional</label>
-            <select name="unidad" id="unidad" class="sin-select2 portal-select" onchange="this.form.submit()">
-                {% for opcion in unidades %}<option value="{{ opcion.pk }}" {% if opcion.pk == unidad.pk %}selected{% endif %}>Piso {{ opcion.piso }}{% if opcion.departamento %} · Depto. {{ opcion.departamento }}{% endif %}</option>{% endfor %}
-            </select>
-            {% else %}<input type="hidden" name="unidad" value="{{ unidad.pk }}">{% endif %}
-            {% if periodo %}<input type="hidden" name="periodo" value="{{ periodo }}">{% endif %}
-        </form>
-        {% endif %}
     </header>
 
     {% if sin_unidades %}

@@ -48,6 +48,11 @@
         </div>
     {% endif %}
 
+    <!-- SELECTOR DE UNIDAD DEL PROPIETARIO (si también es admin, va dentro del panel propietario) -->
+    {% if unidades_propietario and not consorcios_disponibles %}
+        {% include "componentes/selector_unidad.html" %}
+    {% endif %}
+
     {% if user.is_authenticated %}
         <!-- Menú -->
         <div class="sidebar-menu flex column between">
@@ -208,6 +213,9 @@
                 {% if user.is_superuser or 'Propietario' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL PROPIETARIO</span>
+                        {% if unidades_propietario and consorcios_disponibles %}
+                            {% include "componentes/selector_unidad.html" %}
+                        {% endif %}
                         <div class="submenu-item {% if request.resolver_match.url_name == 'inicio_propietario' %}active{% endif %}">
                             <a href="{% url 'inicio_propietario' %}" title="Inicio">
                                 <span class="item-icono">

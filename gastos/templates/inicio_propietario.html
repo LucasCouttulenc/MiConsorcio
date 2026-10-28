@@ -15,13 +15,6 @@
         </header>
         <div class="portal-card portal-vacio"><h2>Todavía no tenés unidades asignadas</h2><p>Cuando la administración te vincule con una unidad funcional, vas a ver acá tu saldo y tus vencimientos.</p></div>
     {% else %}
-        <form method="get" class="inicio-selector">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01"/></svg>
-            <label for="unidad" class="portal-sr-only">Unidad funcional</label>
-            <select name="unidad" id="unidad" class="sin-select2" onchange="this.form.submit()">
-                {% for opcion in unidades %}<option value="{{ opcion.pk }}" {% if opcion.pk == unidad.pk %}selected{% endif %}>{{ opcion.consorcio.nombre }} · Piso {{ opcion.piso }}{% if opcion.departamento %} · Depto. {{ opcion.departamento }}{% endif %}</option>{% endfor %}
-            </select>
-        </form>
 
         <div class="inicio-grilla">
             <div class="inicio-principal">

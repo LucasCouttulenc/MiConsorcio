@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 
 from consorcios.models import Consorcio
 from consorcios.permisos import consorcio_activo
+from gastos.views import unidad_activa
 from usuarios.models import Propietario
 
 from .forms import FormularioDocumento
@@ -55,11 +56,10 @@ def borrar_documento(request, documento_id):
 
 @login_required
 def mis_documentos(request):
-    """Documentos de los consorcios donde el propietario tiene alguna UF, agrupados por consorcio."""
+    """Documentos del consorcio de la unidad elegida en el sidebar."""
     propietario = get_object_or_404(Propietario, usuario=request.user)
-    consorcios = list(Consorcio.objects.filter(
-        unidades_funcionales__propietario=propietario
-    ).distinct().order_by('nombre').prefetch_related('documentos'))
+    unidad = unidad_activa(request, propietario)
+    consorcios = list(Consorcio.objects.filter(pk=unidad.consorcio_id if unidad else None).prefetch_related('documentos'))
     # Las actas de asamblea van aparte y de la más nueva a la más vieja.
     for consorcio in consorcios:
         documentos = list(consorcio.documentos.all())

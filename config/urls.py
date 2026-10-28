@@ -97,6 +97,7 @@ urlpatterns = [
     path('mis-expensas/', views_gastos.mis_expensas, name='mis_expensas'),
     path('historial-pagos/', views_gastos.historial_pagos, name='historial_pagos'),
     path('mi-convenio/', views_convenios.mi_convenio, name='mi_convenio'),
+    path('mi-unidad/cambiar/', views_gastos.cambiar_unidad_propietario, name='cambiar_unidad_propietario'),
     path('pagos/<int:pago_id>/recibo/', views_gastos.descargar_recibo_pago, name='recibo_pago'),
     path('notificaciones/liquidacion/<int:notificacion_id>/', views_gastos.abrir_notificacion_liquidacion, name='abrir_notificacion_liquidacion'),
     path('mis-expensas/liquidacion/<int:liquidacion_id>/documento/', views_gastos.descargar_documento_propietario, name='documento_liquidacion_propietario'),

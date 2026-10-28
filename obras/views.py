@@ -7,6 +7,7 @@ from django.views.decorators.http import require_POST
 from config.views import Lista, crear_modelo, gestionar_modelo
 from consorcios.models import Consorcio
 from consorcios.permisos import consorcio_activo, consorcios_permitidos
+from gastos.views import unidad_activa
 from usuarios.models import Propietario
 
 from .forms import FormularioAsignacion, FormularioObra, FormularioProveedor, proveedores_visibles
@@ -157,9 +158,10 @@ def gestionar_proveedor(request, proveedor_id):
 
 @login_required
 def mis_obras(request):
-    """Obras de los edificios del propietario, separadas en próximas, en curso y finalizadas."""
+    """Obras del edificio de la unidad elegida en el sidebar, separadas en próximas, en curso y finalizadas."""
     propietario = get_object_or_404(Propietario, usuario=request.user)
-    consorcios = Consorcio.objects.filter(unidades_funcionales__propietario=propietario).distinct().order_by('nombre')
+    unidad = unidad_activa(request, propietario)
+    consorcios = Consorcio.objects.filter(pk=unidad.consorcio_id if unidad else None)
     obras = Obra.objects.filter(consorcio__in=consorcios).exclude(estado=EstadoObra.CANCELADA).prefetch_related(
         'asignaciones__proveedor')
     por_consorcio = []
