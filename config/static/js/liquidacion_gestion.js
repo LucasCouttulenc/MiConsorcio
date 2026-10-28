@@ -198,7 +198,7 @@ function cerrarModal(id) {
 // ==========================================
 // CREACIÓN Y ELIMINACIÓN DE FILAS DE GASTO
 // ==========================================
-function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grupoSel = '', monto = '', servicio = '') {
+function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grupoSel = '', monto = '', servicio = '', origen = '') {
     const tbody = document.getElementById('body-gastos');
 
     const filaId = `gasto-${contadorFilas}`;
@@ -206,10 +206,22 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grup
     const rubroNombre = rubroSel ? getNombreRubro(rubroSel) : 'Seleccionar Rubro';
     const grupoNombre = (rubroSel && grupoSel) ? getNombreColumna(rubroSel, grupoSel) : 'Seleccionar Columna';
     
+    // Lógica para las etiquetas
+    let badgeHTML = '';
+    if (servicio) {
+        badgeHTML = '<span class="badge-servicio" title="Propuesto por un servicio recurrente">Recurrente</span>';
+    } else if (origen === 'libro') {
+        badgeHTML = '<span class="badge-libro" title="Anotado en el Libro Diario">Libro</span>';
+    } else if (origen === 'caja') {
+        badgeHTML = '<span class="badge-caja" title="Gasto cerrado en Caja">En Caja</span>';
+    }
+
     const tr = document.createElement('tr');
     tr.id = filaId;
     tr.className = 'fila-gasto';
     if (servicio) tr.dataset.servicio = servicio;
+    if (origen) tr.dataset.origen = origen; 
+    
     tr.innerHTML = `
         <td>
             <button type="button" class="btn-selector btn-concepto" onclick="abrirModalConcepto(this)">
@@ -217,7 +229,7 @@ function agregarFilaGasto(concepto = '', tipo = 'ordinario', rubroSel = '', grup
                 <span class="btn-selector-icon">✎</span>
             </button>
             <input type="hidden" name="gastos_concepto[]" class="input-concepto-hidden" value="${concepto}">
-            ${servicio ? '<span class="badge-recurrente" title="Propuesto por un servicio recurrente">Recurrente</span>' : ''}
+            ${badgeHTML}
         </td>
         <td>
             <div class="tipo-toggle" data-tipo="${esOrdinario ? 'ordinario' : 'extraordinario'}">
@@ -304,8 +316,6 @@ function actualizarFechasYVista() {
     if (typeof sincronizarServiciosRecurrentes === 'function') sincronizarServiciosRecurrentes();
     sincronizarVistaPrevia();
 }
-
-
 
 // Interceptar la tecla Enter dentro de los modales para que no se envíe el formulario de atrás
 document.addEventListener('keydown', function(e) {

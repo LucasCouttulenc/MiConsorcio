@@ -5,7 +5,7 @@ from datetime import date
 
 from django import forms
 from consorcios.models import Consorcio, GrupoProrrateo
-from .models import Pago, ServicioRecurrente
+from .models import Pago, ServicioRecurrente, Gasto, ClaseGasto
 
 PERIODO_RE = re.compile(r'(20\d\d|2100)-(0[1-9]|1[0-2])')
 
@@ -104,3 +104,30 @@ class FormularioServicioRecurrente(forms.ModelForm):
     def save(self, commit=True):
         self.instance.consorcio = self.consorcio
         return super().save(commit)
+
+
+
+class FormularioLibroDiario(forms.ModelForm):
+    class Meta:
+        model = Gasto
+        fields = ['fecha_comprobante', 'concepto', 'clase', 'tipo', 'grupo', 'monto']
+        widgets = {
+            'fecha_comprobante': forms.DateInput(attrs={'type': 'date'}),
+            'clase': forms.Select(attrs={'class': 'ld-select-nativo'}),
+            'tipo': forms.Select(attrs={'class': 'ld-select-nativo'}),
+            'grupo': forms.Select(attrs={'class': 'ld-select-nativo'}),
+        }
+
+    def __init__(self, *args, consorcio, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.consorcio = consorcio
+        self.fields['grupo'].queryset = GrupoProrrateo.objects.filter(consorcio=consorcio).select_related('rubro').order_by('rubro__nombre', 'codigo')
+        self.fields['grupo'].label_from_instance = lambda obj: f"{obj.rubro.nombre} - {obj.nombre}"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.consorcio = self.consorcio
+        instance.periodo = instance.fecha_comprobante.strftime('%Y-%m')
+        if commit:
+            instance.save()
+        return instance

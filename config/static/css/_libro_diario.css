@@ -1,0 +1,323 @@
+/* =========================================
+   LIBRO DIARIO - FORMULARIO
+   ========================================= */
+
+.ld-card {
+    background-color: var(--colorTarjeta, #ffffff);
+    border-radius: var(--radioTarjeta, 12px);
+    border: 1px solid var(--colorBordeBlancoTransparente, #e2e8f0);
+    box-shadow: var(--sombraTarjeta, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+
+.ld-card-header {
+    background-color: #359aff;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.ld-card-body {
+    padding: 1.5rem;
+}
+
+/* Grilla del formulario */
+.ld-form-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+    align-items: end;
+}
+
+/* Asignación de columnas (Desktop) */
+.ld-col-fecha    { grid-column: span 2; }
+.ld-col-concepto { grid-column: span 4; }
+.ld-col-monto    { grid-column: span 2; }
+.ld-col-clase    { grid-column: span 2; }
+.ld-col-tipo     { grid-column: span 2; }
+.ld-col-rubro    { grid-column: span 4; }
+.ld-col-boton    { grid-column: span 2; }
+
+@media (max-width: 1024px) {
+    .ld-col-fecha, .ld-col-concepto, .ld-col-monto, 
+    .ld-col-clase, .ld-col-tipo, .ld-col-rubro {
+        grid-column: span 6;
+    }
+    .ld-col-boton { grid-column: span 12; }
+}
+
+@media (max-width: 768px) {
+    .ld-form-grid > div { grid-column: span 12 !important; }
+}
+
+/* Labels e Inputs */
+.ld-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ld-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Forzamos el estilo de los inputs de Django */
+.ld-group input,
+.ld-group select {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background-color: #c3dfff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: var(--radioBoton, 8px);
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ld-group input:focus,
+.ld-group select:focus {
+    border-color: var(--colorPrincipal, #3b82f6) !important;
+    box-shadow: 0 0 0 3px var(--colorPrincipalTransparente, rgba(59, 130, 246, 0.2));
+    outline: none;
+}
+
+.ld-group input::placeholder {
+    color: #94a3b8;
+}
+
+/* Botón Anotar */
+.ld-btn-submit {
+    width: 100%;
+    height: 40px;
+    background-color: var(--colorPrincipal, #1d4ed8);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radioBoton, 8px);
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.ld-btn-submit:hover {
+    background-color: var(--colorPrincipalHover, #1e40af);
+}
+
+.ld-btn-submit:active {
+    transform: scale(0.98);
+}
+
+/* =========================================
+   ACCIONES EN LA TABLA
+   ========================================= */
+
+.ld-acciones-flex {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.ld-select-medio {
+    padding: 0.3rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background-color: #fff;
+    color: #0f172a;
+    font-size: 0.75rem;
+    font-weight: 500;
+    outline: none;
+}
+
+.ld-btn-pagar {
+    background-color: #10b981; /* Verde éxito */
+    color: white;
+    border: none;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.ld-btn-pagar:hover {
+    background-color: #059669;
+}
+
+.ld-btn-borrar {
+    background-color: #ef4444; /* Rojo error */
+    color: white;
+    border: none;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.ld-btn-borrar:hover {
+    background-color: #dc2626;
+}
+
+/* =========================================
+   ESTILO PARA SELECTS NATIVOS (SIN SELECT2)
+   ========================================= */
+.ld-group select {
+    background-color: #c3dfff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    /* Flechita nativa en azul para que combine */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23359aff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    background-size: 12px !important;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 30px; /* Espacio para la flechita */
+}
+
+
+
+/* Ocultar la caja de búsqueda por completo */
+.ld-card .select2-search--dropdown,
+.ld-card .select2-search,
+.ld-card .select2-search__field {
+    display: none !important;
+}
+
+/* Caja cerrada (AHORA EN CELESTE) */
+.ld-card .select2-container--default .select2-selection--single {
+    background-color: #c3dfff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Texto de la caja cerrada */
+.ld-card .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #0f172a !important;
+    font-size: 0.875rem !important;
+    padding-left: 12px !important;
+}
+
+/* Flechita de Select2 */
+.ld-card .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+}
+
+/* Desplegable (Fondo blanco para que se lea bien) */
+.select2-dropdown {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+}
+
+/* Opciones del desplegable */
+.select2-results__option {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    padding: 8px 12px !important;
+}
+
+/* Opción seleccionada/hover (AHORA USANDO TU AZUL #359aff) */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #359aff !important;
+    color: #ffffff !important;
+}
+
+
+
+/* =========================================
+   BOTONES EXTRA (EDITAR Y CANCELAR)
+   ========================================= */
+
+.ld-btn-editar {
+    background-color: #000000; /* El mismo azul de tu header */
+    color: white;
+    border: none;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.ld-btn-editar:hover {
+    background-color: #1d4ed8;
+}
+
+.ld-btn-cancelar {
+    background-color: #e2e8f0;
+    color: #475569;
+    border-radius: var(--radioBoton, 8px);
+    padding: 0 1rem;
+    font-weight: 700;
+    transition: background-color 0.2s;
+}
+
+.ld-btn-cancelar:hover {
+    background-color: #cbd5e1;
+    color: #1e293b;
+}
+
+
+/* Resaltar la fila que estamos editando */
+.fila-editando {
+    background-color: rgba(53, 154, 255, 0.15) !important; /* Tu azul pero transparente */
+    box-shadow: inset 4px 0 0 #359aff; /* Una línea azul a la izquierda */
+}
+
+/* Quitar el gris de hover por defecto si molesta en la tabla de libro diario */
+.ld-card + .contenedor-tabla .tabla tbody tr:hover {
+    background-color: transparent; 
+}
+.fila-editando:hover {
+    background-color: rgba(53, 154, 255, 0.25) !important;
+}
+
+
+
+.ld-badge-pagado {
+    background-color: #d1fae5; /* Verde muy claro */
+    color: #065f46; /* Verde oscuro */
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ld-btn-cerrar {
+    background-color: #f59e0b; /* Ámbar / Naranja */
+    color: rgb(0, 0, 0);
+    border: none;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.ld-btn-cerrar:hover {
+    background-color: #d97706;
+}

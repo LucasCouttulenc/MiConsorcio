@@ -570,6 +570,44 @@
 }
 
 
+/* =========================================
+   BADGES DE ORIGEN DE GASTO
+   ========================================= */
+
+/* Estilo base compartido para los 3 */
+.badge-servicio, .badge-libro, .badge-caja {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+
+/* 1. Recurrente (Azul) */
+.badge-servicio {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+/* 2. Libro Diario (Gris) */
+.badge-libro {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+/* 3. En Caja (Verde) */
+.badge-caja {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
 
 
 /* ==========================================================

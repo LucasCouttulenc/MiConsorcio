@@ -34,7 +34,6 @@ function alSeleccionarConsorcio(consorcioId) {
     autoGenerarFilasPersonal(consorcioId);
     sincronizarServiciosRecurrentes();
 
-
     const info = window.datosConsorcios[consorcioId];
     if (info) {
         document.getElementById('lbl-consorcio-nombre').textContent = info.nombre;
@@ -250,7 +249,30 @@ document.addEventListener('DOMContentLoaded', () => {
         sincronizarVistaPrevia();
     }
 
-    agregarFilaGasto();
+    // ❌ SE ELIMINÓ AGREGARFILAGASTO() DE ACÁ PARA QUE NO CREE LA FILA VACÍA
+
+    // --- CARGA AUTOMÁTICA DEL LIBRO DIARIO ---
+    if (window.gastosLibroDiario && window.gastosLibroDiario.length > 0 && !document.getElementById('liquidacion-id').value) {
+        
+        // ✅ ORDENAMIENTO: Primero Caja (true), luego Libro (false)
+        const gastosOrdenados = [...window.gastosLibroDiario].sort((a, b) => {
+            return (b.en_caja ? 1 : 0) - (a.en_caja ? 1 : 0);
+        });
+
+        gastosOrdenados.forEach(gasto => {
+            agregarFilaGasto(
+                gasto.concepto,
+                gasto.tipo,
+                gasto.grupo__rubro_id,
+                gasto.grupo_id,
+                gasto.monto,
+                '',         
+                gasto.en_caja ? 'caja' : 'libro'
+            );
+        });
+        
+        window.gastosLibroDiario = [];
+    }
 
     formLiquidacion.addEventListener('input', (e) => {
         if (e.target.matches('.input-concepto, .input-monto, #fecha_cierre, #fecha_vencimiento_1, #admin_razon, #admin_nombre, #admin_domicilio, #admin_fiscal, #admin_cuit, #admin_rpa, #admin_telefono, #admin_mail')) {

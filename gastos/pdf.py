@@ -146,24 +146,46 @@ def _cabecera(liquidacion, admin, est):
     return tabla
 
 
-def _tabla_subtipo(nombre_subtipo, gastos, nombres_grupos, est):
-    """Una tabla por subtipo. Solo muestra los grupos que ese subtipo usa."""
-    ids_usados = sorted({g.grupo_id for g in gastos}, key=lambda x: (x is None, x))
-    columnas = len(ids_usados)
+def _tabla_subtipo(nombre_subtipo, gastos, est):
+    """Una tabla por subtipo. Agrupa columnas que tengan mismo código y tipo de reparto."""
+    
+    columnas_agrupadas = OrderedDict()
+    for g in gastos:
+        if g.grupo:
+            clave = (g.grupo.tipo_reparto, g.grupo.codigo)
+            label_tabla = g.grupo.codigo
+            label_total = f"{g.grupo.codigo} ({g.grupo.get_tipo_reparto_display()})"
+        else:
+            clave = ('general', 'Sin grupo')
+            label_tabla = 'Sin grupo'
+            label_total = 'Sin grupo'
+            
+        if clave not in columnas_agrupadas:
+            columnas_agrupadas[clave] = {'label_tabla': label_tabla, 'label_total': label_total, 'gastos': []}
+        columnas_agrupadas[clave]['gastos'].append(g)
+        
+    claves_usadas = list(columnas_agrupadas.keys())
+    columnas = len(claves_usadas)
     anchos = _anchos(columnas)
 
-    encabezado_grupos = [Paragraph(escape(nombres_grupos.get(i, "Sin grupo")), est["th"]) for i in ids_usados]
+    # En el encabezado de la tabla usamos el nombre limpio (A, B, C)
+    encabezado_grupos = [Paragraph(escape(columnas_agrupadas[c]['label_tabla']), est["th"]) for c in claves_usadas]
     filas = [
         [Paragraph(escape(nombre_subtipo), est["subtipo"])] + [""] * columnas,
         [Paragraph("Concepto / Detalle", est["th_left"])] + encabezado_grupos,
     ]
 
-    subtotales = {i: Decimal("0.00") for i in ids_usados}
+    subtotales = {clave: Decimal("0.00") for clave in claves_usadas}
     for gasto in gastos:
+        if gasto.grupo:
+            clave_gasto = (gasto.grupo.tipo_reparto, gasto.grupo.codigo)
+        else:
+            clave_gasto = ('general', 'Sin grupo')
+
         fila = [Paragraph(escape(gasto.concepto or "(Sin concepto)"), est["normal"])]
-        for i in ids_usados:
-            if gasto.grupo_id == i:
-                subtotales[i] += gasto.monto
+        for clave in claves_usadas:
+            if clave_gasto == clave:
+                subtotales[clave] += gasto.monto
                 fila.append(Paragraph(_money(gasto.monto), est["num_b"]))
             else:
                 fila.append(Paragraph("-", est["th"]))
@@ -171,7 +193,7 @@ def _tabla_subtipo(nombre_subtipo, gastos, nombres_grupos, est):
 
     filas.append(
         [Paragraph(f"SUBTOTAL {escape(nombre_subtipo)}:", est["bold"])]
-        + [Paragraph(_money(subtotales[i]), est["num_b"]) for i in ids_usados]
+        + [Paragraph(_money(subtotales[clave]), est["num_b"]) for clave in claves_usadas]
     )
 
     tabla = Table(filas, colWidths=anchos, repeatRows=2)
@@ -186,17 +208,20 @@ def _tabla_subtipo(nombre_subtipo, gastos, nombres_grupos, est):
         ("TOPPADDING", (0, 0), (-1, -1), 3),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
-    return tabla, subtotales
+    
+    labels_total = {c: columnas_agrupadas[c]['label_total'] for c in claves_usadas}
+    return tabla, subtotales, labels_total
 
 
-def _tabla_total_general(totales, nombres_grupos, est):
-    ids = sorted(totales.keys(), key=lambda x: (x is None, x))
-    anchos = _anchos(len(ids))
+def _tabla_total_general(totales, etiquetas, est):
+    claves = list(totales.keys())
+    anchos = _anchos(len(claves))
     fila = [Paragraph("TOTAL ESTIMADO GENERAL:", est["bold"])] + [
-        Paragraph(_money(totales[i]), est["num_b"]) for i in ids
+        Paragraph(_money(totales[clave]), est["num_b"]) for clave in claves
     ]
+    # En el Total General sí usamos la etiqueta con el tipo de reparto
     encabezado = [Paragraph("", est["th_left"])] + [
-        Paragraph(escape(nombres_grupos.get(i, "Sin grupo")), est["th"]) for i in ids
+        Paragraph(escape(etiquetas[clave]), est["th"]) for clave in claves
     ]
     tabla = Table([encabezado, fila], colWidths=anchos)
     tabla.setStyle(TableStyle([
@@ -212,12 +237,6 @@ def _tabla_total_general(totales, nombres_grupos, est):
 
 
 def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
-    """
-    liquidacion : instancia de Liquidacion (con .consorcio)
-    gastos      : iterable de Gasto (con .grupo_id, .concepto, .monto, .subtipo)
-    admin       : dict con las claves admin_razon, admin_nombre, ... (opcional)
-    Devuelve los bytes del PDF.
-    """
     if gastos is None:
         gastos = liquidacion.gastos_cargados.select_related('grupo').order_by('posicion')
     if admin is None:
@@ -225,14 +244,8 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     est = _estilos()
     gastos = list(gastos)
 
-    nombres_grupos = {}
-    for g in gastos:
-        if g.grupo_id is not None:
-            nombres_grupos[g.grupo_id] = g.grupo.codigo
-
     por_subtipo = OrderedDict()
     for g in gastos:
-        # Usamos el nombre del rubro real, o "GASTOS GENERALES" si no tiene
         clave = (g.grupo.rubro.nombre if g.grupo and g.grupo.rubro else "GASTOS GENERALES").strip().upper()
         por_subtipo.setdefault(clave, []).append(g)
 
@@ -246,16 +259,18 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     ]
 
     totales = {}
+    etiquetas = {}
     if not por_subtipo:
         story.append(Paragraph("Sin gastos ingresados.", est["normal"]))
     else:
         for nombre, lista in por_subtipo.items():
-            tabla, subtotales = _tabla_subtipo(nombre, lista, nombres_grupos, est)
+            tabla, subtotales, labels = _tabla_subtipo(nombre, lista, est)
             story.append(tabla)
             story.append(Spacer(1, 4 * mm))
-            for gid, valor in subtotales.items():
-                totales[gid] = totales.get(gid, Decimal("0.00")) + valor
-        story.append(_tabla_total_general(totales, nombres_grupos, est))
+            for clave, valor in subtotales.items():
+                totales[clave] = totales.get(clave, Decimal("0.00")) + valor
+                etiquetas[clave] = labels[clave]
+        story.append(_tabla_total_general(totales, etiquetas, est))
         
     # ---RESUMEN DE CAJA ---    
     story.append(Spacer(1, 8 * mm))
@@ -279,10 +294,6 @@ def generar_pdf_liquidacion(liquidacion, gastos=None, admin=None):
     return buffer.getvalue()
 
 def _tabla_detalle_uf(liquidacion, est):
-    """
-    Tabla con el detalle por UF: alícuota, ordinario, extraordinario, total.
-    Réplica simplificada del PDF real (falta saldo anterior, deuda, intereses).
-    """
     encabezado = [
         Paragraph("U.F.", est["subtipo"]),
         Paragraph("Dpto", est["subtipo"]),
@@ -325,7 +336,6 @@ def _tabla_detalle_uf(liquidacion, est):
         total_ext += detalle.monto_extraordinario
         total_gen += detalle.monto_total
 
-    # Fila de totales
     filas.append([
         Paragraph("", est["small"]),
         Paragraph("", est["small"]),
@@ -353,13 +363,11 @@ def _tabla_detalle_uf(liquidacion, est):
 
 
 def _periodo(periodo):
-    """'2026-09' -> 'Septiembre 2026'."""
     anio, _, mes = (periodo or "").partition("-")
     return f"{MESES.get(mes, mes)} {anio}".strip()
 
 
 def generar_recibo_pago_pdf(pago):
-    """Recibo de un pago validado: datos del consorcio y la UF, importe y cómo se imputó."""
     est = _estilos()
     detalle = pago.detalle_liquidacion
     uf = detalle.unidad_funcional
@@ -427,28 +435,20 @@ def generar_recibo_pago_pdf(pago):
     return buffer.getvalue()
 
 
-
 def _tabla_resumen_caja(liquidacion, est):
-    """
-    Genera una tabla con el resumen de caja del período de la liquidación.
-    Calcula saldos iniciales, finales, ingresos y egresos.
-    """
     from django.db.models import Sum
     from datetime import date
     from .models import MovimientoCaja
 
-    # Rango de fechas del período de la liquidación
     anio, mes = liquidacion.periodo.split('-')
     fecha_inicio = date(int(anio), int(mes), 1)
     fecha_fin = liquidacion.fecha_cierre or date.today()
 
     movs = MovimientoCaja.objects.filter(consorcio=liquidacion.consorcio)
 
-    # Saldos
     s_ini = movs.filter(fecha__lt=fecha_inicio).aggregate(t=Sum('monto'))['t'] or Decimal('0')
     s_fin = movs.filter(fecha__lte=fecha_fin).aggregate(t=Sum('monto'))['t'] or Decimal('0')
 
-    # Movimientos dentro del período (mes)
     periodo_movs = movs.filter(fecha__gte=fecha_inicio, fecha__lte=fecha_fin)
     ing = periodo_movs.filter(monto__gt=0)
     egr = periodo_movs.filter(monto__lt=0)
@@ -456,21 +456,18 @@ def _tabla_resumen_caja(liquidacion, est):
     def get_sum(qs):
         return qs.aggregate(t=Sum('monto'))['t'] or Decimal('0')
 
-    # Desglose de Ingresos (positivos)
     i_ord = get_sum(ing.filter(tipo='ordinario'))
     i_ext = get_sum(ing.filter(tipo='extraordinario'))
     i_efvo = get_sum(ing.filter(medio_pago='efectivo'))
     i_trans = get_sum(ing.filter(medio_pago='transferencia'))
     i_total = i_ord + i_ext
 
-    # Desglose de Egresos de Caja (negativos, los pasamos a positivo para mostrar)
     e_ord = abs(get_sum(egr.filter(tipo='ordinario')))
     e_ext = abs(get_sum(egr.filter(tipo='extraordinario')))
     e_efvo = abs(get_sum(egr.filter(medio_pago='efectivo')))
     e_trans = abs(get_sum(egr.filter(medio_pago='transferencia')))
     e_total = e_ord + e_ext
 
-    # Armado de la tabla
     encabezado = [
         Paragraph("Resumen de Caja (Movimientos del mes)", est["th_left"]),
         Paragraph("Ordinario", est["th"]),
@@ -510,7 +507,6 @@ def _tabla_resumen_caja(liquidacion, est):
         ]
     ]
 
-    # Ajustamos los anchos: un poco más al concepto, y distribuimos el resto
     anchos = [ANCHO_UTIL * 0.30, ANCHO_UTIL * 0.13, ANCHO_UTIL * 0.14, ANCHO_UTIL * 0.13, ANCHO_UTIL * 0.15, ANCHO_UTIL * 0.15]
     
     tabla = Table(filas, colWidths=anchos)
@@ -525,4 +521,4 @@ def _tabla_resumen_caja(liquidacion, est):
         ("BACKGROUND", (0, 3), (-1, 3), GRIS_SUBTOTAL),
         ("BACKGROUND", (0, 4), (-1, 4), GRIS_TOTAL),
     ]))
-    return tabla
+    return tabla

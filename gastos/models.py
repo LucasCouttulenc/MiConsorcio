@@ -5,11 +5,17 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import models
 from consorcios.models import Consorcio, UnidadFuncional, GrupoProrrateo
 
+
 class TipoGasto(models.TextChoices):
     ORDINARIO = 'ordinario'
     EXTRAORDINARIO = 'extraordinario'
 
-
+class ClaseGasto(models.TextChoices):
+    GASTO = 'gasto', 'Gasto'
+    SERVICIO = 'servicio', 'Servicio'
+    INGRESO = 'ingreso', 'Ingreso'
+    
+    
 class Gasto(models.Model):
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='gastos')
     concepto = models.CharField(max_length=200, verbose_name="Concepto del Gasto")
@@ -20,6 +26,18 @@ class Gasto(models.Model):
         default=TipoGasto.ORDINARIO, 
         verbose_name="Tipo de Gasto"
     )
+    
+    clase = models.CharField(
+        max_length=20, 
+        choices=ClaseGasto.choices, 
+        default=ClaseGasto.GASTO, 
+        verbose_name="Clase"
+    )
+    
+    pagado = models.BooleanField(default=False, verbose_name="¿Está pagado?")
+    en_caja = models.BooleanField(default=False, verbose_name="¿Está en Caja?") 
+
+    
     grupo = models.ForeignKey(GrupoProrrateo, on_delete=models.PROTECT, related_name='gastos', null=True, blank=True, verbose_name="Columna / Grupo de Prorrateo")
     periodo = models.CharField(max_length=7, help_text="Formato AAAA-MM (ej: 2026-03)", verbose_name="Período Imputado")
     fecha_comprobante = models.DateField(verbose_name="Fecha del Comprobante")
@@ -399,3 +417,10 @@ class MovimientoCaja(models.Model):
 
     def __str__(self):
         return f"{self.fecha} - {self.concepto} ({self.monto})"
+
+    
+    
+    
+
+
+

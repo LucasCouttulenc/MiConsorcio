@@ -16,13 +16,15 @@ from django.views.decorators.http import require_POST
 
 from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
-from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante
+from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante, FormularioLibroDiario
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
-from .models import aplicar_saldo_a_favor, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja
+from .models import imputar_pago, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja, ClaseGasto
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
 from consorcios.permisos import consorcios_permitidos, consorcio_activo
+
+
 
 MONTO_MAXIMO_GASTO = Decimal('10000000000')  # Gasto.monto: max_digits=12, decimal_places=2
 
@@ -58,9 +60,6 @@ def listar_liquidaciones(request):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def servicios_recurrentes(request):
-    """
-    Alta, edición, pausa y baja de los servicios recurrentes del consorcio activo.
-    """
     consorcio = consorcio_activo(request)
     if not consorcio:
         messages.error(request, 'Seleccioná un consorcio primero.')
@@ -92,8 +91,36 @@ def servicios_recurrentes(request):
 
     hoy = date.today().strftime('%Y-%m')
     servicios = list(consorcio.servicios_recurrentes.select_related('columna__rubro'))
+    
+    # Buscamos los gastos generados por estos servicios que estén pendientes de liquidar
+    gastos_pendientes = Gasto.objects.filter(
+        consorcio=consorcio, 
+        liquidacion__isnull=True,
+        servicio__isnull=False
+    ).order_by('-pk')
+    
+    # Mapeamos por servicio
+    gastos_por_servicio = {}
+    for g in gastos_pendientes:
+        if g.servicio_id not in gastos_por_servicio:
+            gastos_por_servicio[g.servicio_id] = g
+
     for servicio in servicios:
         servicio.proximo = servicio.proximo_periodo(hoy)
+        gasto = gastos_por_servicio.get(servicio.pk)
+        servicio.gasto_pendiente = gasto
+        
+        # Buscamos el medio de pago en Caja si ya fue cerrado
+        servicio.medio_pago_display = None
+        if gasto and gasto.en_caja:
+            # Usamos .order_by('-id').first() para traer el movimiento MÁS RECIENTE
+            mov = MovimientoCaja.objects.filter(
+                consorcio=consorcio, 
+                concepto=f"Pago: {gasto.concepto}",
+                monto=-gasto.monto
+            ).order_by('-id').first()
+            if mov:
+                servicio.medio_pago_display = mov.get_medio_pago_display()
     
     columnas = GrupoProrrateo.objects.filter(consorcio=consorcio).select_related('rubro').order_by('rubro__nombre', 'codigo')
     if formulario is None:
@@ -107,7 +134,64 @@ def servicios_recurrentes(request):
         'frecuencias': ServicioRecurrente.FRECUENCIAS,
         'tipos': TipoGasto.choices,
     })
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def pagar_servicio_recurrente(request, servicio_id):
+    """Paso 1: Crea el Gasto para el mes actual y lo marca como pagado."""
+    consorcio = consorcio_activo(request)
+    servicio = get_object_or_404(ServicioRecurrente, pk=servicio_id, consorcio=consorcio)
     
+    if servicio.monto_sugerido is None:
+        messages.error(request, f"El servicio '{servicio.concepto}' no tiene un monto sugerido. Editalo primero.")
+        return redirect('servicios_recurrentes')
+        
+    hoy = date.today()
+    periodo = hoy.strftime('%Y-%m')
+    
+    Gasto.objects.create(
+        consorcio=consorcio,
+        concepto=servicio.concepto,
+        monto=servicio.monto_sugerido,
+        tipo=servicio.tipo,
+        clase=ClaseGasto.SERVICIO,
+        grupo=servicio.columna,
+        periodo=periodo,
+        fecha_comprobante=hoy,
+        pagado=True,
+        en_caja=False,
+        servicio=servicio
+    )
+    
+    messages.success(request, f"Pago de '{servicio.concepto}' registrado. Listo para cerrar en Caja.")
+    return redirect('servicios_recurrentes')
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def cerrar_caja_servicio(request, gasto_id):
+    """Paso 2: Registra el egreso en Caja y marca el Gasto como en_caja=True."""
+    consorcio = consorcio_activo(request)
+    gasto = get_object_or_404(Gasto, pk=gasto_id, consorcio=consorcio, liquidacion__isnull=True, pagado=True, en_caja=False)
+    
+    medio = request.POST.get('medio_pago', 'transferencia')
+    
+    with transaction.atomic():
+        MovimientoCaja.objects.create(
+            consorcio=consorcio,
+            fecha=gasto.fecha_comprobante,
+            concepto=f"Pago: {gasto.concepto}",
+            monto=-gasto.monto,
+            tipo=gasto.tipo,
+            medio_pago=medio
+        )
+        gasto.en_caja = True
+        gasto.save(update_fields=['en_caja'])
+        
+    messages.success(request, f"Servicio '{gasto.concepto}' cerrado y registrado en Caja.")
+    return redirect('servicios_recurrentes')
     
     
 def leer_datos(request, finalizar=False):
@@ -248,6 +332,8 @@ def generar_liquidacion(request, liquidacion_id=None):
         consorcio=consorcio,
         nombre='REMUNERACIONES AL PERSONAL',
     )
+    
+    
 
     # Rubros y columnas
     rubros = consorcio.rubros.all().order_by('nombre')
@@ -287,6 +373,14 @@ def generar_liquidacion(request, liquidacion_id=None):
     liquidacion = liquidacion_permitida(request, liquidacion_id) if liquidacion_id else None
     if liquidacion and liquidacion.cerrada:
         return redirect('detalle_liquidacion', liquidacion_id=liquidacion.pk)
+    
+    gastos_pendientes = list(Gasto.objects.filter(
+        consorcio=consorcio, liquidacion__isnull=True
+    ).values('id', 'concepto', 'tipo', 'clase', 'grupo_id', 'grupo__rubro_id', 'monto', 'fecha_comprobante', 'en_caja'))
+    
+    gastos_sin_cerrar = sum(1 for g in gastos_pendientes if not g['en_caja'])
+    
+
 
     return render(request, 'generar_liquidacion.html', {
         'consorcio': consorcio, 
@@ -296,6 +390,9 @@ def generar_liquidacion(request, liquidacion_id=None):
         'columnas_por_rubro': columnas_por_rubro,
         'personal_por_consorcio': personal_por_consorcio,
         'servicios_por_consorcio': servicios_por_consorcio,
+        'gastos_pendientes': gastos_pendientes,
+        'gastos_sin_cerrar': gastos_sin_cerrar
+
     })
 
 @login_required
@@ -313,13 +410,65 @@ def finalizar_liquidacion(request):
                 columna = columnas.get(str(gasto.get('grupo', '')))
                 if not columna:
                     raise ValueError('Un gasto usa una columna que no pertenece al consorcio.')
-                Gasto.objects.create(
+                
+                monto_gasto = Decimal(str(gasto['monto']).replace(',', '.'))
+                origen = gasto.get('origen', '')
+                
+                # 1. Creamos el Gasto definitivo asociado a la liquidación
+                nuevo_gasto = Gasto.objects.create(
                     liquidacion=liquidacion, consorcio=liquidacion.consorcio,
                     periodo=liquidacion.periodo, fecha_comprobante=date.today(),
                     posicion=posicion, concepto=str(gasto['concepto']).strip()[:200],
                     tipo=gasto['tipo'],
-                    grupo=columna, monto=Decimal(str(gasto['monto']).replace(',', '.')),
-                    servicio=servicios.get(str(gasto.get('servicio') or '')))
+                    grupo=columna, monto=monto_gasto,
+                    servicio=servicios.get(str(gasto.get('servicio') or '')),
+                    en_caja=True
+                )
+                
+                # 2. Lógica para guardar en Caja y borrar el original
+                if origen == 'libro':
+                    gasto_original = Gasto.objects.filter(
+                        consorcio=liquidacion.consorcio, 
+                        liquidacion__isnull=True,
+                        concepto__iexact=str(gasto['concepto']).strip(),
+                        monto=monto_gasto
+                    ).first()
+                    
+                    if gasto_original:
+                        # Si no estaba en caja, lo pasamos a caja ahora
+                        if not gasto_original.en_caja:
+                            MovimientoCaja.objects.create(
+                                consorcio=liquidacion.consorcio,
+                                fecha=gasto_original.fecha_comprobante,
+                                concepto=f"Pago: {gasto_original.concepto}",
+                                monto=-gasto_original.monto,
+                                tipo=gasto_original.tipo,
+                                medio_pago='transferencia'
+                            )
+                        gasto_original.delete()
+                        
+                elif origen == 'caja':
+                    # Si ya venía de caja, no creamos un movimiento nuevo (para no duplicar)
+                    # Solo borramos el original porque ya fue absorbido por la liquidación
+                    Gasto.objects.filter(
+                        consorcio=liquidacion.consorcio, 
+                        liquidacion__isnull=True,
+                        concepto__iexact=str(gasto['concepto']).strip(),
+                        monto=monto_gasto
+                    ).delete()
+                    
+                else:
+                    # Si es un gasto manual (no estaba en libro ni en caja), lo pasamos a caja
+                    MovimientoCaja.objects.create(
+                        consorcio=liquidacion.consorcio,
+                        fecha=date.today(),
+                        concepto=f"Pago: {nuevo_gasto.concepto}",
+                        monto=-nuevo_gasto.monto,
+                        tipo=nuevo_gasto.tipo,
+                        medio_pago='transferencia'
+                    )
+                    
+                    
             procesar_liquidacion_periodo(liquidacion)
             aplicar_saldo_a_favor(liquidacion)
             liquidacion.documento = generar_pdf_liquidacion(liquidacion)
@@ -880,37 +1029,18 @@ def descargar_resumen_uf(request, detalle_id):
 @login_required
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 def caja(request):
-    """Muestra la caja del consorcio activo con sus saldos y permite cargar movimientos."""
+    """
+    Muestra la caja del consorcio activo con sus saldos.
+    Los movimientos ya no se cargan manualmente acá:
+    - Los ingresos vienen de la validación de pagos de expensas.
+    - Los egresos vienen de cerrar gastos desde el Libro Diario o finalizar la Liquidación.
+    """
     consorcio = consorcio_activo(request)
     if not consorcio:
         messages.error(request, "Seleccioná un consorcio primero.")
         return redirect('bienvenida')
 
-    # Procesar nuevo movimiento
-    if request.method == 'POST':
-        try:
-            fecha = date.fromisoformat(request.POST.get('fecha'))
-            concepto = request.POST.get('concepto')
-            monto_raw = request.POST.get('monto').replace(',', '.')
-            tipo = request.POST.get('tipo')
-            medio = request.POST.get('medio_pago')
-            
-            monto = Decimal(monto_raw)
-            # Si es un egreso (ej: pago a proveedor), guardamos en negativo
-            if request.POST.get('accion_monto') == 'egreso':
-                monto = -abs(monto)
-            else:
-                monto = abs(monto)
-
-            MovimientoCaja.objects.create(
-                consorcio=consorcio, fecha=fecha, concepto=concepto,
-                monto=monto, tipo=tipo, medio_pago=medio
-            )
-            messages.success(request, "Movimiento registrado correctamente.")
-            return redirect('caja')
-        except Exception as e:
-            messages.error(request, f"Error al registrar movimiento: {e}")
-
+    # Solo consultamos los movimientos
     movimientos = MovimientoCaja.objects.filter(consorcio=consorcio)
 
     # Cálculos de saldos
@@ -939,3 +1069,123 @@ def caja(request):
         'saldo_cierre': saldo_cierre,
         'fecha_cierre': fecha_cierre,
     })
+    
+    
+    
+
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+def libro_diario(request):
+    consorcio = consorcio_activo(request)
+    if not consorcio:
+        messages.error(request, "Seleccioná un consorcio primero.")
+        return redirect('bienvenida')
+
+    gasto_editar = None
+    editar_id = request.GET.get('editar')
+    if editar_id:
+        gasto_editar = get_object_or_404(Gasto, pk=editar_id, consorcio=consorcio, liquidacion__isnull=True)
+
+    if request.method == 'POST':
+        gasto_id_post = request.POST.get('gasto_id')
+        instance = None
+        if gasto_id_post:
+            instance = get_object_or_404(Gasto, pk=gasto_id_post, consorcio=consorcio, liquidacion__isnull=True)
+            
+        form = FormularioLibroDiario(request.POST, instance=instance, consorcio=consorcio)
+        if form.is_valid():
+            gasto = form.save()
+            accion = "actualizado" if instance else "anotado"
+            messages.success(request, f"Movimiento '{gasto.concepto}' {accion} correctamente.")
+            return redirect('libro_diario')
+    else:
+        form = FormularioLibroDiario(
+            consorcio=consorcio, 
+            instance=gasto_editar,
+            initial={'fecha_comprobante': date.today()} if not gasto_editar else None
+        )
+
+    # Traemos TODOS los gastos pendientes (en caja o no)
+    pendientes = list(Gasto.objects.filter(
+        consorcio=consorcio, 
+        liquidacion__isnull=True
+    ).select_related('grupo__rubro').order_by('-fecha_comprobante', '-pk'))
+    
+    # Buscamos los medios de pago para los que ya están en caja
+    for gasto in pendientes:
+        gasto.medio_pago_display = None
+        if gasto.en_caja:
+            mov = MovimientoCaja.objects.filter(
+                consorcio=consorcio, 
+                concepto__endswith=gasto.concepto, # Busca "Pago: X" o "Cobro: X"
+                fecha=gasto.fecha_comprobante
+            ).order_by('-id').first()
+            if mov:
+                gasto.medio_pago_display = mov.get_medio_pago_display()
+
+    return render(request, 'libro_diario.html', {
+        'consorcio': consorcio,
+        'form': form,
+        'pendientes': pendientes,
+        'editando': gasto_editar is not None
+    })
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def pagar_gasto_libro(request, gasto_id):
+    """Marca un gasto como pagado (Paso 1)"""
+    consorcio = consorcio_activo(request)
+    gasto = get_object_or_404(Gasto, pk=gasto_id, consorcio=consorcio, liquidacion__isnull=True)
+    
+    gasto.pagado = True
+    gasto.save(update_fields=['pagado'])
+    
+    messages.success(request, f"Gasto '{gasto.concepto}' marcado como pagado. Listo para pasar a Caja.")
+    return redirect('libro_diario')
+
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def cerrar_gasto_libro(request, gasto_id):
+    consorcio = consorcio_activo(request)
+    gasto = get_object_or_404(Gasto, pk=gasto_id, consorcio=consorcio, liquidacion__isnull=True, pagado=True, en_caja=False)
+    
+    medio = request.POST.get('medio_pago', 'transferencia')
+    
+    # Si es un Ingreso, el monto va positivo a la Caja. Si es Gasto/Servicio, va negativo.
+    monto_caja = gasto.monto if gasto.clase == ClaseGasto.INGRESO else -gasto.monto
+    prefijo = "Cobro" if gasto.clase == ClaseGasto.INGRESO else "Pago"
+    
+    with transaction.atomic():
+        MovimientoCaja.objects.create(
+            consorcio=consorcio,
+            fecha=gasto.fecha_comprobante,
+            concepto=f"{prefijo}: {gasto.concepto}",
+            monto=monto_caja,
+            tipo=gasto.tipo,
+            medio_pago=medio
+        )
+        
+        gasto.en_caja = True
+        gasto.save(update_fields=['en_caja'])
+        
+    messages.success(request, f"Movimiento '{gasto.concepto}' cerrado y registrado en Caja.")
+    return redirect('libro_diario')
+
+
+@login_required
+@permission_required('consorcios.view_consorcio', raise_exception=True)
+@require_POST
+def borrar_gasto_libro(request, gasto_id):
+    """Borra un gasto pendiente del libro diario sin registrar en caja."""
+    consorcio = consorcio_activo(request)
+    gasto = get_object_or_404(Gasto, pk=gasto_id, consorcio=consorcio, liquidacion__isnull=True)
+    gasto.delete()
+    messages.success(request, "Gasto eliminado del libro diario.")
+    return redirect('libro_diario')

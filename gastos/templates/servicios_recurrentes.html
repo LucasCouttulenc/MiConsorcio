@@ -6,7 +6,7 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/_columnas.css' %}">
 <style>
-    /* Formulario del modal: aire entre filas y campos del mismo alto */
+    /* Formulario del modal */
     #servicio-modal h4 { margin-bottom: 1.2rem; }
     #servicio-modal .cols-form-row { align-items: flex-start; margin-bottom: 1.1rem; }
     #servicio-modal .cols-fg { flex: 1 1 0; min-width: 0; }
@@ -15,6 +15,37 @@
     @media (max-width: 640px) { #servicio-modal .cols-form-row { flex-wrap: wrap; } #servicio-modal .cols-fg { flex-basis: 100%; } }
     #servicio-modal .cols-input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 2.6rem; }
     #servicio-modal .errorlist { margin: 0.2rem 0 0; padding: 0; list-style: none; color: #fb7185; font-size: 0.8rem; }
+
+    /* Estilos para separar los botones de la columna de Acciones */
+    .acciones-contenedor {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    .acciones-grupo {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .acciones-separador {
+        width: 1px;
+        height: 20px;
+        background-color: #475569;
+        margin: 0 5px;
+    }
+    
+    /* FIX PARA CENTRAR EL ÍCONO DE PAUSA */
+    .cols-ic {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+    }
+    .cols-ic svg {
+        display: block;
+        margin: 0 auto;
+    }
 </style>
 
 {% include "componentes/mensajes.html" %}
@@ -52,7 +83,7 @@
                     <th>Frecuencia</th>
                     <th>Monto sugerido</th>
                     <th>Próximo período</th>
-                    <th class="col-acc">Acciones</th>
+                    <th class="col-acc" style="text-align: right; padding-right: 15px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -67,40 +98,77 @@
                             <span class="badge-tipo tipo-general">{{ s.get_frecuencia_meses_display }}</span>
                             {% if s.tipo == 'extraordinario' %}<span class="badge-tipo tipo-parcial">Extraordinario</span>{% endif %}
                         </td>
-                        <!-- Rescatado del archivo 2: el filtro floatformat -->
                         <td>{% if s.monto_sugerido %}$ {{ s.monto_sugerido|floatformat:"2g" }}{% else %}<em>A completar</em>{% endif %}</td>
                         <td>
                             {% if not s.activo %}Pausado{% elif s.proximo %}{{ s.proximo }}{% else %}Finalizado{% endif %}
                         </td>
                         <td class="col-acc">
-                            <button type="button" class="cols-ic" title="Editar"
-                                onclick="editarServicio(this)"
-                                data-id="{{ s.id }}"
-                                data-concepto="{{ s.concepto }}"
-                                data-proveedor="{{ s.proveedor }}"
-                                data-columna="{{ s.columna_id }}"
-                                data-tipo="{{ s.tipo }}"
-                                data-monto="{{ s.monto_sugerido|default_if_none:''|stringformat:'s' }}"
-                                data-frecuencia="{{ s.frecuencia_meses }}"
-                                data-inicio="{{ s.periodo_inicio }}"
-                                data-fin="{{ s.periodo_fin }}">✎</button>
-                            <form method="post" style="display:inline">
-                                {% csrf_token %}
-                                <!-- Eliminado el input hidden de consorcio -->
-                                <input type="hidden" name="accion" value="pausar">
-                                <input type="hidden" name="servicio_id" value="{{ s.id }}">
-                                <button type="submit" class="cols-ic" title="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}" aria-label="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}">
-                                    {% if s.activo %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>{% else %}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z"/></svg>{% endif %}
-                                </button>
-                            </form>
-                            <form method="post" style="display:inline"
-                                  onsubmit="return confirm('¿Borrar el servicio {{ s.concepto|escapejs }}? Los gastos ya liquidados no se borran.');">
-                                {% csrf_token %}
-                                <!-- Eliminado el input hidden de consorcio -->
-                                <input type="hidden" name="accion" value="borrar">
-                                <input type="hidden" name="servicio_id" value="{{ s.id }}">
-                                <button type="submit" class="cols-ic del" title="Borrar">✕</button>
-                            </form>
+                            <div class="acciones-contenedor">
+                                <!-- GRUPO 1: Editar, Pausar, Borrar -->
+                                <div class="acciones-grupo">
+                                    <button type="button" class="cols-ic" title="Editar"
+                                        onclick="editarServicio(this)"
+                                        data-id="{{ s.id }}"
+                                        data-concepto="{{ s.concepto }}"
+                                        data-proveedor="{{ s.proveedor }}"
+                                        data-columna="{{ s.columna_id }}"
+                                        data-tipo="{{ s.tipo }}"
+                                        data-monto="{{ s.monto_sugerido|default_if_none:''|stringformat:'s' }}"
+                                        data-frecuencia="{{ s.frecuencia_meses }}"
+                                        data-inicio="{{ s.periodo_inicio }}"
+                                        data-fin="{{ s.periodo_fin }}">✎</button>
+                                    
+                                    <form method="post" style="display:inline; margin:0;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="pausar">
+                                        <input type="hidden" name="servicio_id" value="{{ s.id }}">
+                                        <button type="submit" class="cols-ic" title="{% if s.activo %}Pausar{% else %}Reactivar{% endif %}">
+                                            {% if s.activo %}
+                                                <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="M8 5v14M16 5v14"/></svg>
+                                            {% else %}
+                                                <svg viewBox="0 0 24 24" aria-hidden="true" style="width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2;"><path d="m8 5 11 7-11 7z"/></svg>
+                                            {% endif %}
+                                        </button>
+                                    </form>
+
+                                    <form method="post" style="display:inline; margin:0;"
+                                          onsubmit="return confirm('¿Borrar el servicio {{ s.concepto|escapejs }}? Los gastos ya liquidados no se borran.');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="accion" value="borrar">
+                                        <input type="hidden" name="servicio_id" value="{{ s.id }}">
+                                        <button type="submit" class="cols-ic del" title="Borrar">✕</button>
+                                    </form>
+                                </div>
+
+                                <div class="acciones-separador"></div>
+
+                                <!-- GRUPO 2: Pagos y Caja -->
+                                <div class="acciones-grupo">
+                                    {% if not s.activo %}
+                                        <!-- Deshabilitado si está pausado -->
+                                    {% elif s.gasto_pendiente %}
+                                        {% if s.gasto_pendiente.pagado and not s.gasto_pendiente.en_caja %}
+                                            <form method="post" action="{% url 'cerrar_caja_servicio' s.gasto_pendiente.pk %}" style="display:flex; gap: 6px; align-items: center; margin: 0;">
+                                                {% csrf_token %}
+                                                <select name="medio_pago" class="cols-input sin-select2" style="padding: 0.2rem; font-size: 0.75rem; width: auto; min-height: auto; height: 32px;">
+                                                    <option value="transferencia">Transf.</option>
+                                                    <option value="efectivo">Efectivo</option>
+                                                </select>
+                                                <button type="submit" class="boton-primario" style="padding: 0 0.8rem; font-size: 0.75rem; height: 32px; line-height: 1;" onclick="this.disabled=true; this.form.submit();">Cerrar Caja</button>
+                                            </form>
+                                        {% else %}
+                                            <span class="badge-tipo" style="background-color: #d1fae5; color: #065f46; padding: 0.4rem 0.6rem; font-size: 0.75rem; border-radius: 4px; white-space: nowrap;">
+                                                En Caja ({{ s.medio_pago_display|default:"Transf." }})
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        <form method="post" action="{% url 'pagar_servicio_recurrente' s.pk %}" style="display:inline; margin: 0;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="boton-primario" style="padding: 0 0.8rem; font-size: 0.75rem; height: 32px; line-height: 1;" onclick="this.disabled=true; this.form.submit();">✓ Pagar</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 {% empty %}
@@ -117,7 +185,6 @@
         <h4 id="servicio-modal-title">{% if formulario.instance.pk %}Editar servicio{% else %}Nuevo servicio{% endif %}</h4>
         <form method="post">
             {% csrf_token %}
-            <!-- Eliminado el input hidden de consorcio -->
             <input type="hidden" name="accion" id="servicio-accion" value="{% if formulario.instance.pk %}editar{% else %}crear{% endif %}">
             <input type="hidden" name="servicio_id" id="servicio-id" value="{{ formulario.instance.pk|default_if_none:'' }}">
 
@@ -191,7 +258,6 @@
             <div class="cols-form-row">
                 <div class="cols-fg" style="flex: 0 1 260px;">
                     <label class="cols-label">Monto sugerido (opcional)</label>
-                    <!-- Rescatado del archivo 2: el filtro unlocalize -->
                     <input type="number" name="monto_sugerido" id="servicio-monto" class="cols-input" step="0.01" min="0.01"
                            placeholder="Se completa al liquidar" value="{{ formulario.monto_sugerido.value|default_if_none:''|unlocalize }}">
                     {{ formulario.monto_sugerido.errors }}

@@ -32,7 +32,6 @@
                 <div class="consorcio-select-wrapper">
                     <span class="consorcio-icono" title="{{ consorcio_activo.nombre }}">🏢</span>
                     
-                    <!-- Le cambiamos el onchange para llamar a una función propia -->
                     <select name="consorcio_id" id="consorcio-activo-select" onchange="cambiarConsorcio(this)" class="consorcio-select sin-select2">
                         {% for c in consorcios_disponibles %}
                             <option value="{{ c.pk }}" {% if consorcio_activo.pk == c.pk %}selected{% endif %}>
@@ -40,7 +39,6 @@
                             </option>
                         {% endfor %}
                         
-                        <!-- NUEVA OPCIÓN -->
                         <option value="NUEVO" style="font-weight: 700; color: #60A5FA; border-top: 1px solid #334155;">
                             Crear nuevo consorcio
                         </option>
@@ -57,6 +55,8 @@
                 {% if user.is_superuser or 'Administrador' in user.groups.all|stringformat:"s" %}
                     <div class="submenu">
                         <span class="submenu-titulo">PANEL ADMINISTRADOR</span>
+                        
+                        <!-- 1. DATOS DEL CONSORCIO -->
                         <div class="submenu-item {% if request.resolver_match.url_name == 'gestionar_consorcio' %}active{% endif %}">
                             <a href="{% url 'gestionar_consorcio' %}" title="Datos del consorcio">
                                 <span class="item-icono">
@@ -66,6 +66,19 @@
                                 <span class="item-texto">Datos del consorcio</span>
                             </a>
                         </div>
+
+                        <!-- 2. DOCUMENTOS -->
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'documentos_consorcio' %}active{% endif %}">
+                            <a href="{% url 'documentos_consorcio' %}" title="Documentos">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/expensas.svg' %}" class="svg-icono default-icon" alt="Documentos">
+                                    <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Documentos">
+                                </span>
+                                <span class="item-texto">Documentos</span>
+                            </a>
+                        </div>
+
+                        <!-- 3. UNIDADES FUNCIONALES -->
                         <div class="submenu-item {% if request.resolver_match.url_name == 'listar_unidades_funcionales' %}active{% endif %}">
                             <a href="{% url 'listar_unidades_funcionales' %}" title="Unidades Funcionales">
                                 <span class="item-icono">
@@ -75,36 +88,19 @@
                                 <span class="item-texto">Unidades Funcionales</span>
                             </a>
                         </div>
-                        <div class="submenu-item {% if request.resolver_match.url_name == 'listar_liquidaciones' %}active{% endif %}">
-                            <a href="{% url 'listar_liquidaciones' %}" title="Liquidaciones">
+
+                        <!-- 4. LIBRO DIARIO -->
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'libro_diario' %}active{% endif %}">
+                            <a href="{% url 'libro_diario' %}" title="Libro Diario">
                                 <span class="item-icono">
-                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Liquidaciones">
-                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Liquidaciones">
+                                    <img src="{% static 'imagenes/libro_diario_azul.svg' %}" class="svg-icono default-icon" alt="Libro Diario">
+                                    <img src="{% static 'imagenes/libro_diario_blanco.svg' %}" class="svg-icono hover-icon" alt="Libro Diario">
                                 </span>
-                                <span class="item-texto">Liquidaciones</span>
+                                <span class="item-texto">Libro Diario</span>
                             </a>
                         </div>
 
-
-                        <div class="submenu-item {% if request.resolver_match.url_name == 'caja' %}active{% endif %}">
-                            <a href="{% url 'caja' %}" title="Caja">
-                                <span class="item-icono">
-                                    <img src="{% static 'imagenes/caja.svg' %}" class="svg-icono default-icon" alt="Caja">
-                                    <img src="{% static 'imagenes/caja_blanco.svg' %}" class="svg-icono hover-icon" alt="Caja">
-                                </span>
-                                <span class="item-texto">Caja</span>
-                            </a>
-                        </div>
-
-                        <div class="submenu-item {% if request.resolver_match.url_name == 'configurar_columnas' %}active{% endif %}">
-                            <a href="{% url 'configurar_columnas' %}" title="Configurar columnas">
-                                <span class="item-icono">
-                                    <img src="{% static 'imagenes/prorrateo.svg' %}" class="svg-icono default-icon" alt="Configurar columnas">
-                                    <img src="{% static 'imagenes/prorrateo_blanco.svg' %}" class="svg-icono hover-icon" alt="Configurar columnas">
-                                </span>
-                                <span class="item-texto">Rubros y columnas</span>
-                            </a>
-                        </div>
+                        <!-- 5. SERVICIOS RECURRENTES -->
                         <div class="submenu-item {% if request.resolver_match.url_name == 'servicios_recurrentes' %}active{% endif %}">
                             <a href="{% url 'servicios_recurrentes' %}" title="Servicios recurrentes">
                                 <span class="item-icono">
@@ -132,15 +128,8 @@
                                 <span class="item-texto">Proveedores</span>
                             </a>
                         </div>
-                        <div class="submenu-item {% if request.resolver_match.url_name == 'pagos_pendientes' %}active{% endif %}">
-                            <a href="{% url 'pagos_pendientes' %}" title="Pagos Pendientes">
-                                <span class="item-icono">
-                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Pagos Pendientes">
-                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Pagos Pendientes">
-                                </span>
-                                <span class="item-texto">Pagos Pendientes</span>
-                            </a>
-                        </div>
+
+                        <!-- 6. MOROSIDAD -->
                         <div class="submenu-item {% if request.resolver_match.url_name == 'morosidad' or request.resolver_match.url_name == 'morosidad_unidad' %}active{% endif %}">
                             <a href="{% url 'morosidad' %}" title="Morosidad">
                                 <span class="item-icono">
@@ -150,13 +139,37 @@
                                 <span class="item-texto">Morosidad</span>
                             </a>
                         </div>
-                        <div class="submenu-item {% if request.resolver_match.url_name == 'documentos_consorcio' %}active{% endif %}">
-                            <a href="{% url 'documentos_consorcio' %}" title="Documentos">
+
+                        <!-- 7. CAJA -->
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'caja' %}active{% endif %}">
+                            <a href="{% url 'caja' %}" title="Caja">
                                 <span class="item-icono">
-                                    <img src="{% static 'imagenes/expensas.svg' %}" class="svg-icono default-icon" alt="Documentos">
-                                    <img src="{% static 'imagenes/expensas_blanco.svg' %}" class="svg-icono hover-icon" alt="Documentos">
+                                    <img src="{% static 'imagenes/caja.svg' %}" class="svg-icono default-icon" alt="Caja">
+                                    <img src="{% static 'imagenes/caja_blanco.svg' %}" class="svg-icono hover-icon" alt="Caja">
                                 </span>
-                                <span class="item-texto">Documentos</span>
+                                <span class="item-texto">Caja</span>
+                            </a>
+                        </div>
+
+                        <!-- 8. LIQUIDACIONES -->
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'listar_liquidaciones' %}active{% endif %}">
+                            <a href="{% url 'listar_liquidaciones' %}" title="Liquidaciones">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Liquidaciones">
+                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Liquidaciones">
+                                </span>
+                                <span class="item-texto">Liquidaciones</span>
+                            </a>
+                        </div>
+
+                        <!-- 9. RUBROS Y COLUMNAS -->
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'configurar_columnas' %}active{% endif %}">
+                            <a href="{% url 'configurar_columnas' %}" title="Rubros y columnas">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/prorrateo.svg' %}" class="svg-icono default-icon" alt="Rubros y columnas">
+                                    <img src="{% static 'imagenes/prorrateo_blanco.svg' %}" class="svg-icono hover-icon" alt="Rubros y columnas">
+                                </span>
+                                <span class="item-texto">Rubros y columnas</span>
                             </a>
                         </div>
                         <div class="submenu-item {% if request.resolver_match.url_name == 'contactos_consorcio' %}active{% endif %}">
@@ -177,6 +190,18 @@
                                 <span class="item-texto">Consultas</span>
                             </a>
                         </div>
+
+                        <!-- 11. PAGOS A VALIDAR -->
+                        <div class="submenu-item {% if request.resolver_match.url_name == 'pagos_pendientes' %}active{% endif %}">
+                            <a href="{% url 'pagos_pendientes' %}" title="Pagos a validar">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/liquidaciones.svg' %}" class="svg-icono default-icon" alt="Pagos a validar">
+                                    <img src="{% static 'imagenes/liquidaciones_blanco.svg' %}" class="svg-icono hover-icon" alt="Pagos a validar">
+                                </span>
+                                <span class="item-texto">Pagos a validar</span>
+                            </a>
+                        </div>
+
                     </div>
                 {% endif %}
 
@@ -243,7 +268,6 @@
 
             <!-- Perfil / Salida al Pie -->
             <div class="sidebar-footer">
-                <!-- Formulario con ID para poder enviarlo mediante JS -->
                 <form id="formCerrarSesion" action="{% url 'cerrar_sesion' %}" method="post" class="form-logout">
                     {% csrf_token %}
                     <button id="btnAbrirModalLogout" class="boton-logout-sidebar" type="button" title="Cerrar sesión">
@@ -256,7 +280,7 @@
                 </form>
             </div>
 
-            <!-- Modal de Confirmación de Cerrar Sesión (Centrado) -->
+            <!-- Modal de Confirmación de Cerrar Sesión -->
             <div id="modalLogout" class="modal-overlay">
                 <div class="modal-card">
                     <div class="modal-icono">
@@ -278,7 +302,6 @@
 </nav>
 
 <script>
-
     if (localStorage.getItem('miConsorcioSidebarExpandedV2') !== 'false') {
         document.getElementById('appLayout').classList.add('sidebar-expanded');
         document.getElementById('sidebar').classList.add('open');
@@ -300,7 +323,6 @@ $(document).ready(function() {
         localStorage.setItem(storageKey, String(expanded));
     }
 
-    // La primera visita empieza expandida; solo se pliega si la persona lo eligió.
     setSidebarExpanded(localStorage.getItem(storageKey) !== 'false');
 
     $('#toggleSidebarBtn').on('click', function(e) {
@@ -310,23 +332,19 @@ $(document).ready(function() {
 });
 
 $(document).ready(function() {
-    // Abrir el modal de confirmación al hacer clic en "Cerrar sesión"
     $('#btnAbrirModalLogout').on('click', function(e) {
         e.preventDefault();
         $('#modalLogout').addClass('active');
     });
 
-    // Cerrar el modal al presionar "Cancelar"
     $('#btnCancelarLogout').on('click', function() {
         $('#modalLogout').removeClass('active');
     });
 
-    // Confirmar y enviar el formulario de Django
     $('#btnConfirmarLogout').on('click', function() {
         $('#formCerrarSesion').submit();
     });
 
-    // Cerrar si se hace clic fuera de la tarjeta blanca (en la zona oscura)
     $('#modalLogout').on('click', function(e) {
         if ($(e.target).is('#modalLogout')) {
             $('#modalLogout').removeClass('active');
@@ -334,17 +352,11 @@ $(document).ready(function() {
     });
 });
 
-
     function cambiarConsorcio(selectElement) {
         if (selectElement.value === 'NUEVO') {
-            // Si elige crear uno nuevo, lo mandamos a la vista de creación
             window.location.href = "{% url 'crear_consorcio' %}";
         } else {
-            // Si elige un consorcio normal, enviamos el formulario
             selectElement.form.submit();
         }
     }
-
-
-
 </script>

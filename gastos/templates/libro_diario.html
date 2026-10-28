@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Libro Diario{% endblock %}
+
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<link rel="stylesheet" href="{% static 'css/_libro_diario.css' %}">
+
+<div style="margin-bottom: 1.5rem;">
+    <h1 class="titulo" style="margin-bottom: 0.2rem;">Libro Diario</h1>
+    <p style="color: #64748b; font-size: 1.1rem; margin: 0;">{{ consorcio.nombre }}</p>
+</div>
+
+<div class="ld-card">
+    <div class="ld-card-header">
+        {% if editando %}Editando movimiento{% else %}Anotar un nuevo movimiento{% endif %}
+    </div>
+    <div class="ld-card-body">
+        <form method="post" class="ld-form-grid">
+            {% csrf_token %}
+            <input type="hidden" name="gasto_id" value="{{ form.instance.pk|default:'' }}">
+            
+            <div class="ld-group ld-col-fecha">
+                <label class="ld-label">Fecha</label>
+                {{ form.fecha_comprobante }}
+            </div>
+            
+            <div class="ld-group ld-col-concepto">
+                <label class="ld-label">Concepto</label>
+                {{ form.concepto }}
+            </div>
+            
+            <div class="ld-group ld-col-monto">
+                <label class="ld-label">Monto ($)</label>
+                {{ form.monto }}
+            </div>
+
+            <div class="ld-group ld-col-clase">
+                <label class="ld-label">Clase</label>
+                {{ form.clase }}
+            </div>
+            
+            <div class="ld-group ld-col-tipo">
+                <label class="ld-label">Tipo</label>
+                {{ form.tipo }}
+            </div>
+            
+            <div class="ld-group ld-col-rubro">
+                <label class="ld-label">Rubro / Columna</label>
+                {{ form.grupo }}
+            </div>
+            
+            <div class="ld-col-boton" style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="ld-btn-submit">{% if editando %}Guardar{% else %}Anotar{% endif %}</button>
+                {% if editando %}
+                    <a href="{% url 'libro_diario' %}" class="ld-btn-cancelar" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">✕</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="contenedor-tabla">
+    <table class="tabla">
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Concepto</th>
+                <th>Clase</th>
+                <th>Tipo</th>
+                <th>Rubro</th>
+                <th>Monto</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for gasto in pendientes %}
+                <tr {% if editando and gasto.pk == form.instance.pk %}class="fila-editando"{% endif %}>
+                    <td>{{ gasto.fecha_comprobante|date:"d/m/Y" }}</td>
+                    <td><strong>{{ gasto.concepto }}</strong></td>
+                    <td>{{ gasto.get_clase_display }}</td>
+                    <td>{{ gasto.get_tipo_display }}</td>
+                    <td>{{ gasto.grupo.rubro.nombre }}</td>
+                    <td>$ {{ gasto.monto|floatformat:"2g" }}</td>
+                    <td>
+                        <div class="ld-acciones-flex">
+                            {% if gasto.en_caja %}
+                                <!-- ESTADO 3: EN CAJA -->
+                                <span class="ld-badge-pagado" style="background-color: {% if gasto.clase == 'ingreso' %}#d1fae5; color: #065f46;{% else %}#d1fae5; color: #065f46;{% endif %}">
+                                    En Caja ({{ gasto.medio_pago_display|default:"Transf." }})
+                                </span>
+                            {% else %}
+                                {% if not gasto.pagado %}
+                                    <!-- ESTADO 1: PENDIENTE -->
+                                    <a href="?editar={{ gasto.pk }}" class="ld-btn-editar" title="Editar">✎</a>
+                                    
+                                    <form method="post" action="{% url 'pagar_gasto_libro' gasto.pk %}" style="margin: 0;">
+                                        {% csrf_token %}
+                                        {% if gasto.clase == 'ingreso' %}
+                                            <button type="submit" class="ld-btn-pagar" title="Marcar como cobrado">✓ Cobrar</button>
+                                        {% else %}
+                                            <button type="submit" class="ld-btn-pagar" title="Marcar como pagado">✓ Pagar</button>
+                                        {% endif %}
+                                    </form>
+                                {% else %}
+                                    <!-- ESTADO 2: PAGADO/COBRADO (PENDIENTE DE CAJA) -->
+                                    <span class="ld-badge-pagado">
+                                        {% if gasto.clase == 'ingreso' %}Cobrado{% else %}Pagado{% endif %}
+                                    </span>
+                                    
+                                    <form method="post" action="{% url 'cerrar_gasto_libro' gasto.pk %}" class="ld-acciones-flex" style="margin: 0;">
+                                        {% csrf_token %}
+                                        <select name="medio_pago" class="ld-select-medio">
+                                            <option value="transferencia">Transf.</option>
+                                            <option value="efectivo">Efectivo</option>
+                                        </select>
+                                        <button type="submit" class="ld-btn-cerrar" title="Cerrar y pasar a Caja" onclick="this.disabled=true; this.form.submit(); return false;">Cerrar en Caja</button>
+                                    </form>
+                                {% endif %}
+
+                                <!-- El botón borrar solo aparece si NO está en caja -->
+                                <form method="post" action="{% url 'borrar_gasto_libro' gasto.pk %}" onsubmit="return confirm('¿Borrar este movimiento?');" style="margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="ld-btn-borrar" title="Borrar">✕</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7" class="tabla__texto-sin-resultados">No hay gastos pendientes en el libro diario.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

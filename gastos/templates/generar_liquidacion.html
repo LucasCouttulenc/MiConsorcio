@@ -12,15 +12,26 @@
     {% for message in messages %}
         <div style="padding:10px 14px; margin-bottom:12px; border-radius:6px; background:#fff3cd; border:1px solid #e0c36a;">{{ message }}</div>
     {% endfor %}
+    
     <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
         <a href="{% url 'listar_liquidaciones' %}" class="gl-btn gl-btn-secondary gl-btn-sm">← Volver</a>
         <h2 class="gl-header-title" style="margin:0;">Generar Liquidación de Expensas</h2>
     </div>
 
+    <!-- ALERTA DE GASTOS SIN CERRAR EN CAJA -->
+    {% if gastos_sin_cerrar > 0 %}
+    <div class="alerta alerta-warning" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 1rem; border-radius: 8px;">
+        <span style="font-size: 1.5rem;">⚠️</span>
+        <div>
+            <strong>Atención:</strong> Tenés {{ gastos_sin_cerrar }} movimiento(s) en el Libro Diario que aún no se pasaron a Caja. 
+            Podés continuar con la liquidación sin problemas, pero te recomendamos cerrarlos para mantener el balance al día.
+        </div>
+    </div>
+    {% endif %}
+
     <form method="POST" action="{% url 'finalizar_liquidacion' %}" id="form-liquidacion" data-autosave-url="{% url 'autosave_liquidacion' %}">
         {% csrf_token %}
         
-        <!-- INPUTS OCULTOS: Mantienen compatibilidad con tus scripts JS actuales -->
         <input type="hidden" name="consorcio" id="select-consorcio" value="{{ consorcio.id }}">
         <input type="hidden" name="liquidacion_id" id="liquidacion-id" value="{{ liquidacion.id|default:'' }}">
         <input type="hidden" name="gastos" id="gastos-json">
@@ -34,10 +45,7 @@
         </div>
 
         <div class="gl-grid">
-            <!-- COLUMNA IZQUIERDA: FORMULARIO DE CARGA -->
             <div class="gl-main-content">
-
-                <!-- 1. DATOS EDITABLES DE LA ADMINISTRACIÓN -->
                 <div class="gl-card">
                     <div class="gl-card-header gl-card-header-secondary">
                         <span class="gl-card-header-title">Datos de la Administración</span>
@@ -89,7 +97,6 @@
                     </div>
                 </div>
 
-                <!-- 2. PERÍODO Y FECHAS -->
                 <div class="gl-card">
                     <div class="gl-card-header gl-card-header-dark">
                         <span class="gl-card-header-title">Período y Fechas de Vencimiento</span>
@@ -121,12 +128,10 @@
                                     </select>
                                 </div>
                             </div>
-
                             <div class="gl-form-group gl-col-4">
                                 <label class="gl-label">Cierre de Expensas al</label>
                                 <input type="date" name="fecha_cierre" id="fecha_cierre" class="gl-input" required>
                             </div>
-
                             <div class="gl-form-group gl-col-4">
                                 <label class="gl-label">Fecha Vencimiento</label>
                                 <input type="date" name="fecha_vencimiento_1" id="fecha_vencimiento_1" class="gl-input" required>
@@ -135,7 +140,6 @@
                     </div>
                 </div>
 
-                <!-- 3. MATRIZ DE GASTOS -->
                 <div class="gl-card">
                     <div class="gl-card-header">
                         <span class="gl-card-header-title">Gastos Imputados</span>
@@ -156,21 +160,16 @@
                                         <th style="width: 5%; text-align: center;">Acción</th>
                                     </tr>
                                 </thead>
-                                <tbody id="body-gastos">
-                                    <!-- Filas dinámicas JS -->
-                                </tbody>
+                                <tbody id="body-gastos"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-
             </div>
 
-            <!-- COLUMNA DERECHA: VISTA PREVIA EN TIEMPO REAL -->
             <div class="gl-preview-sidebar">
                 <div class="gl-preview-sticky">
                     <div class="gl-preview-title">Vista Previa del Encabezado</div>
-
                     <div class="gl-preview-card">
                         <div class="banner-expensas">
                             <h3>EXPENSAS MICONSORCIO</h3>
@@ -178,7 +177,6 @@
                             <p>Cierre de expensas al: <span id="lbl-cierre"></span></p>
                             <p>Vencimiento: <span id="lbl-vencimiento"></span></p>
                         </div>
-
                         <div class="cabecera-info">
                             <div class="cabecera-info-grid">
                                 <div class="cabecera-col cabecera-col-border">
@@ -191,7 +189,6 @@
                                     <div><strong>Te.:</strong> <span id="lbl-admin-telefono">-</span></div>
                                     <div style="word-break: break-all;"><strong>Mail:</strong> <span id="lbl-admin-mail">-</span></div>
                                 </div>
-
                                 <div class="cabecera-col">
                                     <h6>CONSORCIO</h6>
                                     <div><strong>Nombre:</strong> <span id="lbl-consorcio-nombre">--</span></div>
@@ -203,7 +200,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="gl-preview-table-container">
                             <div class="gl-preview-table-title">Resumen de Gastos Cargados</div>
                             <div class="gl-table-wrapper">
@@ -220,7 +216,6 @@
             <button type="submit" class="btn btn-primary fw-bold px-4">Finalizar y calcular liquidación</button>
         </div>
 
-        <!-- MODAL RUBRO -->
         <div class="gl-modal" id="modal-rubro" style="display:none">
             <div class="gl-modal-content">
                 <div class="gl-modal-header">
@@ -231,7 +226,6 @@
             </div>
         </div>
 
-        <!-- MODAL MONTO -->
         <div class="gl-modal" id="modal-monto" style="display:none">
             <div class="gl-modal-content">
                 <div class="gl-modal-header">
@@ -241,7 +235,7 @@
                 <div class="gl-modal-body">
                     <div class="gl-input-group">
                         <span class="gl-input-prefix">$</span>
-                        <input type="number" step="0.01" min="0" id="modal-monto-input" class="gl-input gl-input-lg" placeholder="0.00" guardarMontoModal()">
+                        <input type="number" step="0.01" min="0" id="modal-monto-input" class="gl-input gl-input-lg" placeholder="0.00">
                     </div>
                 </div>
                     <div class="gl-modal-footer">
@@ -250,7 +244,6 @@
             </div>
         </div>
 
-        <!-- MODAL CONCEPTO -->
         <div class="gl-modal" id="modal-concepto" style="display:none">
             <div class="gl-modal-content">
                 <div class="gl-modal-header">
@@ -266,7 +259,6 @@
             </div>
         </div>
 
-        <!-- MODAL COLUMNA -->
         <div class="gl-modal" id="modal-columna" style="display:none">
             <div class="gl-modal-content">
                 <div class="gl-modal-header">
@@ -281,19 +273,21 @@
 
 </div>
 
+<!-- TODOS LOS JSON_SCRIPT (agregado el de gastos-libro-diario) -->
 {{ datos_iniciales|json_script:"datos-iniciales" }}
 {{ rubros_por_consorcio|json_script:"rubros-por-consorcio" }}
 {{ columnas_por_rubro|json_script:"columnas-por-rubro" }}
 {{ personal_por_consorcio|json_script:"personal-por-consorcio" }}
 {{ servicios_por_consorcio|json_script:"servicios-por-consorcio" }}
+{{ gastos_pendientes|json_script:"gastos-libro-diario" }}
 
 <script>
     window.rubrosPorConsorcio = JSON.parse(document.getElementById('rubros-por-consorcio').textContent);
     window.columnasPorRubro = JSON.parse(document.getElementById('columnas-por-rubro').textContent);
     window.personalPorConsorcio = JSON.parse(document.getElementById('personal-por-consorcio').textContent);
     window.serviciosPorConsorcio = JSON.parse(document.getElementById('servicios-por-consorcio').textContent);
+    window.gastosLibroDiario = JSON.parse(document.getElementById('gastos-libro-diario').textContent);
 
-    // Adaptamos el objeto para que el JS encuentre los datos del único consorcio activo
     window.datosConsorcios = {
         "{{ consorcio.id }}": {
             nombre: "{{ consorcio.nombre|default:'-'|escapejs }}",

@@ -104,7 +104,19 @@ urlpatterns = [
     path('liquidaciones/detalle-uf/<int:detalle_id>/resumen/',views_gastos.descargar_resumen_uf,name='descargar_resumen_uf'),
     path('liquidaciones/<int:liquidacion_id>/eliminar/', views_gastos.eliminar_borrador, name='eliminar_borrador'),
     path('administracion/caja/', views_gastos.caja, name='caja'),
+    
+    
+    
+    # Libro Diario
+    path('administracion/libro-diario/', views_gastos.libro_diario, name='libro_diario'),
+    path('administracion/libro-diario/<int:gasto_id>/pagar/', views_gastos.pagar_gasto_libro, name='pagar_gasto_libro'),
+    path('administracion/libro-diario/<int:gasto_id>/borrar/', views_gastos.borrar_gasto_libro, name='borrar_gasto_libro'),
+    path('libro-diario/cerrar/<int:gasto_id>/', views_gastos.cerrar_gasto_libro, name='cerrar_gasto_libro'),
 
+
+    #servicios recurrentes
+    path('servicios-recurrentes/pagar/<int:servicio_id>/', views_gastos.pagar_servicio_recurrente, name='pagar_servicio_recurrente'),
+    path('servicios-recurrentes/cerrar-caja/<int:gasto_id>/', views_gastos.cerrar_caja_servicio, name='cerrar_caja_servicio'),
 ]
 
 if settings.DEBUG:

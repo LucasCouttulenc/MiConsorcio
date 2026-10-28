@@ -25,17 +25,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('body-gastos').replaceChildren();
         (inicial.gastos || []).forEach(gasto => {
-            // Cada gasto guardado tiene: concepto, tipo, rubro, grupo, monto
+            
+            // ✅ ACÁ ESTÁ LA MAGIA PARA LOS BORRADORES VIEJOS
+            let origenFinal = gasto.origen;
+            if (!origenFinal && window.gastosLibroDiario) {
+                // Si el borrador viejo no tiene el origen, lo buscamos en los gastos pendientes
+                const pendiente = window.gastosLibroDiario.find(g => 
+                    (g.concepto || '').toLowerCase() === (gasto.concepto || '').toLowerCase() && 
+                    parseFloat(g.monto) === parseFloat(gasto.monto)
+                );
+                if (pendiente) {
+                    origenFinal = pendiente.en_caja ? 'caja' : 'libro';
+                }
+            }
+
             agregarFilaGasto(
                 gasto.concepto || '',
                 gasto.tipo || 'ordinario',
                 gasto.rubro || '',
                 gasto.grupo || '',
                 gasto.monto || '',
-                gasto.servicio || ''
+                gasto.servicio || '', 
+                origenFinal || ''    
             );
         });
-        if (!inicial.gastos?.length) agregarFilaGasto();
+        
         sincronizarVistaPrevia();
         estado.textContent = 'Borrador cargado. Los cambios se guardan automáticamente.';
     }
@@ -48,6 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
             rubro: fila.querySelector('.input-rubro-hidden').value,
             grupo: fila.querySelector('.input-grupo-hidden').value,
             monto: fila.querySelector('.input-monto-hidden').value,
+            servicio: fila.dataset.servicio || '', // ✅ GUARDA SERVICIO
+            origen: fila.dataset.origen || ''      // ✅ GUARDA ORIGEN (Caja/Libro)
         }));
         document.getElementById('gastos-json').value = JSON.stringify(gastos);
     }
