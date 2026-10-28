@@ -150,4 +150,4 @@ def gestionar_consulta(request, consulta_id):
         'consulta': consulta, 
         'mensajes_consulta': consulta.mensajes.select_related('autor'), 
         'formulario': formulario,
-    })
+    })

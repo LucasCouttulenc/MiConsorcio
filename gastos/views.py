@@ -1224,4 +1224,4 @@ def borrar_gasto_libro(request, gasto_id):
     gasto = get_object_or_404(Gasto, pk=gasto_id, consorcio=consorcio, liquidacion__isnull=True)
     gasto.delete()
     messages.success(request, "Gasto eliminado del libro diario.")
-    return redirect('libro_diario')
+    return redirect('libro_diario')
