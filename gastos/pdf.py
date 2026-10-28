@@ -319,8 +319,8 @@ def _tabla_detalle_uf(liquidacion, est):
     for detalle in detalles:
         uf = detalle.unidad_funcional
         propietario = (
-            uf.propietario.usuario.get_full_name()
-            or uf.propietario.usuario.username
+            uf.propietario.usuario.get_full_name() or uf.propietario.usuario.username
+            if uf.propietario_id else 'Pendiente de propietario'
         )
         filas.append([
             Paragraph(str(uf.pk).zfill(3), est["th"]),
@@ -372,7 +372,7 @@ def generar_recibo_pago_pdf(pago):
     detalle = pago.detalle_liquidacion
     uf = detalle.unidad_funcional
     consorcio = detalle.liquidacion.consorcio
-    usuario = uf.propietario.usuario
+    usuario = uf.propietario.usuario if uf.propietario_id else None
     unidad = f"Piso {uf.piso}" + (f" · Depto. {uf.departamento}" if uf.departamento else "")
 
     banner = Table([
@@ -388,7 +388,7 @@ def generar_recibo_pago_pdf(pago):
         ("Consorcio", f"{_txt(consorcio.nombre)} · CUIT {_txt(consorcio.cuit)}"),
         ("Domicilio", f"{_txt(consorcio.calle)} {_txt(consorcio.altura)}"),
         ("Unidad funcional", _txt(unidad)),
-        ("Propietario", _txt(usuario.get_full_name() or usuario.username)),
+        ("Propietario", _txt((usuario.get_full_name() or usuario.username) if usuario else 'Sin propietario asignado')),
         ("Fecha de pago", _fecha(pago.fecha_pago)),
         ("Período informado", _periodo(detalle.liquidacion.periodo)),
     ]

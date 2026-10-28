@@ -1,0 +1,187 @@
+.uf-invitacion-ayuda {
+    margin: .55rem 0 1rem;
+    padding: .75rem 1rem;
+    border-left: 3px solid #39bdf8;
+    border-radius: 0 8px 8px 0;
+    background: rgba(57, 189, 248, .09);
+    color: var(--colorTextoSecundario, #a9c2dd);
+}
+
+.uf-pendiente {
+    display: inline-flex;
+    align-items: center;
+    padding: .2rem .55rem;
+    border: 1px solid rgba(96, 165, 250, .38);
+    border-radius: 999px;
+    background: rgba(59, 130, 246, .12);
+    color: #8fcaff;
+    font-size: .82em;
+    font-weight: 700;
+}
+
+.invitacion-propietario-form {
+    display: grid;
+    gap: 1rem;
+    padding: 1.75rem 2rem 2rem;
+    background: #122a48;
+}
+
+.invitacion-propietario-page {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: min(76vh, 820px);
+    padding: clamp(1rem, 4vw, 3rem);
+    box-sizing: border-box;
+}
+
+.invitacion-propietario-card {
+    width: min(100%, 720px);
+    overflow: hidden;
+    border: 1px solid #456589;
+    border-radius: 16px;
+    background: #172f4e;
+    color: #e8f1fc;
+    box-shadow: 0 18px 45px rgba(3, 14, 31, .32);
+}
+
+.invitacion-propietario-header {
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 1px solid rgba(149, 181, 215, .2);
+    background: linear-gradient(135deg, #203c60 0%, #1a3455 100%);
+}
+
+.invitacion-propietario-eyebrow {
+    margin: 0 0 .65rem;
+    color: #55c8f5;
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+}
+
+.invitacion-propietario-header h1 {
+    margin: 0 0 .8rem;
+    color: #f2f7ff;
+    font-family: 'Exo 2', sans-serif;
+    font-size: clamp(1.55rem, 4vw, 2rem);
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.invitacion-propietario-header > p:not(.invitacion-propietario-eyebrow) {
+    margin: .35rem 0 0;
+    color: #b7cbe2;
+    font-size: .98rem;
+    line-height: 1.55;
+}
+
+.invitacion-propietario-header .invitacion-propietario-unidad {
+    display: inline-flex;
+    margin-top: .1rem;
+    padding: .35rem .7rem;
+    border: 1px solid rgba(85, 200, 245, .3);
+    border-radius: 999px;
+    background: rgba(48, 155, 211, .12);
+    color: #8edcff;
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.invitacion-propietario-campo {
+    display: grid;
+    gap: .5rem;
+    color: #dce9f8;
+    font-size: .92rem;
+    font-weight: 700;
+}
+
+.invitacion-propietario-campo input {
+    width: 100%;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: .7rem .85rem;
+    border: 1px solid #718ba9;
+    border-radius: 9px;
+    outline: none;
+    background: #e4edf8;
+    color: #142947;
+    font: 500 .95rem 'Nunito', sans-serif;
+    transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.invitacion-propietario-campo input:focus {
+    border-color: #55c8f5;
+    background: #f4f8fd;
+    box-shadow: 0 0 0 3px rgba(85, 200, 245, .2);
+}
+
+.invitacion-propietario-campo input:disabled {
+    border-color: #526d8c;
+    background: #cfdae8;
+    color: #334d6b;
+    opacity: 1;
+}
+
+.invitacion-propietario-boton {
+    justify-self: start;
+    min-height: 44px;
+    margin-top: .4rem;
+    padding: .7rem 1.15rem;
+    border: 1px solid #4a92ff;
+    border-radius: 9px;
+    background: #3b82f6;
+    color: #fff;
+    font: 700 .95rem 'Nunito', sans-serif;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.invitacion-propietario-boton:hover {
+    background: #2872e8;
+    box-shadow: 0 5px 14px rgba(14, 87, 190, .28);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.invitacion-propietario-error,
+.invitacion-propietario-error-campo {
+    color: #ffb7c0;
+}
+
+.invitacion-propietario-error {
+    padding: .8rem 1rem;
+    border: 1px solid rgba(255, 119, 137, .38);
+    border-radius: 9px;
+    background: rgba(185, 50, 69, .16);
+}
+
+.invitacion-propietario-error-campo {
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .invitacion-propietario-page {
+        min-height: auto;
+        padding: 1rem .75rem 2rem;
+    }
+
+    .invitacion-propietario-card {
+        border-radius: 13px;
+    }
+
+    .invitacion-propietario-header {
+        padding: 1.4rem 1.2rem 1.2rem;
+    }
+
+    .invitacion-propietario-form {
+        padding: 1.25rem 1.2rem 1.4rem;
+    }
+
+    .invitacion-propietario-boton {
+        width: 100%;
+    }
+}

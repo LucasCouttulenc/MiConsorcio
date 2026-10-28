@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Invitación a una unidad{% endblock %}
+
+{% block content %}
+{% include "componentes/mensajes.html" %}
+<section class="invitacion-propietario-page">
+    <div class="invitacion-propietario-card">
+        {% if vencida %}
+            <div class="invitacion-propietario-header">
+                <p class="invitacion-propietario-eyebrow">INVITACIÓN DE PROPIETARIO</p>
+                <h1>La invitación venció</h1>
+                <p>Pedile a la administración que vuelva a enviar la invitación para esta unidad.</p>
+            </div>
+        {% elif ya_aceptada %}
+            <div class="invitacion-propietario-header">
+                <p class="invitacion-propietario-eyebrow">INVITACIÓN DE PROPIETARIO</p>
+                <h1>La invitación ya fue utilizada</h1>
+                <p>Esta unidad ya está vinculada a una cuenta. Iniciá sesión para verla.</p>
+                <a class="invitacion-propietario-boton" href="{% url 'login' %}">Iniciar sesión</a>
+            </div>
+        {% elif error_invitacion %}
+            <div class="invitacion-propietario-header">
+                <p class="invitacion-propietario-eyebrow">INVITACIÓN DE PROPIETARIO</p>
+                <h1>No se pudo vincular la unidad</h1>
+                <p>{{ error_invitacion }}</p>
+            </div>
+        {% else %}
+            <header class="invitacion-propietario-header">
+                <p class="invitacion-propietario-eyebrow">INVITACIÓN DE PROPIETARIO</p>
+                <h1>Unite a {{ unidad.consorcio.nombre }}</h1>
+                <p class="invitacion-propietario-unidad">Piso {{ unidad.piso }}{% if unidad.departamento %} · Departamento {{ unidad.departamento }}{% endif %}</p>
+                <p>El correo de esta invitación quedará asociado a tu cuenta.</p>
+            </header>
+
+            <form method="post" class="invitacion-propietario-form">
+                {% csrf_token %}
+                {% if formulario.non_field_errors %}<div class="invitacion-propietario-error">{{ formulario.non_field_errors }}</div>{% endif %}
+                {% for campo in formulario %}
+                    <label class="invitacion-propietario-campo">
+                        <span>{{ campo.label }}</span>
+                        {{ campo }}
+                        {% for error in campo.errors %}<small class="invitacion-propietario-error-campo">{{ error }}</small>{% endfor %}
+                    </label>
+                {% endfor %}
+                <button type="submit" class="invitacion-propietario-boton">Crear cuenta y vincular unidad</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

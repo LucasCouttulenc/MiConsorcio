@@ -51,3 +51,30 @@ class FormularioLogin(AuthenticationForm):
                 css_class='flex center column contenedor-boton'
             )
         )
+
+
+class FormularioRegistroPropietario(forms.Form):
+    email = forms.EmailField(label='Correo electrónico', disabled=True)
+    nombre = forms.CharField(max_length=150, label='Nombre')
+    apellido = forms.CharField(max_length=150, label='Apellido')
+    password = forms.CharField(
+        label='Contraseña', strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+    )
+    confirmar_password = forms.CharField(
+        label='Confirmar contraseña', strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'new-password'}),
+    )
+
+    def __init__(self, *args, email, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].initial = email
+        self.email_invitacion = email
+
+    def clean(self):
+        datos = super().clean()
+        password = datos.get('password')
+        confirmar = datos.get('confirmar_password')
+        if password and confirmar and password != confirmar:
+            self.add_error('confirmar_password', 'Las contraseñas no coinciden.')
+        return datos

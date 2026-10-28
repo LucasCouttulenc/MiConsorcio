@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Generar Liquidación de Expensas</title>
-    <link rel="stylesheet" href="{% static 'css/_generar_liquidacion.css' %}">
+    <link rel="stylesheet" href="{% static 'css/_generar_liquidacion.css' %}?v=20261027-alicuotas-alerta">
 </head>
 <body>
 
@@ -20,13 +20,29 @@
 
     <!-- ALERTA DE GASTOS SIN CERRAR EN CAJA -->
     {% if gastos_sin_cerrar > 0 %}
-    <div class="alerta alerta-warning" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 1rem; border-radius: 8px;">
-        <span style="font-size: 1.5rem;">⚠️</span>
+    <div class="alerta alerta-warning" role="status" style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 1rem; border-radius: 8px;">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 24px;">
+            <path d="M12 3 2.8 20h18.4L12 3Z"></path>
+            <path d="M12 9v4"></path>
+            <path d="M12 17h.01"></path>
+        </svg>
         <div>
             <strong>Atención:</strong> Tenés {{ gastos_sin_cerrar }} movimiento(s) en el Libro Diario que aún no se pasaron a Caja. 
             Podés continuar con la liquidación sin problemas, pero te recomendamos cerrarlos para mantener el balance al día.
         </div>
     </div>
+    {% endif %}
+
+    {% if not alicuotas_validas %}
+        <section class="gl-alicuotas-warning" role="alert" aria-live="assertive">
+            <div class="gl-alicuotas-warning-icon" aria-hidden="true">!</div>
+            <div>
+                <h3>Revisá los porcentajes antes de finalizar</h3>
+                <p>Las alícuotas de <strong>{{ consorcio.nombre }}</strong> suman <strong>{{ suma_alicuotas }}%</strong> y deben sumar <strong>100%</strong> para poder cerrar la liquidación.</p>
+                <p>Podés seguir cargando gastos: el borrador se guarda normalmente. Para finalizar, corregí los porcentajes.</p>
+                <a href="{% url 'definir_alicuotas' %}">Ir a corregir alícuotas</a>
+            </div>
+        </section>
     {% endif %}
 
     <form method="POST" action="{% url 'finalizar_liquidacion' %}" id="form-liquidacion" data-autosave-url="{% url 'autosave_liquidacion' %}">

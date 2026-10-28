@@ -43,6 +43,59 @@
     width: 100%;
 }
 
+.gl-alicuotas-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin: 0 0 1.25rem;
+    padding: 1.1rem 1.25rem;
+    color: #7f1d1d;
+    background: #fff1f0;
+    border: 2px solid #dc554f;
+    border-left-width: 7px;
+    border-radius: 10px;
+    box-shadow: 0 5px 16px rgba(74, 16, 16, 0.16);
+}
+
+.gl-alicuotas-warning-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2rem;
+    width: 2rem;
+    height: 2rem;
+    color: #fff;
+    background: #c53030;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.gl-alicuotas-warning h3 {
+    margin: 0 0 0.35rem;
+    color: #7f1d1d;
+    font-size: 1.05rem;
+}
+
+.gl-alicuotas-warning p {
+    margin: 0.25rem 0;
+    line-height: 1.45;
+}
+
+.gl-alicuotas-warning a {
+    display: inline-block;
+    margin-top: 0.4rem;
+    color: #123b75;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.gl-alicuotas-warning a:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
+}
+
 .gl-grid {
     display: grid;
     /* Fijamos el render en 420px (un poco más ancho para que respire) */

@@ -76,7 +76,7 @@
                     <tr>
                         <td class="col-uf">{{ detalle.unidad_funcional.pk|stringformat:"03d" }}</td>
                         <td class="col-dpto">{{ detalle.unidad_funcional.piso }}° {{ detalle.unidad_funcional.departamento|default:"" }}</td>
-                        <td class="col-prop">{{ detalle.unidad_funcional.propietario.usuario.get_full_name|default:detalle.unidad_funcional.propietario.usuario.username }}</td>
+                        <td class="col-prop">{% if detalle.unidad_funcional.propietario_id %}{{ detalle.unidad_funcional.propietario.usuario.get_full_name|default:detalle.unidad_funcional.propietario.usuario.username }}{% else %}<span class="uf-pendiente">Pendiente de propietario</span>{% endif %}</td>
                         <td class="col-num">{{ detalle.alicuota|floatformat:0 }}%</td>
                         <td class="col-num">$ {{ detalle.monto_ordinario|floatformat:"2g" }}</td>
                         <td class="col-num">$ {{ detalle.monto_extraordinario|floatformat:"2g" }}</td>

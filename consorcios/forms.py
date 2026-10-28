@@ -2,8 +2,7 @@ from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Submit, Div, HTML
 from django_flatpickr.widgets import DatePickerInput
-from django_select2.forms import Select2Widget
-from usuarios.models import Propietario,Administrador
+from usuarios.models import Administrador
 from .models import *
 
 class FormularioConsorcio(forms.ModelForm):
@@ -126,30 +125,16 @@ class FormularioPersonal(forms.ModelForm):
             Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')
         )
 
-from django.contrib.auth import get_user_model
-from usuarios.models import Propietario
-from crispy_forms.layout import HTML # Asegurate de que HTML esté importado
-
 class FormularioUnidadFuncional(forms.ModelForm):
     """
     Formulario para crear o editar una unidad funcional.
-    Permite elegir un propietario existente O crear uno nuevo.
+    La UF se crea sin propietario y se vincula cuando acepta la invitación enviada por correo.
     """
-    propietario = forms.ModelChoiceField(
-        queryset=Propietario.objects.all(), 
-        required=False, 
-        widget=Select2Widget(attrs={'data-placeholder': 'Buscar propietario existente...'}),
-        label="Propietario existente"
-    )
-    
-    # Campos para el nuevo propietario
-    nuevo_nombre = forms.CharField(max_length=100, required=False, label="Nombre (Nuevo)")
-    nuevo_apellido = forms.CharField(max_length=100, required=False, label="Apellido (Nuevo)")
-    nuevo_email = forms.EmailField(required=False, label="Email (Nuevo)")
+    email_propietario = forms.EmailField(label="Correo del propietario")
 
     class Meta:
         model = UnidadFuncional
-        fields = ["propietario", "consorcio", "piso", "departamento"]
+        fields = ["consorcio", "piso", "departamento"]
 
     def __init__(self, *args, **kwargs):
         consorcio = kwargs.pop('consorcio', None)
@@ -165,71 +150,32 @@ class FormularioUnidadFuncional(forms.ModelForm):
         # Bloqueamos el campo consorcio siempre
         self.fields['consorcio'].disabled = True
 
+        if self.instance and self.instance.pk and self.instance.propietario_id:
+            self.fields['email_propietario'].initial = self.instance.propietario.usuario.email
+            self.fields['email_propietario'].disabled = True
+            self.fields['email_propietario'].required = False
+            self.fields['email_propietario'].help_text = 'Esta UF ya está vinculada a un propietario.'
+        elif self.instance and self.instance.pk:
+            invitacion = getattr(self.instance, 'invitacion_propietario', None)
+            if invitacion:
+                self.fields['email_propietario'].initial = invitacion.email
+
         self.helper.layout = Layout(
             Row(
-                Column('propietario'),
+                Column('email_propietario'),
                 Column('consorcio'),
                 css_class='row'
             ),
-            HTML("<div style='text-align: center; margin: 1rem 0; color: #64748b; font-weight: 600;'>— O si es un propietario nuevo, completá estos campos —</div>"),
-            Row(
-                Column('nuevo_nombre'),
-                Column('nuevo_apellido'),
-                Column('nuevo_email'),
-                css_class='row'
-            ),
+            HTML("<p class='uf-invitacion-ayuda'>Le enviaremos un correo para que se registre o vincule esta unidad a su cuenta.</p>"),
             Row(
                 Column('piso'),
                 Column('departamento'),
                 css_class='row'
             ),
-            Div(Submit('submit', 'Aceptar', css_class='boton-primario'), css_class='flex wrap center')
+            Div(Submit(
+                'submit',
+                'Guardar cambios' if self.instance and self.instance.pk and self.instance.propietario_id
+                else ('Guardar y reenviar invitación' if self.instance and self.instance.pk else 'Crear UF y enviar invitación'),
+                css_class='boton-primario',
+            ), css_class='flex wrap center')
         )
-
-    def clean(self):
-        cleaned_data = super().clean()
-        propietario = cleaned_data.get('propietario')
-        nuevo_nombre = cleaned_data.get('nuevo_nombre')
-        nuevo_email = cleaned_data.get('nuevo_email')
-
-        # Validación 1: Al menos uno de los dos métodos debe estar completo
-        if not propietario and not (nuevo_nombre and nuevo_email):
-            raise forms.ValidationError("Tenés que seleccionar un propietario existente o completar al menos el Nombre y Email para crear uno nuevo.")
-        
-        # Validación 2: Si va a crear uno nuevo, nos aseguramos que el email no exista ya en la BD
-        if not propietario and nuevo_email:
-            User = get_user_model()
-            if User.objects.filter(username=nuevo_email).exists():
-                self.add_error('nuevo_email', f"El email {nuevo_email} ya está registrado en el sistema.")
-        
-        return cleaned_data
-
-    def save(self, commit=True):
-        """
-        Sobrescribimos el save para interceptar la creación.
-        Si no hay propietario pero hay datos de uno nuevo, lo creamos ANTES de guardar la UF.
-        """
-        instance = super().save(commit=False)
-        
-        if not instance.propietario_id and self.cleaned_data.get('nuevo_email'):
-            User = get_user_model()
-            email = self.cleaned_data['nuevo_email']
-            
-            # Creamos el usuario
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                first_name=self.cleaned_data.get('nuevo_nombre'),
-                last_name=self.cleaned_data.get('nuevo_apellido', ''),
-                password='Consorcio1234' # Contraseña por defecto
-            )
-            
-            # Creamos el Propietario y se lo asignamos a la instancia de la UF
-            propietario = Propietario.objects.create(usuario=user)
-            instance.propietario = propietario
-
-        # Recién ahora que la UF tiene un propietario_id válido, la guardamos en la DB
-        if commit:
-            instance.save()
-            
-        return instance

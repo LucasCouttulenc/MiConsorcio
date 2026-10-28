@@ -5,7 +5,7 @@
     <div class="mor-cabecera">
         <div>
             <a class="mor-volver" href="{% url 'morosidad' %}">← Morosidad</a>
-            <h1 class="titulo">Piso {{ unidad.piso }}{% if unidad.departamento %} · {{ unidad.departamento }}{% endif %} — {{ unidad.propietario.usuario.get_full_name|default:unidad.propietario.usuario.username }}</h1>
+            <h1 class="titulo">Piso {{ unidad.piso }}{% if unidad.departamento %} · {{ unidad.departamento }}{% endif %} — {% if unidad.propietario_id %}{{ unidad.propietario.usuario.get_full_name|default:unidad.propietario.usuario.username }}{% else %}Pendiente de propietario{% endif %}</h1>
             <p class="mor-sub">{{ unidad.consorcio.nombre }} · Alícuota {{ unidad.alicuota|floatformat:"-2" }}%</p>
         </div>
         {% if resumen.total %}<span class="mor-badge mor-{{ nivel }} mor-badge-grande">{% if resumen.dias_atraso %}{{ resumen.dias_atraso }} día{{ resumen.dias_atraso|pluralize }} de atraso{% else %}Sin vencer{% endif %}</span>

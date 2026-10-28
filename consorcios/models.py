@@ -122,7 +122,9 @@ class UnidadFuncional(models.Model):
         verbose_name = "Unidad Funcional"
         verbose_name_plural = "Unidades Funcionales"
 
-    propietario = models.ForeignKey('usuarios.Propietario', on_delete=models.CASCADE)
+    propietario = models.ForeignKey(
+        'usuarios.Propietario', on_delete=models.SET_NULL, null=True, blank=True,
+    )
     consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='unidades_funcionales')
     piso = models.PositiveIntegerField(verbose_name="Piso")
     departamento = models.CharField(max_length=10, verbose_name="Departamento", blank=True, null=True)
@@ -133,7 +135,8 @@ class UnidadFuncional(models.Model):
     )
 
     def __str__(self):
-        return f"{self.piso}° {self.departamento} (Propietario: {self.propietario})"
+        propietario = self.propietario or 'Pendiente de propietario'
+        return f"{self.piso}° {self.departamento} (Propietario: {propietario})"
 
     def save(self, *args, **kwargs):
         if UnidadFuncional.objects.filter(

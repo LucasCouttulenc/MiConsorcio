@@ -34,7 +34,7 @@
         {% for fila in filas %}
             <tr>
                 <td><strong>Piso {{ fila.unidad.piso }}{% if fila.unidad.departamento %} · {{ fila.unidad.departamento }}{% endif %}</strong></td>
-                <td>{{ fila.unidad.propietario.usuario.get_full_name|default:fila.unidad.propietario.usuario.username }}</td>
+                <td>{% if fila.unidad.propietario_id %}{{ fila.unidad.propietario.usuario.get_full_name|default:fila.unidad.propietario.usuario.username }}{% else %}<span class="uf-pendiente">Pendiente de propietario</span>{% endif %}</td>
                 <td>{{ fila.periodos_impagos }}{% if fila.desde %}<small>desde {{ fila.desde }}</small>{% endif %}</td>
                 <td>
                     {% if fila.total %}<span class="mor-badge mor-{{ fila.nivel }}">{% if fila.dias_atraso %}{{ fila.dias_atraso }} día{{ fila.dias_atraso|pluralize }}{% else %}Sin vencer{% endif %}</span>{% else %}<span class="mor-badge mor-al-dia">Al día</span>{% endif %}

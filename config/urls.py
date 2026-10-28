@@ -36,6 +36,7 @@ urlpatterns = [
     path('cerrar-sesion/', auth_views.LogoutView.as_view(next_page='login'), name='cerrar_sesion'),
     path('usuarios/login/', views_usuarios.login, name='login'),
     path('usuarios/bienvenida/', views_usuarios.bienvenida, name='bienvenida'),
+    path('invitacion/propietario/<str:token>/', views_usuarios.aceptar_invitacion_propietario, name='aceptar_invitacion_propietario'),
     path('cambiar-consorcio/', views_usuarios.cambiar_consorcio_activo, name='cambiar_consorcio_activo'),
     
     # Consorcios

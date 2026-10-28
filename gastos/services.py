@@ -188,8 +188,9 @@ def generar_pdf_liquidacion(liquidacion):
     unidades = [['Unidad', 'Propietario', 'Ordinario', 'Extraordinario', 'Total']]
     for detalle in liquidacion.detalles_uf.select_related('unidad_funcional__propietario__usuario').all():
         uf = detalle.unidad_funcional
+        nombre_propietario = (uf.propietario.usuario.get_full_name() or uf.propietario.usuario.username) if uf.propietario_id else 'Pendiente de propietario'
         unidades.append([f'{uf.piso}° {uf.departamento or ""}',
-                         Paragraph(escape(uf.propietario.usuario.get_full_name() or uf.propietario.usuario.username), estilos['Normal']),
+                         Paragraph(escape(nombre_propietario), estilos['Normal']),
                          f'$ {detalle.monto_ordinario:.2f}',
                          f'$ {detalle.monto_extraordinario:.2f}', f'$ {detalle.monto_total:.2f}'])
     tabla_uf = Table(unidades, colWidths=[75, 145, 90, 95, 90], repeatRows=1)
@@ -213,8 +214,8 @@ def generar_resumen_uf_pdf(detalle):
     consorcio = liquidacion.consorcio
     admin = (liquidacion.datos_borrador or {}).get('administracion', {})
     propietario = (
-        uf.propietario.usuario.get_full_name()
-        or uf.propietario.usuario.username
+        uf.propietario.usuario.get_full_name() or uf.propietario.usuario.username
+        if uf.propietario_id else 'Pendiente de propietario'
     )
 
     detalle_gastos = calcular_detalle_uf(detalle)

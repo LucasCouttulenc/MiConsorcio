@@ -53,7 +53,9 @@
                                 <span class="uf-piso">{{ uf.piso }}°</span>
                                 <span class="uf-depto">{{ uf.departamento|default:"—" }}</span>
                             </td>
-                            <td class="col-prop" title="{{ uf.propietario }}">{{ uf.propietario }}</td>
+                            <td class="col-prop" title="{% if uf.propietario_id %}{{ uf.propietario }}{% else %}Pendiente de propietario{% endif %}">
+                                {% if uf.propietario_id %}{{ uf.propietario }}{% else %}<span class="uf-pendiente">Pendiente de propietario</span>{% endif %}
+                            </td>
                             <td class="col-alicuota">
                                 <div class="input-wrapper">
                                     <input type="number" step="0.0001" min="0" max="100"

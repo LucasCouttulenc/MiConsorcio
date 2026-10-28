@@ -84,6 +84,14 @@ class TablaUnidadesFuncionales(tables.Table):
             return f"{value:.0f}%" # Convierte a entero (ej: 20.0000 -> 20)
         return "-"
 
+    def render_propietario(self, value, record):
+        if value:
+            return value
+        invitacion = getattr(record, 'invitacion_propietario', None)
+        if invitacion:
+            return f'Invitación pendiente · {invitacion.email}'
+        return 'Sin propietario asignado'
+
     # Acciones
     gestionar = TemplateColumn(
         template_code='<a href="{% url "gestionar_unidad_funcional" record.id %}" class="tabla__boton-accion-registro">Modificar</a>',
@@ -113,5 +121,6 @@ class FiltroUnidadesFuncionales(django_filters.FilterSet):
             Q(piso__icontains=value) |
             Q(departamento__icontains=value) |
             Q(propietario__usuario__first_name__icontains=value) |
-            Q(propietario__usuario__last_name__icontains=value) 
+            Q(propietario__usuario__last_name__icontains=value) |
+            Q(invitacion_propietario__email__icontains=value)
         )

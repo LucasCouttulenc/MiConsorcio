@@ -244,18 +244,9 @@ def leer_datos(request, finalizar=False):
     }
 
 
-def guardar_borrador(request, finalizar=False):
+def guardar_borrador(request, finalizar=False, actualizar_existente=False):
     consorcio, periodo, cierre, vencimiento, datos = leer_datos(request, finalizar)
-    
-    if not consorcio_tiene_alicuotas_validas(consorcio):
-        raise ValueError(
-            f"El consorcio '{consorcio.nombre}' no tiene sus alícuotas sumando 100% "
-            f"(suma actual: {suma_alicuotas(consorcio)}%). "
-            "Corregí las alícuotas antes de liquidar."
-        )
-    
-    
-    
+
     liquidacion_id = request.POST.get('liquidacion_id', '')
     if liquidacion_id:
         liquidacion = liquidacion_permitida(request, liquidacion_id)
@@ -264,12 +255,15 @@ def guardar_borrador(request, finalizar=False):
             if existente:
                 if existente.cerrada:
                     raise ValueError('Ya existe una liquidación finalizada para ese período.')
-                raise BorradorExistente(existente)
-            liquidacion.consorcio = consorcio
-            liquidacion.periodo = periodo
+                if not actualizar_existente:
+                    raise BorradorExistente(existente)
+                liquidacion = existente
+            else:
+                liquidacion.consorcio = consorcio
+                liquidacion.periodo = periodo
     else:
         liquidacion, creado = Liquidacion.objects.get_or_create(consorcio=consorcio, periodo=periodo)
-        if not creado and not liquidacion.cerrada:
+        if not creado and not liquidacion.cerrada and not actualizar_existente:
             raise BorradorExistente(liquidacion)
     if liquidacion.cerrada:
         raise ValueError('Esta liquidación ya fue finalizada y no puede modificarse.')
@@ -385,6 +379,8 @@ def generar_liquidacion(request, liquidacion_id=None):
     return render(request, 'generar_liquidacion.html', {
         'consorcio': consorcio, 
         'liquidacion': liquidacion,
+        'alicuotas_validas': consorcio_tiene_alicuotas_validas(consorcio),
+        'suma_alicuotas': suma_alicuotas(consorcio),
         'datos_iniciales': liquidacion.datos_borrador if liquidacion else {},
         'rubros_por_consorcio': rubros_por_consorcio,
         'columnas_por_rubro': columnas_por_rubro,
@@ -399,6 +395,29 @@ def generar_liquidacion(request, liquidacion_id=None):
 @permission_required('consorcios.view_consorcio', raise_exception=True)
 @require_POST
 def finalizar_liquidacion(request):
+    try:
+        consorcio, *_ = leer_datos(request)
+        if not consorcio_tiene_alicuotas_validas(consorcio):
+            # Guardar antes de salir: si se intentara dentro de la transacción
+            # de finalización, el rollback eliminaría también el borrador.
+            liquidacion = guardar_borrador(request, actualizar_existente=True)
+            messages.error(
+                request,
+                f"No se puede finalizar la liquidación: las alícuotas de '{consorcio.nombre}' "
+                f"suman {suma_alicuotas(consorcio)}% y deben sumar 100%. "
+                "El borrador quedó guardado. Corregí los porcentajes y volvé a finalizar.",
+            )
+            return redirect('editar_liquidacion', liquidacion_id=liquidacion.pk)
+    except BorradorExistente as exc:
+        messages.info(request, str(exc))
+        return redirect(exc.url)
+    except (ValueError, Http404) as exc:
+        messages.error(request, str(exc))
+        borrador_id = request.POST.get('liquidacion_id', '')
+        if borrador_id.isdecimal():
+            return redirect('editar_liquidacion', liquidacion_id=borrador_id)
+        return redirect('generar_liquidacion')
+
     try:
         with transaction.atomic():
             liquidacion = guardar_borrador(request, finalizar=True)
@@ -480,6 +499,7 @@ def finalizar_liquidacion(request):
                     detalle_liquidacion=detalle,
                 )
                 for detalle in liquidacion.detalles_uf.select_related('unidad_funcional__propietario')
+                if detalle.unidad_funcional.propietario_id
             ], ignore_conflicts=True)
     except BorradorExistente as exc:
         messages.info(request, str(exc))
