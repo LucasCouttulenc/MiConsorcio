@@ -17,7 +17,9 @@ from .models import InvitacionPropietario, Propietario
 
 
 def pagina_inicial(usuario):
-    """El propietario arranca en su Inicio; el resto, en la bienvenida."""
+    """El propietario arranca en su Inicio; quien administra algún consorcio (aunque también sea propietario), en la bienvenida."""
+    if consorcios_permitidos(usuario).exists():
+        return redirect('bienvenida')
     if Propietario.objects.filter(usuario=usuario).exists():
         return redirect('inicio_propietario')
     return redirect('bienvenida')

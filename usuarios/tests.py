@@ -165,7 +165,6 @@ class ConsorcioActivoTests(TestCase):
         self.assertSinTocarElAjeno()
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class InvitacionPropietarioTests(TestCase):
     """El link de invitación crea la cuenta del propietario o, si ya existe, pide su contraseña."""
 
@@ -261,3 +260,62 @@ class InvitacionPropietarioTests(TestCase):
         self.assertRedirects(respuesta, reverse('inicio_propietario'), fetch_redirect_response=False)
         self.unidad.refresh_from_db()
         self.assertEqual(self.unidad.propietario.usuario, usuario)
+
+
+class GestionPropietarioUFTests(TestCase):
+    """El admin cambia el propietario de una UF desde su correo, y editar otros datos no manda mails."""
+
+    def setUp(self):
+        from django.core import mail
+        self.consorcio = crear_consorcio('Torre Uno', '30712345678')
+        self.admin = crear_usuario('admin', GRUPO_ADMINISTRADORES, PERMISOS_ADMINISTRADORES)
+        Administrador.objects.create(usuario=self.admin).consorcios.add(self.consorcio)
+        self.client.force_login(self.admin)
+        self.client.post(reverse('cambiar_consorcio_activo'), {'consorcio_id': self.consorcio.pk})
+        self.unidad = UnidadFuncional.objects.create(consorcio=self.consorcio, piso=1, departamento='A')
+        mail.outbox = []
+
+    def guardar(self, email, **extra):
+        datos = {'email_propietario': email, 'piso': self.unidad.piso, 'departamento': self.unidad.departamento}
+        datos.update(extra)
+        return self.client.post(reverse('gestionar_unidad_funcional', args=[self.unidad.pk]), datos)
+
+    def test_editar_el_piso_de_una_uf_pendiente_no_reenvia_el_mail(self):
+        from django.core import mail
+        self.guardar('nuevo@correo.com')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertContains(self.client.get(reverse('gestionar_unidad_funcional', args=[self.unidad.pk])), 'reenviar_invitacion')
+        self.guardar('nuevo@correo.com', piso=3)
+        self.assertEqual(len(mail.outbox), 1)
+        self.guardar('nuevo@correo.com', reenviar_invitacion='on')
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_cambiar_el_correo_pasa_la_uf_a_otro_propietario(self):
+        from django.core import mail
+        viejo = User.objects.create_user('viejo@correo.com', email='viejo@correo.com', password='clave')
+        self.unidad.propietario = Propietario.objects.create(usuario=viejo)
+        self.unidad.save()
+        nueva = User.objects.create_user('nueva@correo.com', email='nueva@correo.com', password='clave')
+        pantalla = self.client.get(reverse('gestionar_unidad_funcional', args=[self.unidad.pk]))
+        self.assertContains(pantalla, 'viejo@correo.com')
+        self.assertNotContains(pantalla, 'reenviar_invitacion')
+        self.guardar('nueva@correo.com')
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.propietario.usuario, nueva)
+        self.assertEqual(mail.outbox, [])
+
+    def test_cambiar_el_correo_a_uno_sin_cuenta_desvincula_e_invita(self):
+        from django.core import mail
+        viejo = User.objects.create_user('viejo@correo.com', email='viejo@correo.com', password='clave')
+        self.unidad.propietario = Propietario.objects.create(usuario=viejo)
+        self.unidad.save()
+        self.guardar('nuevo@correo.com')
+        self.unidad.refresh_from_db()
+        self.assertIsNone(self.unidad.propietario_id)
+        self.assertEqual(mail.outbox[-1].to, ['nuevo@correo.com'])
+
+    def test_admin_que_tambien_es_propietario_entra_por_la_bienvenida(self):
+        from usuarios.views import pagina_inicial
+        self.unidad.propietario = Propietario.objects.create(usuario=self.admin)
+        self.unidad.save()
+        self.assertEqual(pagina_inicial(self.admin).url, reverse('bienvenida'))

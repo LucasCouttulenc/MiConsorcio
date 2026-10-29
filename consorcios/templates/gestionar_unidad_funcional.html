@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="{% static 'css/_formulario.css' %}">
 
 <h1 class="titulo">Gestionar unidad funcional</h1>
-{% if not unidad_funcional.propietario_id %}<p class="uf-invitacion-ayuda">Esta UF todavía no tiene propietario vinculado. Guardar los cambios vuelve a enviar la invitación al correo indicado.</p>{% endif %}
+{% if not unidad_funcional.propietario_id %}<p class="uf-invitacion-ayuda">Esta UF todavía no tiene propietario vinculado. Si el propietario perdió el mail, marcá "Reenviar la invitación" al guardar.</p>{% endif %}
 <a href="{% url 'listar_unidades_funcionales' %}" class="link-cancelar"> ↩ Cancelar</a>
 <div class="flex around">
     <div>

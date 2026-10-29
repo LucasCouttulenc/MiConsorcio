@@ -163,15 +163,23 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Email: en desarrollo se imprime en la consola; el host SMTP se activa por variables de entorno.
-EMAIL_HOST = config('EMAIL_HOST', default='')
-EMAIL_BACKEND = (
-    'django.core.mail.backends.smtp.EmailBackend'
-    if EMAIL_HOST else 'django.core.mail.backends.console.EmailBackend'
-)
-EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=False, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=10, cast=int)
+# Las variables del .env siguen llamándose EMAIL_*, pero se cargan en MAILERS (Django 6.1+).
+_EMAIL_HOST = config('EMAIL_HOST', default='')
+if _EMAIL_HOST:
+    MAILERS = {
+        'default': {
+            'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+            'OPTIONS': {
+                'host': _EMAIL_HOST,
+                'port': config('EMAIL_PORT', default=587, cast=int),
+                'username': config('EMAIL_HOST_USER', default=''),
+                'password': config('EMAIL_HOST_PASSWORD', default=''),
+                'use_tls': config('EMAIL_USE_TLS', default=True, cast=bool),
+                'use_ssl': config('EMAIL_USE_SSL', default=False, cast=bool),
+                'timeout': config('EMAIL_TIMEOUT', default=10, cast=int),
+            },
+        },
+    }
+else:
+    MAILERS = {'default': {'BACKEND': 'django.core.mail.backends.console.EmailBackend'}}
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='MiConsorcios <no-reply@localhost>')

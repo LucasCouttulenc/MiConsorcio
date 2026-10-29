@@ -23,7 +23,7 @@ from usuarios.invitaciones import asignar_propietario
 def _mensaje_invitacion_enviada(resultado='invitada'):
     if resultado == 'vinculada':
         return "El correo ya tenía una cuenta, así que la UF se sumó directo a ese propietario."
-    if settings.EMAIL_BACKEND.endswith('console.EmailBackend'):
+    if settings.MAILERS['default']['BACKEND'].endswith('console.EmailBackend'):
         return "La invitación quedó impresa en la consola de desarrollo."
     return "Se envió la invitación al propietario."
 
@@ -203,13 +203,19 @@ def gestionar_unidad_funcional(request, unidad_id):
         except Exception:
             messages.error(request, "No se pudieron guardar los cambios de la unidad funcional.")
         else:
-            if not unidad_funcional.propietario_id:
+            # Solo se toca el propietario si cambió el correo o el admin pidió reenviar la invitación:
+            # editar el piso o el depto no manda mails ni invalida el link que ya tiene el propietario.
+            cambio_email = form.email_cambio()
+            if cambio_email or form.cleaned_data.get('reenviar_invitacion'):
+                if cambio_email and unidad_funcional.propietario_id:
+                    unidad_funcional.propietario = None
+                    unidad_funcional.save(update_fields=['propietario'])
                 try:
                     resultado = asignar_propietario(
                         unidad_funcional, form.cleaned_data['email_propietario'], request,
                     )
                 except Exception:
-                    messages.error(request, "Los datos se guardaron, pero no se pudo enviar el correo. Revisá la configuración y volvé a guardar para reenviar.")
+                    messages.error(request, "Los datos se guardaron, pero no se pudo enviar el correo. Revisá la configuración y reenviá la invitación desde esta pantalla.")
                 else:
                     messages.success(request, f"Los datos se guardaron. {_mensaje_invitacion_enviada(resultado)}")
             else:

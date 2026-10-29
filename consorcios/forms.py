@@ -128,9 +128,13 @@ class FormularioPersonal(forms.ModelForm):
 class FormularioUnidadFuncional(forms.ModelForm):
     """
     Formulario para crear o editar una unidad funcional.
-    La UF se crea sin propietario y se vincula cuando acepta la invitación enviada por correo.
+    La UF se crea sin propietario y se vincula cuando acepta la invitación enviada por correo
+    (o directo, si el correo ya tiene cuenta). Cambiar el correo pasa la UF a ese otro propietario.
     """
     email_propietario = forms.EmailField(label="Correo del propietario")
+    reenviar_invitacion = forms.BooleanField(
+        label="Reenviar la invitación (el link anterior deja de funcionar)", required=False,
+    )
 
     class Meta:
         model = UnidadFuncional
@@ -150,15 +154,21 @@ class FormularioUnidadFuncional(forms.ModelForm):
         # Bloqueamos el campo consorcio siempre
         self.fields['consorcio'].disabled = True
 
-        if self.instance and self.instance.pk and self.instance.propietario_id:
-            self.fields['email_propietario'].initial = self.instance.propietario.usuario.email
-            self.fields['email_propietario'].disabled = True
-            self.fields['email_propietario'].required = False
-            self.fields['email_propietario'].help_text = 'Esta UF ya está vinculada a un propietario.'
+        # Correo con el que está la UF hoy: el de su propietario o el de la invitación pendiente.
+        self.email_actual = ''
+        con_propietario = bool(self.instance and self.instance.pk and self.instance.propietario_id)
+        if con_propietario:
+            usuario = self.instance.propietario.usuario
+            self.email_actual = usuario.email or usuario.username
+            self.fields['email_propietario'].help_text = 'Si cambiás el correo, la UF pasa a ese otro propietario.'
         elif self.instance and self.instance.pk:
             invitacion = getattr(self.instance, 'invitacion_propietario', None)
             if invitacion:
-                self.fields['email_propietario'].initial = invitacion.email
+                self.email_actual = invitacion.email
+        self.fields['email_propietario'].initial = self.email_actual
+        pendiente = bool(self.instance and self.instance.pk and not con_propietario)
+        if not pendiente:
+            del self.fields['reenviar_invitacion']
 
         self.helper.layout = Layout(
             Row(
@@ -166,16 +176,20 @@ class FormularioUnidadFuncional(forms.ModelForm):
                 Column('consorcio'),
                 css_class='row'
             ),
-            HTML("<p class='uf-invitacion-ayuda'>Si el correo ya tiene cuenta, la unidad se suma directo; si no, le enviamos un link para que cree su cuenta.</p>"),
             Row(
                 Column('piso'),
                 Column('departamento'),
                 css_class='row'
             ),
+            'reenviar_invitacion' if pendiente else HTML(''),
             Div(Submit(
                 'submit',
-                'Guardar cambios' if self.instance and self.instance.pk and self.instance.propietario_id
-                else ('Guardar y reenviar invitación' if self.instance and self.instance.pk else 'Crear UF y enviar invitación'),
+                'Guardar cambios' if self.instance and self.instance.pk else 'Crear UF',
                 css_class='boton-primario',
             ), css_class='flex wrap center')
         )
+
+    def email_cambio(self):
+        """True si el admin cargó un correo distinto al que tenía la UF."""
+        nuevo = self.cleaned_data.get('email_propietario', '').strip().lower()
+        return nuevo != self.email_actual.strip().lower()
