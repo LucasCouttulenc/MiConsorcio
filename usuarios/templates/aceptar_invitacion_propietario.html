@@ -30,7 +30,11 @@
                 <p class="invitacion-propietario-eyebrow">INVITACIÓN DE PROPIETARIO</p>
                 <h1>Unite a {{ unidad.consorcio.nombre }}</h1>
                 <p class="invitacion-propietario-unidad">Piso {{ unidad.piso }}{% if unidad.departamento %} · Departamento {{ unidad.departamento }}{% endif %}</p>
+                {% if cuenta_existente %}
+                <p>Ya tenés una cuenta con este correo. Ingresá tu contraseña para sumar esta unidad.</p>
+                {% else %}
                 <p>El correo de esta invitación quedará asociado a tu cuenta.</p>
+                {% endif %}
             </header>
 
             <form method="post" class="invitacion-propietario-form">
@@ -43,7 +47,7 @@
                         {% for error in campo.errors %}<small class="invitacion-propietario-error-campo">{{ error }}</small>{% endfor %}
                     </label>
                 {% endfor %}
-                <button type="submit" class="invitacion-propietario-boton">Crear cuenta y vincular unidad</button>
+                <button type="submit" class="invitacion-propietario-boton">{% if cuenta_existente %}Vincular unidad a mi cuenta{% else %}Crear cuenta y vincular unidad{% endif %}</button>
             </form>
         {% endif %}
     </div>

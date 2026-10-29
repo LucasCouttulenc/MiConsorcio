@@ -166,7 +166,7 @@ class FormularioUnidadFuncional(forms.ModelForm):
                 Column('consorcio'),
                 css_class='row'
             ),
-            HTML("<p class='uf-invitacion-ayuda'>Le enviaremos un correo para que se registre o vincule esta unidad a su cuenta.</p>"),
+            HTML("<p class='uf-invitacion-ayuda'>Si el correo ya tiene cuenta, la unidad se suma directo; si no, le enviamos un link para que cree su cuenta.</p>"),
             Row(
                 Column('piso'),
                 Column('departamento'),

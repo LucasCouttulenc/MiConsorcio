@@ -163,3 +163,101 @@ class ConsorcioActivoTests(TestCase):
             with self.subTest(vista=nombre):
                 self.assertRedirects(respuesta, reverse('bienvenida'), fetch_redirect_response=False)
         self.assertSinTocarElAjeno()
+
+
+@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class InvitacionPropietarioTests(TestCase):
+    """El link de invitación crea la cuenta del propietario o, si ya existe, pide su contraseña."""
+
+    def setUp(self):
+        from django.test import RequestFactory
+        from usuarios.invitaciones import enviar_invitacion_propietario
+        self.consorcio = crear_consorcio('Torre Uno', '30712345678')
+        self.unidad = UnidadFuncional.objects.create(consorcio=self.consorcio, piso=1, departamento='A')
+        self.request = RequestFactory().get('/')
+        self.enviar = enviar_invitacion_propietario
+
+    def url_invitacion(self, email):
+        import re
+        from django.core import mail
+        self.enviar(self.unidad, email, self.request)
+        return re.search(r'(/invitacion/propietario/[^/\s]+/)', mail.outbox[-1].body).group(1)
+
+    def test_cuenta_nueva_se_crea_con_contrasena_valida(self):
+        url = self.url_invitacion('nuevo@correo.com')
+        datos = {'nombre': 'Ana', 'apellido': 'Paz', 'password': 'Edificio-2026', 'confirmar_password': 'Edificio-2026'}
+        respuesta = self.client.post(url, datos)
+        self.assertRedirects(respuesta, reverse('inicio_propietario'), fetch_redirect_response=False)
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.propietario.usuario.username, 'nuevo@correo.com')
+        self.assertTrue(self.unidad.propietario.usuario.check_password('Edificio-2026'))
+
+    def test_cuenta_nueva_rechaza_contrasena_debil(self):
+        url = self.url_invitacion('nuevo@correo.com')
+        respuesta = self.client.post(url, {'nombre': 'Ana', 'apellido': 'Paz', 'password': '1', 'confirmar_password': '1'})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertFalse(User.objects.filter(username='nuevo@correo.com').exists())
+        self.unidad.refresh_from_db()
+        self.assertIsNone(self.unidad.propietario_id)
+
+    def test_cuenta_existente_no_entra_con_solo_abrir_el_link(self):
+        User.objects.create_user('vecina@correo.com', email='vecina@correo.com', password='clave-vieja-123')
+        url = self.url_invitacion('vecina@correo.com')
+        respuesta = self.client.get(url)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(respuesta.context['cuenta_existente'])
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.unidad.refresh_from_db()
+        self.assertIsNone(self.unidad.propietario_id)
+
+    def test_cuenta_existente_con_contrasena_incorrecta_no_vincula(self):
+        User.objects.create_user('vecina@correo.com', email='vecina@correo.com', password='clave-vieja-123')
+        url = self.url_invitacion('vecina@correo.com')
+        self.client.post(url, {'password': 'otra'})
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.unidad.refresh_from_db()
+        self.assertIsNone(self.unidad.propietario_id)
+
+    def test_cuenta_existente_con_su_contrasena_suma_la_unidad(self):
+        usuario = User.objects.create_user('vecina@correo.com', email='vecina@correo.com', password='clave-vieja-123')
+        url = self.url_invitacion('vecina@correo.com')
+        respuesta = self.client.post(url, {'password': 'clave-vieja-123'})
+        self.assertRedirects(respuesta, reverse('inicio_propietario'), fetch_redirect_response=False)
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.propietario.usuario, usuario)
+        self.assertEqual(int(self.client.session['_auth_user_id']), usuario.pk)
+
+    def test_correo_con_cuenta_suma_la_unidad_directo_sin_mandar_link(self):
+        from django.core import mail
+        from usuarios.invitaciones import asignar_propietario
+        usuario = User.objects.create_user('vecina@correo.com', email='vecina@correo.com', password='clave-vieja-123')
+        mail.outbox = []
+        self.assertEqual(asignar_propietario(self.unidad, 'Vecina@Correo.com', self.request), 'vinculada')
+        self.assertEqual(mail.outbox, [])
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.propietario.usuario, usuario)
+
+    def test_correo_sin_cuenta_recibe_el_link(self):
+        from django.core import mail
+        from usuarios.invitaciones import asignar_propietario
+        mail.outbox = []
+        self.assertEqual(asignar_propietario(self.unidad, 'nuevo@correo.com', self.request), 'invitada')
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_al_crear_la_cuenta_se_suman_las_otras_unidades_pendientes(self):
+        otra = UnidadFuncional.objects.create(consorcio=self.consorcio, piso=2, departamento='B')
+        self.enviar(otra, 'nuevo@correo.com', self.request)
+        url = self.url_invitacion('nuevo@correo.com')
+        datos = {'nombre': 'Ana', 'apellido': 'Paz', 'password': 'Edificio-2026', 'confirmar_password': 'Edificio-2026'}
+        self.client.post(url, datos)
+        otra.refresh_from_db()
+        self.assertEqual(otra.propietario.usuario.username, 'nuevo@correo.com')
+
+    def test_link_viejo_con_sesion_iniciada_suma_directo(self):
+        usuario = User.objects.create_user('vecina@correo.com', email='vecina@correo.com', password='clave-vieja-123')
+        url = self.url_invitacion('vecina@correo.com')
+        self.client.force_login(usuario)
+        respuesta = self.client.get(url)
+        self.assertRedirects(respuesta, reverse('inicio_propietario'), fetch_redirect_response=False)
+        self.unidad.refresh_from_db()
+        self.assertEqual(self.unidad.propietario.usuario, usuario)

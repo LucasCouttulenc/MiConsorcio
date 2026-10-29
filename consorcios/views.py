@@ -17,10 +17,12 @@ from django.urls import reverse
 import re
 from .permisos import consorcio_activo
 from .alicuotas import leer_alicuotas, guardar_alicuotas, suma_alicuotas, consorcio_tiene_alicuotas_validas
-from usuarios.invitaciones import enviar_invitacion_propietario
+from usuarios.invitaciones import asignar_propietario
 
 
-def _mensaje_invitacion_enviada():
+def _mensaje_invitacion_enviada(resultado='invitada'):
+    if resultado == 'vinculada':
+        return "El correo ya tenía una cuenta, así que la UF se sumó directo a ese propietario."
     if settings.EMAIL_BACKEND.endswith('console.EmailBackend'):
         return "La invitación quedó impresa en la consola de desarrollo."
     return "Se envió la invitación al propietario."
@@ -159,11 +161,11 @@ def crear_unidad_funcional(request):
             messages.error(request, "No se pudo crear la unidad funcional. Revisá los datos e intentá de nuevo.")
         else:
             try:
-                enviar_invitacion_propietario(unidad, form.cleaned_data['email_propietario'], request)
+                resultado = asignar_propietario(unidad, form.cleaned_data['email_propietario'], request)
             except Exception:
                 messages.error(request, "La UF se creó, pero no se pudo enviar el correo. Podés guardar la UF desde su pantalla de gestión para reenviar la invitación.")
             else:
-                messages.success(request, f"La UF se creó. {_mensaje_invitacion_enviada()}")
+                messages.success(request, f"La UF se creó. {_mensaje_invitacion_enviada(resultado)}")
             return redirect('definir_alicuotas')
 
     return render(request, "crear_unidad_funcional.html", {'formulario': form, 'consorcio': consorcio})
@@ -203,13 +205,13 @@ def gestionar_unidad_funcional(request, unidad_id):
         else:
             if not unidad_funcional.propietario_id:
                 try:
-                    enviar_invitacion_propietario(
+                    resultado = asignar_propietario(
                         unidad_funcional, form.cleaned_data['email_propietario'], request,
                     )
                 except Exception:
                     messages.error(request, "Los datos se guardaron, pero no se pudo enviar el correo. Revisá la configuración y volvé a guardar para reenviar.")
                 else:
-                    messages.success(request, f"Los datos se guardaron. {_mensaje_invitacion_enviada()}")
+                    messages.success(request, f"Los datos se guardaron. {_mensaje_invitacion_enviada(resultado)}")
             else:
                 messages.success(request, "Se ha actualizado correctamente la unidad funcional.")
             return redirect('gestionar_unidad_funcional', unidad_id=unidad_funcional.pk)

@@ -1,7 +1,12 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Row, Column, Div, Submit
+
+User = get_user_model()
 
 class FormularioLogin(AuthenticationForm):
     """
@@ -77,4 +82,33 @@ class FormularioRegistroPropietario(forms.Form):
         confirmar = datos.get('confirmar_password')
         if password and confirmar and password != confirmar:
             self.add_error('confirmar_password', 'Las contraseñas no coinciden.')
+        elif password:
+            usuario = User(
+                username=self.email_invitacion, email=self.email_invitacion,
+                first_name=datos.get('nombre', ''), last_name=datos.get('apellido', ''),
+            )
+            try:
+                validate_password(password, user=usuario)
+            except ValidationError as error:
+                self.add_error('password', error)
         return datos
+
+
+class FormularioConfirmarCuenta(forms.Form):
+    """Pide la contraseña de una cuenta existente antes de sumarle la UF de la invitación."""
+    email = forms.EmailField(label='Correo electrónico', disabled=True)
+    password = forms.CharField(
+        label='Contraseña de tu cuenta', strip=False,
+        widget=forms.PasswordInput(attrs={'autocomplete': 'current-password'}),
+    )
+
+    def __init__(self, *args, usuario, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].initial = usuario.email or usuario.username
+        self.usuario = usuario
+
+    def clean_password(self):
+        password = self.cleaned_data['password']
+        if not self.usuario.check_password(password):
+            raise ValidationError('La contraseña es incorrecta.')
+        return password
