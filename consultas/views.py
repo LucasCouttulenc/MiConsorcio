@@ -3,9 +3,11 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.db import transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from consorcios.models import UnidadFuncional
 from consorcios.permisos import consorcio_activo
+from gastos.notificaciones import avisar_unidad
 from usuarios.models import Propietario
 
 from .forms import FormularioConsulta, FormularioMensaje
@@ -144,6 +146,10 @@ def gestionar_consulta(request, consulta_id):
             )
             consulta.estado = EstadoConsulta.EN_CURSO
             consulta.save(update_fields=['estado', 'actualizada'])
+            avisar_unidad(
+                consulta.unidad_funcional, 'consulta', f'Respondieron tu consulta "{consulta.asunto}"',
+                url=reverse('ver_consulta', args=[consulta.pk]),
+            )
             return redirect('gestionar_consulta', consulta_id=consulta.pk)
             
     return render(request, 'gestionar_consulta.html', {

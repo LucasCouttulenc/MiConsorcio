@@ -13,7 +13,8 @@ from consorcios.models import Consorcio, GrupoProrrateo, Rubro, UnidadFuncional
 from usuarios.models import Propietario
 
 from .forms import FormularioPago, FormularioServicioRecurrente
-from .models import DetalleLiquidacionUF, Gasto, ImputacionPago, Liquidacion, Pago, ServicioRecurrente
+from .models import DetalleLiquidacionUF, Gasto, ImputacionPago, Liquidacion, NotificacionLiquidacion, Novedad, Pago, ServicioRecurrente
+from .notificaciones import avisar_unidad, cuando
 
 
 def crear_consorcio(nombre='Torre Uno', cuit='30712345678'):
@@ -456,10 +457,11 @@ class InicioPropietarioTests(TestCase):
 
     def test_novedades_de_liquidaciones_y_pagos(self):
         detalle = self.detalle('2026-09', '12000')
-        self.pago(detalle, '5000', 'rechazado')
-        titulos = [n['titulo'] for n in self.contexto()['novedades']]
-        self.assertIn('Nueva liquidación: Septiembre 2026', titulos)
-        self.assertIn('Pago rechazado', titulos)
+        NotificacionLiquidacion.objects.create(propietario=self.propietario, detalle_liquidacion=detalle)
+        avisar_unidad(self.uf, 'pago', 'Pago rechazado', detalle='$ 5.000,00 de Septiembre 2026')
+        contexto = self.contexto()
+        self.assertEqual([n['texto'] for n in contexto['novedades']], ['Pago rechazado', 'Nueva liquidación: Septiembre 2026'])
+        self.assertEqual(contexto['novedades_nuevas'], 2)
 
     def test_elige_la_unidad_por_parametro(self):
         otra = UnidadFuncional.objects.create(
@@ -1258,3 +1260,143 @@ class RepartoTests(TestCase):
         self.assertEqual(repartir_capital(pendiente, Decimal('0.02')),
                          [('ordinario', Decimal('0.01')), ('extraordinario', Decimal('0.01'))])
         self.assertEqual(sum(m for _, m in repartir_capital(pendiente, Decimal('5'))), Decimal('0.03'))
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class NovedadesTests(TestCase):
+    """Avisos al propietario que salen de las acciones del administrador."""
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        from django.conf import settings
+        shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        self.usuario = User.objects.create_user('prop', password='clave')
+        self.propietario = Propietario.objects.create(usuario=self.usuario)
+        self.uf = UnidadFuncional.objects.create(
+            propietario=self.propietario, consorcio=self.consorcio, piso=3, departamento='B', alicuota=Decimal('50'))
+        # Segunda unidad del mismo dueño en el mismo edificio: los avisos del consorcio le llegan una sola vez.
+        UnidadFuncional.objects.create(
+            propietario=self.propietario, consorcio=self.consorcio, piso=4, departamento='B', alicuota=Decimal('25'))
+        self.vecino = Propietario.objects.create(usuario=User.objects.create_user('vecino', password='clave'))
+        self.uf_vecino = UnidadFuncional.objects.create(
+            propietario=self.vecino, consorcio=self.consorcio, piso=1, departamento='A', alicuota=Decimal('25'))
+        otro_consorcio, _ = crear_consorcio(nombre='Torre Dos', cuit='30712345679')
+        self.ajeno = Propietario.objects.create(usuario=User.objects.create_user('ajeno', password='clave'))
+        UnidadFuncional.objects.create(
+            propietario=self.ajeno, consorcio=otro_consorcio, piso=1, departamento='A', alicuota=Decimal('100'))
+        self.admin = User.objects.create_superuser('admin', 'admin@example.com', 'clave')
+
+    def como_admin(self):
+        self.client.force_login(self.admin)
+        activar_consorcio(self.client, self.consorcio)
+
+    def textos(self, propietario):
+        return list(Novedad.objects.filter(propietario=propietario).values_list('texto', flat=True))
+
+    def test_aviso_del_admin_llega_a_cada_propietario_del_consorcio(self):
+        self.como_admin()
+        respuesta = self.client.post(reverse('avisar_propietarios'), {'texto': '  Corte de agua el martes  '})
+        self.assertRedirects(respuesta, reverse('bienvenida'))
+        self.assertEqual(self.textos(self.propietario), ['Corte de agua el martes'])
+        self.assertEqual(self.textos(self.vecino), ['Corte de agua el martes'])
+        self.assertEqual(self.textos(self.ajeno), [])
+
+    def test_aviso_vacio_no_se_manda(self):
+        self.como_admin()
+        self.client.post(reverse('avisar_propietarios'), {'texto': '   '})
+        self.assertFalse(Novedad.objects.exists())
+
+    def test_el_propietario_no_puede_mandar_avisos(self):
+        self.client.force_login(self.usuario)
+        respuesta = self.client.post(reverse('avisar_propietarios'), {'texto': 'Hola'})
+        self.assertEqual(respuesta.status_code, 403)
+        self.assertFalse(Novedad.objects.exists())
+
+    def test_subir_un_acta_avisa_a_todo_el_consorcio(self):
+        from documentos.models import TipoDocumento
+        self.como_admin()
+        self.client.post(reverse('documentos_consorcio'), {
+            'titulo': 'Asamblea ordinaria', 'tipo': TipoDocumento.ACTA,
+            'archivo': archivo('acta.pdf', 'application/pdf', b'%PDF-1.4'),
+        })
+        self.assertEqual(self.textos(self.vecino), ['Nueva acta: Asamblea ordinaria'])
+        self.assertEqual(Novedad.objects.get(propietario=self.vecino).url, reverse('mis_documentos'))
+
+    def test_cambio_de_estado_de_obra_avisa_y_editar_sin_cambiarlo_no(self):
+        from obras.models import EstadoObra, Obra
+        obra = Obra.objects.create(
+            consorcio=self.consorcio, concepto='Pintura fachada', fecha_inicio=date(2026, 10, 1),
+            fecha_fin_estimada=date(2026, 12, 1))
+        self.como_admin()
+        datos = {'concepto': 'Pintura fachada', 'descripcion': '', 'estado': EstadoObra.PLANIFICADA,
+                 'fecha_inicio': '2026-10-01', 'fecha_fin_estimada': '2026-12-01'}
+        self.client.post(reverse('gestionar_obra', args=[obra.pk]), datos)
+        self.assertFalse(Novedad.objects.exists())
+        self.client.post(reverse('gestionar_obra', args=[obra.pk]), {**datos, 'estado': EstadoObra.EN_CURSO})
+        self.assertEqual(self.textos(self.propietario), ['Pintura fachada en curso'])
+
+    def test_validar_un_pago_avisa_solo_a_esa_unidad(self):
+        liquidacion = Liquidacion.objects.create(consorcio=self.consorcio, periodo='2026-08', cerrada=True)
+        detalle = DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=self.uf, monto_total=Decimal('86000'))
+        pago = Pago.objects.create(detalle_liquidacion=detalle, fecha_pago=date.today(),
+                                   monto_pagado=Decimal('86000'), comprobante='x.pdf')
+        self.como_admin()
+        self.client.post(reverse('procesar_pago', args=[pago.pk]), {'accion': 'validar'})
+        novedad = Novedad.objects.get()
+        self.assertEqual((novedad.propietario, novedad.unidad_funcional), (self.propietario, self.uf))
+        self.assertEqual((novedad.texto, novedad.detalle), ('Pago validado', '$ 86.000,00 de Agosto 2026'))
+
+    def test_responder_una_consulta_avisa_al_propietario(self):
+        from consultas.models import Consulta
+        consulta = Consulta.objects.create(unidad_funcional=self.uf, asunto='Filtración en el baño')
+        self.como_admin()
+        self.client.post(reverse('gestionar_consulta', args=[consulta.pk]),
+                         {'accion': 'responder', 'texto': 'Mañana va el plomero.'})
+        novedad = Novedad.objects.get()
+        self.assertEqual(novedad.texto, 'Respondieron tu consulta "Filtración en el baño"')
+        self.assertEqual(novedad.url, reverse('ver_consulta', args=[consulta.pk]))
+
+    def test_campanita_e_inicio_muestran_lo_que_corresponde(self):
+        avisar_unidad(self.uf, 'pago', 'Pago validado')
+        avisar_unidad(self.uf_vecino, 'pago', 'Pago del vecino')
+        Novedad.objects.create(propietario=self.propietario, consorcio=self.consorcio, tipo='aviso', texto='Corte de agua')
+        self.client.force_login(self.usuario)
+        contexto = self.client.get(reverse('inicio_propietario'), {'unidad': self.uf.pk}).context
+        self.assertEqual(contexto['notificaciones_propietario_total'], 2)
+        self.assertEqual([n['texto'] for n in contexto['novedades']], ['Corte de agua', 'Pago validado'])
+        self.assertEqual(contexto['novedades'][0]['etiqueta'], 'Aviso')
+
+    def test_abrir_una_novedad_la_marca_leida_y_lleva_a_su_pantalla(self):
+        novedad = avisar_unidad(self.uf, 'pago', 'Pago validado', url=reverse('historial_pagos'))
+        self.client.force_login(self.usuario)
+        respuesta = self.client.get(reverse('abrir_novedad', args=[novedad.pk]))
+        self.assertRedirects(respuesta, reverse('historial_pagos'), fetch_redirect_response=False)
+        novedad.refresh_from_db()
+        self.assertIsNotNone(novedad.leida_en)
+        self.assertEqual(self.client.session['unidad_propietario'], self.uf.pk)
+        contexto = self.client.get(reverse('inicio_propietario')).context
+        self.assertEqual(contexto['notificaciones_propietario_total'], 0)
+        self.assertEqual(contexto['novedades_nuevas'], 0)
+
+    def test_no_se_puede_abrir_la_novedad_de_otro(self):
+        novedad = avisar_unidad(self.uf_vecino, 'pago', 'Pago validado')
+        self.client.force_login(self.usuario)
+        self.assertEqual(self.client.get(reverse('abrir_novedad', args=[novedad.pk])).status_code, 404)
+
+    def test_cuando(self):
+        from datetime import datetime, timezone as tz
+        ahora = datetime(2026, 10, 29, 15, 0, tzinfo=tz.utc)
+        self.assertEqual(cuando(ahora - timedelta(minutes=5), ahora), 'hace 5 min')
+        self.assertEqual(cuando(ahora - timedelta(hours=2), ahora), 'hace 2 h')
+        self.assertEqual(cuando(ahora - timedelta(days=1), ahora), 'ayer')
+        self.assertEqual(cuando(ahora - timedelta(days=9), ahora), '20/10')
+
+    def test_logo_del_sidebar_lleva_al_inicio_de_cada_uno(self):
+        self.como_admin()
+        self.assertRedirects(self.client.get(reverse('login')), reverse('bienvenida'))
+        self.assertContains(self.client.get(reverse('bienvenida')), 'Avisar a los propietarios')

@@ -1,10 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from consorcios.models import Consorcio
 from consorcios.permisos import consorcio_activo
+from gastos.notificaciones import avisar_consorcio
 from gastos.views import unidad_activa
 from usuarios.models import Propietario
 
@@ -27,6 +29,8 @@ def documentos_consorcio(request):
         documento = formulario.save(commit=False)
         documento.consorcio = consorcio
         documento.save()
+        prefijo = 'Nueva acta' if documento.tipo == TipoDocumento.ACTA else 'Nuevo documento'
+        avisar_consorcio(consorcio, 'documento', f'{prefijo}: {documento.titulo}', url=reverse('mis_documentos'))
         messages.success(request, f'Documento "{documento.titulo}" subido.')
         return redirect('documentos_consorcio')
         

@@ -1,10 +1,10 @@
 @import "_constantes.css";
 @import "_footer.css";
-@import "_sidebar.css?v=20261028-convenio";
+@import "_sidebar.css?v=20261029-novedades";
 @import "_tabla.css";
 @import "_componentes.css?v=20261020-toast-layout";
 @import "_liquidaciones.css";
-@import "_portal_propietario.css?v=20261029-transferencias";
+@import "_portal_propietario.css?v=20261029-novedades";
 @import "_pagos_pendientes.css?v=20261029-medio-pago";
 @import "_consultas.css?v=20261024-consultas-3";
 @import "_documentos.css?v=20261028-actas-obras";
@@ -14,7 +14,7 @@
 @import "_utilidades.css";
 
 @import "_login.css";
-@import "_bienvenida.css";
+@import "_bienvenida.css?v=20261029-novedades";
 @import "_pagina_en_construccio.css";
 
 * {

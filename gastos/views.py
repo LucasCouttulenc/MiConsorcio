@@ -20,8 +20,9 @@ from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprob
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
 from contactos.models import ContactoAdministracion
 from .reparto import con_nombre
-from .models import aplicar_saldo_a_favor, cobrar_cuotas_convenio, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja, ClaseGasto
+from .models import aplicar_saldo_a_favor, cobrar_cuotas_convenio, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, Novedad, ServicioRecurrente, MovimientoCaja, ClaseGasto
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
+from .notificaciones import avisar_consorcio, avisar_unidad, novedades_unidad
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
 from consorcios.alicuotas import consorcio_tiene_alicuotas_validas, suma_alicuotas
 from consorcios.permisos import consorcios_permitidos, consorcio_activo
@@ -691,30 +692,7 @@ def inicio_propietario(request):
         for detalle in impagos if detalle.liquidacion.fecha_vencimiento_1
     ]
 
-    textos_pago = {
-        'pendiente': ('Pago en revisión', 'La administración todavía tiene que validar tu comprobante'),
-        'validado': ('Pago validado', 'La administración acreditó tu pago'),
-        'rechazado': ('Pago rechazado', 'Revisá el motivo en el historial de pagos'),
-    }
-    novedades = [
-        {
-            'fecha': detalle.liquidacion.fecha_cierre or detalle.liquidacion.fecha_emision,
-            'tipo': 'liquidacion',
-            'titulo': f'Nueva liquidación: {periodo_legible(detalle.liquidacion.periodo)}',
-            'texto': f'Te corresponde $ {number_format(detalle.monto_total, 2, force_grouping=True)}',
-        }
-        for detalle in detalles
-    ] + [
-        {
-            'fecha': timezone.localdate(pago.fecha_registro),
-            'tipo': pago.estado,
-            'titulo': textos_pago[pago.estado][0],
-            'texto': f'{textos_pago[pago.estado][1]} de $ {number_format(pago.monto_pagado, 2, force_grouping=True)} '
-                     f'({periodo_legible(pago.detalle_liquidacion.liquidacion.periodo)}).',
-        }
-        for pago in pagos if pago.estado in textos_pago
-    ]
-    novedades.sort(key=lambda novedad: novedad['fecha'], reverse=True)
+    novedades = novedades_unidad(propietario, unidad)
 
     return render(request, 'inicio_propietario.html', {
         'unidades': unidades,
@@ -735,7 +713,8 @@ def inicio_propietario(request):
         'a_pagar': a_pagar,
         'periodo_destino': (impagos[0] if impagos else ultima).liquidacion.periodo if ultima else None,
         'vencimientos': sorted(vencimientos, key=lambda v: v['fecha']),
-        'novedades': novedades[:5],
+        'novedades': novedades,
+        'novedades_nuevas': sum(not novedad['leida'] for novedad in novedades),
         'hoy': hoy,
     })
 
@@ -930,6 +909,37 @@ def abrir_notificacion_liquidacion(request, notificacion_id):
     )
     return redirect(destino + parametros)
 
+
+@login_required
+def abrir_novedad(request, novedad_id):
+    """Marca la novedad como leída y lleva a la pantalla que corresponde, con la unidad de esa novedad elegida."""
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    novedad = get_object_or_404(Novedad, pk=novedad_id, propietario=propietario)
+    if novedad.leida_en is None:
+        novedad.leida_en = timezone.now()
+        novedad.save(update_fields=['leida_en'])
+
+    unidad = novedad.unidad_funcional or UnidadFuncional.objects.filter(
+        propietario=propietario, consorcio_id=novedad.consorcio_id).order_by('piso', 'departamento').first()
+    if unidad:
+        request.session[CLAVE_UNIDAD_PROPIETARIO] = unidad.pk
+    return redirect(novedad.url or 'inicio_propietario')
+
+
+@login_required
+@permission_required('consorcios.change_consorcio', raise_exception=True)
+@require_POST
+def avisar_propietarios(request):
+    """Aviso de una línea del administrador a todos los propietarios del consorcio activo."""
+    consorcio = consorcio_activo(request)
+    texto = request.POST.get('texto', '').strip()[:200]
+    if not consorcio or not texto:
+        messages.error(request, 'Escribí el aviso antes de enviarlo.')
+        return redirect('bienvenida')
+    enviados = avisar_consorcio(consorcio, 'aviso', texto)
+    messages.success(request, f'Aviso enviado a {len(enviados)} propietario{"s" if len(enviados) != 1 else ""}.')
+    return redirect('bienvenida')
+
 @login_required
 def registrar_pago(request, detalle_id):
     """Procesa el formulario cuando el propietario sube un comprobante."""
@@ -1073,6 +1083,13 @@ def procesar_pago(request, pago_id):
                     tipo='extraordinario',
                     medio_pago=medio_caja
                 )
+
+    detalle = pago.detalle_liquidacion
+    avisar_unidad(
+        detalle.unidad_funcional, 'pago', 'Pago validado' if accion == 'validar' else 'Pago rechazado',
+        detalle=f'$ {number_format(pago.monto_pagado, 2, force_grouping=True)} de {periodo_legible(detalle.liquidacion.periodo)}',
+        url=reverse('historial_pagos'),
+    )
 
     if accion == 'validar':
         messages.success(request, f'Pago de {pago.detalle_liquidacion.unidad_funcional} validado y registrado en Caja.')

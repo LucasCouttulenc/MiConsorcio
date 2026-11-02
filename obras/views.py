@@ -1,12 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 
 from config.views import Lista, crear_modelo, gestionar_modelo
 from consorcios.models import Consorcio
 from consorcios.permisos import consorcio_activo, consorcios_permitidos
+from gastos.notificaciones import avisar_consorcio
 from gastos.views import unidad_activa
 from usuarios.models import Propietario
 
@@ -69,7 +71,8 @@ def crear_obra(request):
 def gestionar_obra(request, obra_id):
     """Edita los datos y el estado de la obra, y muestra sus proveedores asignados."""
     obra = _obra_permitida(request, obra_id)
-    return gestionar_modelo(
+    estado_anterior = obra.estado
+    respuesta = gestionar_modelo(
         request=request,
         id_modelo=obra.pk,
         formulario_modelo=FormularioObra,
@@ -79,6 +82,12 @@ def gestionar_obra(request, obra_id):
             'formulario_asignacion': FormularioAsignacion(obra=obra, usuario=request.user),
         },
     )
+    obra.refresh_from_db()
+    if obra.estado != estado_anterior:
+        avisar_consorcio(
+            obra.consorcio, 'obra', f'{obra.concepto} {obra.get_estado_display().lower()}', url=reverse('mis_obras'),
+        )
+    return respuesta
 
 
 @login_required

@@ -15,20 +15,13 @@
             <strong>Novedades</strong>
             {% if notificaciones_propietario_total %}<span>{{ notificaciones_propietario_total }}</span>{% endif %}
         </div>
-        {% for notificacion in notificaciones_propietario %}
-            {% with detalle=notificacion.detalle_liquidacion %}
-            <a class="portal-notificacion-item" href="{% url 'abrir_notificacion_liquidacion' notificacion.pk %}">
-                <span class="portal-notificacion-punto" aria-hidden="true"></span>
-                <span>
-                    <strong>Nueva liquidación disponible</strong>
-                    <small>{{ detalle.liquidacion.consorcio.nombre }} · {{ detalle.liquidacion.periodo }}</small>
-                    <small>Unidad {{ detalle.unidad_funcional.piso }}{% if detalle.unidad_funcional.departamento %}° {{ detalle.unidad_funcional.departamento }}{% endif %}</small>
-                </span>
-            </a>
-            {% endwith %}
+        <div class="portal-notificaciones-lista">
+        {% for novedad in notificaciones_propietario %}
+            {% include "componentes/novedad.html" %}
         {% empty %}
             <p class="portal-notificaciones-vacias">No hay notificaciones nuevas.</p>
         {% endfor %}
+        </div>
     </div>
 </div>
 <script src="{% static 'js/notificaciones_propietario.js' %}" defer></script>

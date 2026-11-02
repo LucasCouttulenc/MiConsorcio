@@ -4,6 +4,7 @@
 {% block title %}Bienvenida{% endblock %}
 
 {% block content %}
+{% include "componentes/mensajes.html" %}
 <div class="pagina-bienvenida flex center column">
 
     <div class="tarjeta-bienvenida flex column center">
@@ -30,9 +31,31 @@
                 {{ consorcio_activo.nombre }}
             </h2>
             
-            <a href="{% url 'gestionar_consorcio' %}" class="boton-primario" style="margin-top: 0.5rem;">
-                Ir al panel del consorcio
-            </a>
+            <div class="bienvenida-acciones">
+                <a href="{% url 'gestionar_consorcio' %}" class="boton-primario">
+                    Ir al panel del consorcio
+                </a>
+                {% if perms.consorcios.change_consorcio %}
+                <button type="button" class="boton-primario bienvenida-avisar" onclick="document.getElementById('dialogo-aviso').showModal()">
+                    Avisar a los propietarios
+                </button>
+                {% endif %}
+            </div>
+
+            {% if perms.consorcios.change_consorcio %}
+            <dialog class="dialogo-aviso" id="dialogo-aviso">
+                <form method="post" action="{% url 'avisar_propietarios' %}">
+                    {% csrf_token %}
+                    <h3>Avisar a los propietarios</h3>
+                    <label for="texto-aviso">Aviso para {{ consorcio_activo.nombre }}</label>
+                    <input type="text" id="texto-aviso" name="texto" maxlength="200" required placeholder="Ej: Corte de agua el martes de 9 a 13 h">
+                    <div class="dialogo-aviso-acciones">
+                        <button type="button" class="dialogo-aviso-cancelar" onclick="this.closest('dialog').close()">Cancelar</button>
+                        <button type="submit" class="dialogo-aviso-enviar">Enviar aviso</button>
+                    </div>
+                </form>
+            </dialog>
+            {% endif %}
             
             <div class="indicador-menu flex center" style="margin-top: 2rem;">
                 <span class="indicador-menu__icono" aria-hidden="true">

@@ -54,3 +54,84 @@
 }
 
 .indicador-menu__icono svg { display: block; width: 1.25rem; height: 1.25rem; }
+
+.bienvenida-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 0.5rem;
+}
+
+.boton-primario.bienvenida-avisar {
+    background-color: #2d73d9;
+    color: #ffffff;
+}
+
+.dialogo-aviso {
+    width: min(480px, calc(100vw - 32px));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    text-align: left;
+}
+
+.dialogo-aviso::backdrop {
+    background: rgba(3, 10, 25, 0.62);
+}
+
+.dialogo-aviso h3 {
+    margin: 0 0 18px;
+    padding: 18px 22px;
+    background: #1b365d;
+    color: #ffffff;
+    font: 700 1.2rem 'Exo 2', sans-serif;
+}
+
+.dialogo-aviso label {
+    display: block;
+    margin: 0 22px 6px;
+    color: #333333;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.dialogo-aviso input {
+    display: block;
+    width: calc(100% - 44px);
+    margin: 0 22px;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #222222;
+    font-size: 0.95rem;
+}
+
+.dialogo-aviso-acciones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px 20px;
+}
+
+.dialogo-aviso-cancelar {
+    border: 0;
+    background: none;
+    color: #6c757d;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.dialogo-aviso-enviar {
+    padding: 11px 22px;
+    border: 0;
+    border-radius: 8px;
+    background: #1b365d;
+    color: #ffffff;
+    font-weight: 800;
+    cursor: pointer;
+}

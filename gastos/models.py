@@ -461,6 +461,37 @@ class NotificacionLiquidacion(models.Model):
         return f"Liquidación {self.detalle_liquidacion.liquidacion.periodo} para {self.propietario}"
 
 
+class Novedad(models.Model):
+    """Aviso para el propietario que sale de una acción de la administración (o de un aviso escrito por ella).
+    Sin unidad funcional es para todo el consorcio."""
+    TIPOS = (
+        ('aviso', 'Aviso'),
+        ('documento', 'Documento'),
+        ('obra', 'Obra'),
+        ('pago', 'Pago'),
+        ('consulta', 'Consulta'),
+    )
+    propietario = models.ForeignKey('usuarios.Propietario', on_delete=models.CASCADE, related_name='novedades')
+    consorcio = models.ForeignKey(Consorcio, on_delete=models.CASCADE, related_name='novedades')
+    unidad_funcional = models.ForeignKey(
+        UnidadFuncional, on_delete=models.CASCADE, null=True, blank=True, related_name='novedades'
+    )
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    texto = models.CharField(max_length=200)
+    detalle = models.CharField(max_length=200, blank=True, default='')
+    url = models.CharField(max_length=300, blank=True, default='')
+    creada = models.DateTimeField(auto_now_add=True)
+    leida_en = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Novedad'
+        verbose_name_plural = 'Novedades'
+        ordering = ['-creada']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()}: {self.texto}"
+
+
 
 
 class MovimientoCaja(models.Model):

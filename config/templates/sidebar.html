@@ -10,14 +10,14 @@
                 <line x1="3" y1="18" x2="21" y2="18"></line>
             </svg>
         </button>
-        <div class="sidebar-empresa">
+        <a class="sidebar-empresa" href="{% url 'login' %}" title="Ir al inicio">
             <div class="empresa-icono">
                 <img src="{% static 'imagenes/logo.svg' %}" alt="Logo" class="svg-icono logo-svg">
             </div>
             <div class="empresa-texto">
                 <h2>MisConsorcios</h2>
             </div>
-        </div>
+        </a>
         {% if user.is_authenticated %}
             {% include "componentes/notificaciones_propietario.html" %}
         {% endif %}

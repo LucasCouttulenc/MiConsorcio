@@ -1,0 +1,11 @@
+{% comment %}Una novedad del propietario (Inicio y campanita). Recibe `novedad` armada por gastos.notificaciones.{% endcomment %}
+<a class="novedad{% if novedad.leida %} novedad-leida{% endif %}" href="{{ novedad.url }}">
+    <span class="novedad-punto" aria-hidden="true"></span>
+    <span class="novedad-cuerpo">
+        <span class="novedad-cabecera"><span class="novedad-tipo">{{ novedad.etiqueta }}</span><small>{{ novedad.cuando }}</small></span>
+        <strong>{{ novedad.texto }}</strong>
+        {% if novedad.detalle %}<span class="novedad-detalle">{{ novedad.detalle }}</span>{% endif %}
+        {% if not novedad.leida %}<span class="portal-sr-only">Sin leer</span>{% endif %}
+    </span>
+    <span class="novedad-flecha" aria-hidden="true">›</span>
+</a>

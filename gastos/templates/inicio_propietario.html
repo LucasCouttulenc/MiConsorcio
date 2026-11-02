@@ -118,17 +118,13 @@
             </div>
 
             <aside class="inicio-lateral">
-                <h2 class="inicio-subtitulo">ÚLTIMAS NOVEDADES</h2>
+                <div class="inicio-novedades-cabecera">
+                    <h2 class="inicio-subtitulo">ÚLTIMAS NOVEDADES</h2>
+                    {% if novedades_nuevas %}<span>{{ novedades_nuevas }} nueva{{ novedades_nuevas|pluralize }}</span>{% endif %}
+                </div>
                 <div class="inicio-novedades">
                 {% for novedad in novedades %}
-                    <div class="inicio-novedad inicio-novedad-{{ novedad.tipo }}">
-                        <span class="inicio-novedad-punto" aria-hidden="true"></span>
-                        <div>
-                            <strong>{{ novedad.titulo }}</strong>
-                            <p>{{ novedad.texto }}</p>
-                            <small>{{ novedad.fecha|date:"d/m/Y" }}</small>
-                        </div>
-                    </div>
+                    {% include "componentes/novedad.html" %}
                 {% empty %}
                     <p class="inicio-vacio">No hay novedades todavía.</p>
                 {% endfor %}
