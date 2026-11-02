@@ -52,8 +52,9 @@
                     {% if periodo.interes_devengado %}<div class="mor-fila mor-fila-interes"><span>Intereses ({{ tasa|floatformat:"-2" }}% × {{ periodo.meses }} mes{{ periodo.meses|pluralize:"es" }})</span><span>+ $ {{ periodo.interes_devengado|floatformat:"2g" }}</span></div>{% endif %}
                     {% if periodo.intereses_pagados %}<div class="mor-fila mor-fila-pago"><span>Pagado a intereses</span><span>− $ {{ periodo.intereses_pagados|floatformat:"2g" }}</span></div>{% endif %}
                     {% if periodo.adelanto %}<div class="mor-fila mor-fila-adelanto"><span>Saldo a favor aplicado</span><span>− $ {{ periodo.adelanto|floatformat:"2g" }}</span></div>{% endif %}
-                    {% if periodo.capital_pagado %}<div class="mor-fila mor-fila-pago"><span>Pagado a capital</span><span>− $ {{ periodo.capital_pagado|floatformat:"2g" }}</span></div>{% endif %}
+                    {% if periodo.capital_pagado %}<div class="mor-fila mor-fila-pago"><span>Pagado a capital{% if periodo.desglose_pagado|length > 1 %} <small class="mor-incluye">{% for nombre, monto in periodo.desglose_pagado %}{{ nombre }} $ {{ monto|floatformat:"2g" }}{% if not forloop.last %} · {% endif %}{% endfor %}</small>{% endif %}</span><span>− $ {{ periodo.capital_pagado|floatformat:"2g" }}</span></div>{% endif %}
                     <div class="mor-fila mor-fila-sub"><span>Adeuda</span><span>$ {{ periodo.adeuda|floatformat:"2g" }}</span></div>
+                    {% if periodo.desglose_adeuda|length > 1 %}{% for nombre, monto in periodo.desglose_adeuda %}<div class="mor-fila mor-fila-parte"><span>Capital {{ nombre }}</span><span>$ {{ monto|floatformat:"2g" }}</span></div>{% endfor %}{% endif %}
                 </div>
             {% empty %}
                 <p class="mor-vacio">No tiene deuda.</p>

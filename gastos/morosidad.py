@@ -147,6 +147,8 @@ def morosidad_unidad(request, unidad_id):
         'interes_devengado': detalle.interes_devengado(hoy),
         'meses': detalle.meses_de_atraso(hoy),
         'capital_pagado': detalle.total_pagado - detalle.adelanto_aplicado,
+        'desglose_pagado': detalle.desglose_capital_pagado(),
+        'desglose_adeuda': detalle.desglose_pendiente(),
         'adelanto': detalle.adelanto_aplicado,
         'intereses_pagados': detalle.intereses_pagados,
         'adeuda': detalle.deuda_total_actualizada + detalle.interes(hoy),

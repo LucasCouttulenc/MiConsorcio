@@ -4,6 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.db import models
 from consorcios.models import Consorcio, UnidadFuncional, GrupoProrrateo
+from .reparto import con_nombre, montos_del_cupon, repartir_capital
 
 
 class TipoGasto(models.TextChoices):
@@ -209,6 +210,30 @@ class DetalleLiquidacionUF(models.Model):
     def intereses_pagados(self):
         return sum((imp.monto for imp in self._imputaciones('interes')), Decimal('0'))
 
+    def montos_por_parte(self):
+        return montos_del_cupon(self.monto_total, self.monto_extraordinario, self.monto_fondo_reserva, self.monto_convenio)
+
+    def pagado_por_parte(self):
+        """Capital y adelantos que ya cancelaron cada parte de la expensa (convenio, ordinario, extraordinario, fondo)."""
+        pagado = dict.fromkeys(self.montos_por_parte(), Decimal('0'))
+        for imp in self._imputaciones('capital') + self._imputaciones('adelanto'):
+            pagado[imp.parte or 'ordinario'] += imp.monto
+        return pagado
+
+    def pendiente_por_parte(self):
+        pagado = self.pagado_por_parte()
+        return {parte: max(monto - pagado[parte], Decimal('0')) for parte, monto in self.montos_por_parte().items()}
+
+    def desglose_capital_pagado(self):
+        """Lo pagado a capital (sin saldo a favor) por parte, con nombre: [('ordinarias', 28000), ...]."""
+        pagado = {}
+        for imp in self._imputaciones('capital'):
+            pagado[imp.parte or 'ordinario'] = pagado.get(imp.parte or 'ordinario', Decimal('0')) + imp.monto
+        return con_nombre(pagado)
+
+    def desglose_pendiente(self):
+        return con_nombre(self.pendiente_por_parte()) if self.deuda_total_actualizada > 0 else []
+
     @property
     def deuda_total_actualizada(self):
         if self.convenio_id:
@@ -272,6 +297,7 @@ def imputar_pago(pago):
     """
     Reparte un pago validado entre las deudas de su UF, del período más viejo al más nuevo:
     primero el interés de cada período y después su capital. Lo que sobra queda como saldo a favor.
+    El capital de cada período se parte entre convenio, ordinarias, extraordinarias y fondo (ver reparto.py).
     """
     restante = pago.monto_pagado
     detalles = DetalleLiquidacionUF.objects.filter(
@@ -279,11 +305,16 @@ def imputar_pago(pago):
     ).select_related('liquidacion__consorcio').prefetch_related('imputaciones__pago').order_by('liquidacion__periodo')
     imputaciones = []
     for detalle in detalles:
-        for concepto, deuda in (('interes', detalle.interes(pago.fecha_pago)), ('capital', detalle.deuda_total_actualizada)):
-            monto = min(restante, deuda)
-            if monto > 0:
-                imputaciones.append(ImputacionPago(pago=pago, detalle_liquidacion=detalle, concepto=concepto, monto=monto))
-                restante -= monto
+        interes = min(restante, detalle.interes(pago.fecha_pago))
+        if interes > 0:
+            imputaciones.append(ImputacionPago(pago=pago, detalle_liquidacion=detalle, concepto='interes', monto=interes))
+            restante -= interes
+        capital = min(restante, detalle.deuda_total_actualizada)
+        if capital > 0:
+            for parte, monto in repartir_capital(detalle.pendiente_por_parte(), capital):
+                imputaciones.append(ImputacionPago(
+                    pago=pago, detalle_liquidacion=detalle, concepto='capital', parte=parte, monto=monto))
+            restante -= capital
         if restante <= 0:
             break
     if restante > 0:
@@ -315,7 +346,7 @@ def aplicar_saldo_a_favor(liquidacion):
                 break
             monto = min(excedente.monto, tope)
             ImputacionPago.objects.create(
-                pago=excedente.pago, detalle_liquidacion=detalle, concepto='adelanto', monto=monto)
+                pago=excedente.pago, detalle_liquidacion=detalle, concepto='adelanto', parte='ordinario', monto=monto)
             tope -= monto
             excedente.monto -= monto
             if excedente.monto > 0:
@@ -362,7 +393,15 @@ class ImputacionPago(models.Model):
     detalle_liquidacion = models.ForeignKey(
         DetalleLiquidacionUF, on_delete=models.CASCADE, related_name='imputaciones', null=True, blank=True
     )
+    PARTES = (
+        ('convenio', 'Cuota de convenio'),
+        ('ordinario', 'Ordinarias'),
+        ('extraordinario', 'Extraordinarias'),
+        ('fondo', 'Fondo de reserva'),
+    )
     concepto = models.CharField(max_length=10, choices=CONCEPTOS)
+    # Solo para capital y adelantos: qué parte de la expensa cancela.
+    parte = models.CharField(max_length=15, choices=PARTES, blank=True, default='')
     monto = models.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
@@ -372,6 +411,11 @@ class ImputacionPago(models.Model):
 
     def __str__(self):
         return f"{self.get_concepto_display()} ${self.monto} - {self.pago}"
+
+    @property
+    def nombre_parte(self):
+        """'ordinarias', 'extraordinarias'... para el capital; vacío en intereses y saldo a favor."""
+        return self.get_parte_display().lower() if self.concepto == 'capital' and self.parte else ''
 
 
 class DetalleGastoUF(models.Model):
@@ -544,7 +588,7 @@ class CuotaConvenio(models.Model):
             (cuota.monto for cuota in self.detalle_liquidacion.cuotas_convenio.all() if cuota.numero <= self.numero),
             Decimal('0'),
         )
-        if self.detalle_liquidacion.total_pagado >= hasta_esta:
+        if self.detalle_liquidacion.pagado_por_parte()['convenio'] >= hasta_esta:
             return 'pagada'
         vencimiento = self.vencimiento
         if vencimiento and (hoy or date.today()) > vencimiento:

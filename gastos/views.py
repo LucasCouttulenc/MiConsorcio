@@ -18,6 +18,7 @@ from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
 from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante, FormularioLibroDiario
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
+from .reparto import con_nombre
 from .models import aplicar_saldo_a_favor, cobrar_cuotas_convenio, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja, ClaseGasto
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
 from .services import procesar_liquidacion_periodo, generar_resumen_uf_pdf
@@ -814,10 +815,15 @@ def mis_expensas(request):
     for imputacion in (detalle.imputaciones.all() if detalle else []):
         item = pagos_del_periodo.setdefault(imputacion.pago_id, {
             'fecha': imputacion.pago.fecha_pago, 'monto_pagado': imputacion.pago.monto_pagado, 'total': Decimal('0'),
-            'interes': Decimal('0'), 'capital': Decimal('0'), 'adelanto': Decimal('0'),
+            'interes': Decimal('0'), 'capital': Decimal('0'), 'adelanto': Decimal('0'), 'partes': {},
         })
         item[imputacion.concepto] += imputacion.monto
         item['total'] += imputacion.monto
+        if imputacion.concepto == 'capital':
+            parte = imputacion.parte or 'ordinario'
+            item['partes'][parte] = item['partes'].get(parte, Decimal('0')) + imputacion.monto
+    for item in pagos_del_periodo.values():
+        item['partes'] = con_nombre(item['partes'])
     pagos_del_periodo = sorted(pagos_del_periodo.values(), key=lambda item: item['fecha'])
     # Períodos anteriores que siguen impagos: se arrastran como saldo anterior, con sus intereses.
     saldo_anterior = []
@@ -846,6 +852,7 @@ def mis_expensas(request):
         'interes_devengado': detalle.interes_devengado() if detalle and not detalle.convenio_id else Decimal('0'),
         'pasado_a_convenio': detalle.monto_total - detalle.total_pagado if detalle and detalle.convenio_id else Decimal('0'),
         'pagos_del_periodo': pagos_del_periodo,
+        'desglose_pendiente': detalle.desglose_pendiente() if detalle and not detalle.convenio_id else [],
         'saldo_a_favor': saldo_a_favor(unidad) if unidad else Decimal('0'),
         'saldo_anterior': saldo_anterior,
         'total_saldo_anterior': total_saldo_anterior,
@@ -1017,7 +1024,12 @@ def procesar_pago(request, pago_id):
             
             for imp in imputaciones:
                 det = imp.detalle_liquidacion
-                if det and det.monto_total > 0:
+                # El capital ya viene partido (pago parcial): ordinarias por un lado; extraordinarias y fondo por otro.
+                if imp.parte == 'ordinario':
+                    monto_ord += imp.monto
+                elif imp.parte in ('extraordinario', 'fondo'):
+                    monto_ext += imp.monto
+                elif det and det.monto_total > 0:
                     # Separamos proporcionalmente el monto imputado según el detalle de la UF
                     monto_ord += det.monto_ordinario * (imp.monto / det.monto_total)
                     # El fondo de reserva lo paga el propietario: en caja entra como extraordinario.

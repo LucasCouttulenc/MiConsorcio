@@ -417,7 +417,7 @@ def generar_recibo_pago_pdf(pago):
               Paragraph("Importe", est["th"])]]
     for imputacion in pago.imputaciones.select_related("detalle_liquidacion__liquidacion"):
         periodo = _periodo(imputacion.detalle_liquidacion.liquidacion.periodo) if imputacion.detalle_liquidacion else "-"
-        filas.append([Paragraph(periodo, est["normal"]), Paragraph(imputacion.get_concepto_display(), est["normal"]),
+        filas.append([Paragraph(periodo, est["normal"]), Paragraph(imputacion.get_concepto_display() + (f" · {imputacion.nombre_parte}" if imputacion.nombre_parte else ""), est["normal"]),
                       Paragraph(_money(imputacion.monto), est["num"])])
     filas.append([Paragraph("TOTAL RECIBIDO", est["bold"]), "", Paragraph(_money(pago.monto_pagado), est["num_b"])])
     tabla_imputacion = Table(filas, colWidths=[ANCHO_UTIL * 0.35, ANCHO_UTIL * 0.4, ANCHO_UTIL * 0.25])

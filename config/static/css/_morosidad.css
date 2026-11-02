@@ -50,6 +50,7 @@
 .mor-fila-interes { color: #ffb3b3; }
 .mor-fila-pago { color: #8be0b4; }
 .mor-fila-sub { margin-top: 3px; padding-top: 5px; border-top: 1px solid #35577f; font-weight: 800; }
+.mor-fila-parte { padding-left: 14px; color: #9fb7d6; font-size: .78rem; }
 .mor-gran-total { display: flex; justify-content: space-between; padding-top: 8px; color: #fff; font: 700 1.1rem 'Exo 2', sans-serif; }
 .mor-gran-total span:last-child { color: #61b7ff; }
 .mor-movimiento { padding: 7px 0; border-bottom: 1px solid #23406a; font-size: .84rem; }

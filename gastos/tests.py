@@ -1036,3 +1036,126 @@ def crear_convenio_desde(test, cuotas):
     test.liquidar('2026-01', '1000', vence_hace_dias=90)
     test.liquidar('2026-02', '2000', vence_hace_dias=80)
     return crear_convenio(test.uf, cuotas, '2026-03', hoy=test.hoy - timedelta(days=70))
+
+
+class PagoParcialTests(TestCase):
+    """Story 16: el capital pagado de un mes se reparte entre ordinarias, extraordinarias y fondo en proporción."""
+
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=User.objects.create_user('prop', password='clave')),
+            consorcio=self.consorcio, piso=3, departamento='B', alicuota=Decimal('50'))
+        # Ejemplo del mapping: 70.000 ordinarias + 20.000 extraordinarias + 10.000 fondo
+        self.marzo = self.detalle('2026-03', '70000', '20000', '10000')
+
+    def detalle(self, periodo, ordinario, extraordinario, fondo, convenio='0', vencimiento=None):
+        liquidacion = Liquidacion.objects.create(
+            consorcio=self.consorcio, periodo=periodo, cerrada=True, fecha_vencimiento_1=vencimiento)
+        montos = [Decimal(ordinario), Decimal(extraordinario), Decimal(fondo), Decimal(convenio)]
+        return DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=self.uf, monto_ordinario=montos[0],
+            monto_extraordinario=montos[1], monto_fondo_reserva=montos[2], monto_convenio=montos[3],
+            monto_total=sum(montos))
+
+    def pagar(self, monto, detalle=None, fecha=date(2026, 3, 5), estado='validado'):
+        return Pago.objects.create(detalle_liquidacion=detalle or self.marzo, fecha_pago=fecha,
+                                   monto_pagado=Decimal(monto), estado=estado, comprobante='x.pdf')
+
+    def partes(self, pago):
+        return [(i.concepto, i.parte, i.monto) for i in pago.imputaciones.all()]
+
+    def refrescar(self, detalle):
+        return DetalleLiquidacionUF.objects.get(pk=detalle.pk)
+
+    def test_ejemplo_del_mapping(self):
+        pago = self.pagar('40000')
+        self.assertEqual(self.partes(pago), [
+            ('capital', 'ordinario', Decimal('28000')), ('capital', 'extraordinario', Decimal('8000')),
+            ('capital', 'fondo', Decimal('4000')),
+        ])
+        marzo = self.refrescar(self.marzo)
+        self.assertEqual(marzo.deuda_total_actualizada, Decimal('60000'))
+        self.assertEqual(marzo.pendiente_por_parte(), {
+            'convenio': Decimal('0'), 'ordinario': Decimal('42000'),
+            'extraordinario': Decimal('12000'), 'fondo': Decimal('6000'),
+        })
+
+    def test_el_segundo_pago_completa_cada_parte(self):
+        self.pagar('40000')
+        pago = self.pagar('60000')
+        self.assertEqual(self.partes(pago), [
+            ('capital', 'ordinario', Decimal('42000')), ('capital', 'extraordinario', Decimal('12000')),
+            ('capital', 'fondo', Decimal('6000')),
+        ])
+        self.assertTrue(self.refrescar(self.marzo).esta_pagado)
+
+    def test_primero_el_interes_y_despues_la_proporcion(self):
+        self.consorcio.tasa_interes_mensual = Decimal('3')
+        self.consorcio.save()
+        enero = self.detalle('2026-01', '40', '10', '0', vencimiento=date(2026, 1, 10))
+        pago = self.pagar('31.50', detalle=enero, fecha=date(2026, 2, 5))  # $50 al 3% → $1,50 de interés
+        self.assertEqual(self.partes(pago), [
+            ('interes', '', Decimal('1.50')), ('capital', 'ordinario', Decimal('24')),
+            ('capital', 'extraordinario', Decimal('6')),
+        ])
+
+    def test_la_cuota_del_convenio_se_cobra_antes_que_el_resto(self):
+        self.marzo.delete()
+        abril = self.detalle('2026-04', '70000', '20000', '10000', convenio='10000')
+        pago = self.pagar('30000', detalle=abril)
+        self.assertEqual(self.partes(pago), [
+            ('capital', 'convenio', Decimal('10000')), ('capital', 'ordinario', Decimal('14000')),
+            ('capital', 'extraordinario', Decimal('4000')), ('capital', 'fondo', Decimal('2000')),
+        ])
+
+    def test_con_saldo_a_favor_aplicado_se_reparte_sobre_lo_que_queda(self):
+        anterior = self.pagar('100000')
+        ImputacionPago.objects.create(pago=anterior, concepto='adelanto', parte='ordinario',
+                                      detalle_liquidacion=self.detalle('2026-04', '70000', '20000', '10000'),
+                                      monto=Decimal('70000'))  # las ordinarias de abril ya están cubiertas
+        pago = self.pagar('15000', fecha=date(2026, 4, 5))
+        self.assertEqual(self.partes(pago), [
+            ('capital', 'extraordinario', Decimal('10000')), ('capital', 'fondo', Decimal('5000')),
+        ])
+
+    def test_el_redondeo_no_pierde_centavos(self):
+        self.marzo.delete()
+        detalle = self.detalle('2026-05', '100', '100', '100')
+        pago = self.pagar('100', detalle=detalle)
+        self.assertEqual(sum(i.monto for i in pago.imputaciones.all()), Decimal('100'))
+        self.assertEqual([i.monto for i in pago.imputaciones.all()],
+                         [Decimal('33.33'), Decimal('33.33'), Decimal('33.34')])
+
+    def test_validar_registra_en_caja_lo_ordinario_y_lo_extraordinario(self):
+        from .models import MovimientoCaja
+        pago = self.pagar('40000', estado='pendiente')
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        self.client.post(reverse('procesar_pago', args=[pago.pk]), {'accion': 'validar'})
+        movimientos = dict(MovimientoCaja.objects.values_list('tipo', 'monto'))
+        self.assertEqual(movimientos, {'ordinario': Decimal('28000'), 'extraordinario': Decimal('12000')})
+
+    def test_el_propietario_ve_el_desglose(self):
+        self.pagar('40000')
+        self.client.force_login(self.uf.propietario.usuario)
+        expensas = self.client.get(reverse('mis_expensas'), {'periodo': '2026-03'})
+        self.assertContains(expensas, 'Te queda por pagar de este mes')
+        self.assertContains(expensas, 'Extraordinarias $')
+        self.assertContains(self.client.get(reverse('historial_pagos')), 'Capital 2026-03 · extraordinarias')
+
+    def test_el_admin_ve_el_desglose_en_morosidad(self):
+        self.pagar('40000')
+        self.client.force_login(User.objects.create_superuser('admin', 'admin@example.com', 'clave'))
+        activar_consorcio(self.client, self.consorcio)
+        respuesta = self.client.get(reverse('morosidad_unidad', args=[self.uf.pk]))
+        self.assertContains(respuesta, 'Capital extraordinarias')
+
+
+class RepartoTests(TestCase):
+    def test_nunca_asigna_mas_de_lo_que_se_debe(self):
+        from .reparto import repartir_capital
+        pendiente = {'convenio': Decimal('0'), 'ordinario': Decimal('0.01'),
+                     'extraordinario': Decimal('0.01'), 'fondo': Decimal('0.01')}
+        self.assertEqual(repartir_capital(pendiente, Decimal('0.02')),
+                         [('ordinario', Decimal('0.01')), ('extraordinario', Decimal('0.01'))])
+        self.assertEqual(sum(m for _, m in repartir_capital(pendiente, Decimal('5'))), Decimal('0.03'))
