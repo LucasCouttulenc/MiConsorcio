@@ -665,6 +665,24 @@ class GastosDeMiUnidadTests(TestCase):
         self.assertNotContains(self.client.get(url, {'periodo': '2026-09'}), 'Ver factura')
 
 
+    def test_el_propietario_descarga_el_resumen_de_su_uf(self):
+        detalle = DetalleLiquidacionUF.objects.get(unidad_funcional=self.uf)
+        url = reverse('resumen_uf_propietario', args=[detalle.pk])
+        self.client.force_login(self.usuario)
+        self.assertContains(self.client.get(reverse('mis_expensas'), {'periodo': '2026-09'}), url)
+        respuesta = self.client.get(url)
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta['Content-Type'], 'application/pdf')
+        self.assertTrue(respuesta.content.startswith(b'%PDF'))
+
+    def test_no_descarga_el_resumen_de_otra_uf_ni_de_un_borrador(self):
+        vecina = DetalleLiquidacionUF.objects.get(unidad_funcional=self.vecina)
+        mio = DetalleLiquidacionUF.objects.get(unidad_funcional=self.uf)
+        self.client.force_login(self.usuario)
+        self.assertEqual(self.client.get(reverse('resumen_uf_propietario', args=[vecina.pk])).status_code, 404)
+        Liquidacion.objects.filter(pk=mio.liquidacion_id).update(cerrada=False)
+        self.assertEqual(self.client.get(reverse('resumen_uf_propietario', args=[mio.pk])).status_code, 404)
+
 class MorosidadTests(TestCase):
     """Pantalla de morosidad del admin: deuda por UF con los mismos números que ve el propietario."""
 

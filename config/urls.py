@@ -101,6 +101,7 @@ urlpatterns = [
     path('pagos/<int:pago_id>/recibo/', views_gastos.descargar_recibo_pago, name='recibo_pago'),
     path('notificaciones/liquidacion/<int:notificacion_id>/', views_gastos.abrir_notificacion_liquidacion, name='abrir_notificacion_liquidacion'),
     path('mis-expensas/liquidacion/<int:liquidacion_id>/documento/', views_gastos.descargar_documento_propietario, name='documento_liquidacion_propietario'),
+    path('mis-expensas/detalle/<int:detalle_id>/resumen/', views_gastos.descargar_resumen_propietario, name='resumen_uf_propietario'),
     path('liquidaciones/detalle/<int:detalle_id>/pagar/', views_gastos.registrar_pago, name='registrar_pago'),
     path('pagos/pendientes/', views_gastos.listar_pagos_pendientes, name='pagos_pendientes'),
     path('administracion/morosidad/', views_morosidad.morosidad, name='morosidad'),

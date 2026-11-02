@@ -1092,6 +1092,25 @@ def descargar_resumen_uf(request, detalle_id):
     return respuesta
 
 
+@login_required
+def descargar_resumen_propietario(request, detalle_id):
+    """Resumen en PDF de la liquidación cerrada para una UF del propietario logueado."""
+    propietario = get_object_or_404(Propietario, usuario=request.user)
+    detalle = get_object_or_404(
+        DetalleLiquidacionUF.objects.select_related(
+            'liquidacion__consorcio',
+            'unidad_funcional__propietario__usuario',
+        ),
+        pk=detalle_id, liquidacion__cerrada=True, unidad_funcional__propietario=propietario,
+    )
+    respuesta = HttpResponse(generar_resumen_uf_pdf(detalle), content_type='application/pdf')
+    respuesta['Content-Disposition'] = content_disposition_header(
+        True,
+        f'resumen-{detalle.unidad_funcional.pk}-{detalle.liquidacion.periodo}.pdf',
+    )
+    return respuesta
+
+
 
 
 

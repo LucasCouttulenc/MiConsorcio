@@ -86,6 +86,7 @@
                     <a class="portal-boton portal-boton-acento" href="{% url 'registrar_pago' detalle.pk %}">Adjuntar comprobante de pago</a>
                 {% endif %}
                 {% if detalle.liquidacion.documento %}<a class="portal-boton portal-boton-secundario" href="{% url 'documento_liquidacion_propietario' detalle.liquidacion.pk %}">Descargar liquidación PDF</a>{% endif %}
+                <a class="portal-boton portal-boton-secundario" href="{% url 'resumen_uf_propietario' detalle.pk %}">Descargar mi resumen PDF</a>
             </div>
         </section>
 
