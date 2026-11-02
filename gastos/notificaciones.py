@@ -55,6 +55,7 @@ def _item_liquidacion(notificacion):
         'texto': f'Nueva liquidación: {periodo_legible(detalle.liquidacion.periodo)}',
         'detalle': f'Te corresponde $ {number_format(detalle.monto_total, 2, force_grouping=True)}',
         'creada': notificacion.creada,
+        'orden': (0, notificacion.pk),
         'leida': notificacion.leida_en is not None,
         'url': reverse('abrir_notificacion_liquidacion', args=[notificacion.pk]),
     }
@@ -67,13 +68,15 @@ def _item_novedad(novedad):
         'texto': novedad.texto,
         'detalle': novedad.detalle,
         'creada': novedad.creada,
+        'orden': (1, novedad.pk),
         'leida': novedad.leida_en is not None,
         'url': reverse('abrir_novedad', args=[novedad.pk]),
     }
 
 
 def _ordenar(items):
-    items.sort(key=lambda item: item['creada'], reverse=True)
+    # Si dos quedan con el mismo instante, va primero la creada después (mayor pk; la novedad antes que la liquidación).
+    items.sort(key=lambda item: (item['creada'], item['orden']), reverse=True)
     ahora = timezone.now()
     for item in items:
         item['cuando'] = cuando(item['creada'], ahora)
