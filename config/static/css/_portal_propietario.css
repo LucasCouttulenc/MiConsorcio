@@ -22,6 +22,9 @@
 .portal-select option { background: #142b4b; color: #fff; }
 .portal-notificaciones { position: relative; z-index: 20; }
 .portal-notificaciones-boton { position: relative; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid #52739e; border-radius: 10px; background: #173252; color: #cfe5ff; cursor: pointer; transition: background .15s, border-color .15s; }
+.portal-notificaciones-boton.notificaciones-sidebar-cerrada {
+    top: -15px;
+}
 .portal-notificaciones-boton:hover, .portal-notificaciones-boton[aria-expanded="true"] { background: #24466f; border-color: #6eb9ff; }
 .portal-notificaciones-boton svg { width: 21px; height: 21px; }
 .portal-notificaciones-punto { position: absolute; top: 5px; right: 5px; width: 9px; height: 9px; border: 2px solid #173252; border-radius: 50%; background: #51c9ff; box-shadow: 0 0 0 1px rgba(81, 201, 255, .4); }

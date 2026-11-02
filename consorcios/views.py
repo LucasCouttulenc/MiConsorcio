@@ -112,7 +112,7 @@ class ListarUnidadesFuncionales(Lista):
     # agregaremos manualmente o vía contexto
     acciones = [] 
     columnas_con_permiso = {"gestionar": "consorcios.change_unidadfuncional"}
-    columnas_a_ocultar = {}
+    columnas_a_ocultar = {"consorcio"}
 
     def get_queryset(self):
         queryset = super().get_queryset()

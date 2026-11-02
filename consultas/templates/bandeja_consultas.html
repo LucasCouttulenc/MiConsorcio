@@ -21,13 +21,13 @@
 
 <div class="contenedor-tabla">
     <table class="tabla">
-        <thead><tr><th>N°</th><th>Asunto</th><th>Consorcio / UF</th><th>Propietario</th><th>Última actividad</th><th>Estado</th></tr></thead>
+        <thead><tr><th>N°</th><th>Asunto</th><th>UF</th><th>Propietario</th><th>Última actividad</th><th>Estado</th></tr></thead>
         <tbody>
         {% for consulta in consultas %}
             <tr class="consultas-fila" onclick="location.href='{% url 'gestionar_consulta' consulta.pk %}'">
                 <td>#{{ consulta.pk }}</td>
                 <td><a href="{% url 'gestionar_consulta' consulta.pk %}"><strong>{{ consulta.asunto }}</strong></a><br><small>{{ consulta.cantidad_mensajes }} mensaje{{ consulta.cantidad_mensajes|pluralize }}</small></td>
-                <td><strong>{{ consulta.unidad_funcional.consorcio.nombre }}</strong><br><small>Piso {{ consulta.unidad_funcional.piso }}° {{ consulta.unidad_funcional.departamento }}</small></td>
+                <td>{{ consulta.unidad_funcional.piso }}° {{ consulta.unidad_funcional.departamento }}</td>
                 <td>{% if consulta.unidad_funcional.propietario_id %}{{ consulta.unidad_funcional.propietario.usuario.get_full_name|default:consulta.unidad_funcional.propietario.usuario.username }}{% else %}<span class="uf-pendiente">Sin propietario asignado</span>{% endif %}</td>
                 <td>{{ consulta.actualizada|date:"d/m/Y H:i" }}</td>
                 <td><span class="consulta-estado consulta-estado-{{ consulta.estado }}">{{ consulta.get_estado_display }}</span></td>

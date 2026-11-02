@@ -118,6 +118,16 @@ a.sidebar-empresa {
     overflow-y: auto;
     overflow-x: hidden;
     margin-top: 16px;
+    /* ocultar scroll bar */
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    -webkit-scrollbar { display: none; /* Safari and Chrome */ }
+}
+
+.sidebar-submenu {
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .submenu-titulo {
@@ -126,13 +136,15 @@ a.sidebar-empresa {
     color: var(--colorTextoMuted);
     letter-spacing: 0.05em;
     display: block;
-    margin: 16px 0 8px 12px;
+    margin: 10px 0 8px 12px;
     opacity: 0;
-    transition: opacity 0.2s;
+    height: 0;
+    transition: opacity 0.2s ease, height 0.2s ease;
 }
 
 .sidebar.open .submenu-titulo {
     opacity: 1;
+    height: auto;
 }
 
 .sidebar-header > .portal-notificaciones {
@@ -381,9 +393,8 @@ a.sidebar-empresa {
    ========================================================== */
 
 .sidebar-consorcio-selector {
-    padding: 15px 20px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 5px 5px;
+    /* border-bottom: 1px solid rgba(255, 255, 255, 0.05); */
     transition: all 0.3s ease;
 }
 

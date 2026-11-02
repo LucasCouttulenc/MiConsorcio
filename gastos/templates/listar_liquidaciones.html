@@ -43,12 +43,12 @@
 <h2 class="liquidaciones-subtitulo">Finalizadas</h2>
 <div class="contenedor-tabla">
   <table class="tabla">
-    <thead><tr><th>Período</th><th>Consorcio</th><th>Emisión</th><th>Vencimiento</th><th>Total</th><th>Detalle</th></tr></thead>
+    <thead><tr><th>Período</th><th>Emisión</th><th>Vencimiento</th><th>Total</th><th>Detalle</th></tr></thead>
     <tbody>
     {% for liquidacion in finalizadas %}
       <tr>
         <td>{{ liquidacion.periodo }}</td>
-        <td>{{ liquidacion.consorcio.nombre }}</td>
+        <!-- <td>{{ liquidacion.consorcio.nombre }}</td> -->
         <td>{{ liquidacion.fecha_emision|date:'d/m/Y' }}</td>
         <td>{{ liquidacion.fecha_vencimiento_1|date:'d/m/Y' }}</td>
         <td>$ {{ liquidacion.total|floatformat:"2g" }}</td>

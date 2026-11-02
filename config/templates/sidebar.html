@@ -94,6 +94,17 @@
                             </a>
                         </div>
 
+                        <!-- x. PERSONAL -->
+                        <div class="submenu-item {% if request.resolver_match.url_name in 'listar_personal crear_personal gestionar_personal' %}active{% endif %}">
+                            <a href="{% url 'listar_personal' %}" title="Personal">
+                                <span class="item-icono">
+                                    <img src="{% static 'imagenes/personal.svg' %}" class="svg-icono default-icon" alt="Personal">
+                                    <img src="{% static 'imagenes/personal_blanco.svg' %}" class="svg-icono hover-icon" alt="Personal">
+                                </span>
+                                <span class="item-texto">Personal</span>
+                            </a>
+                        </div>
+
                         <!-- 4. LIBRO DIARIO -->
                         <div class="submenu-item {% if request.resolver_match.url_name == 'libro_diario' %}active{% endif %}">
                             <a href="{% url 'libro_diario' %}" title="Libro Diario">
@@ -189,8 +200,8 @@
                         <div class="submenu-item {% if request.resolver_match.url_name == 'bandeja_consultas' or request.resolver_match.url_name == 'gestionar_consulta' %}active{% endif %}">
                             <a href="{% url 'bandeja_consultas' %}" title="Consultas">
                                 <span class="item-icono">
-                                    <img src="{% static 'imagenes/personal.svg' %}" class="svg-icono default-icon" alt="Consultas">
-                                    <img src="{% static 'imagenes/personal_blanco.svg' %}" class="svg-icono hover-icon" alt="Consultas">
+                                    <img src="{% static 'imagenes/consultas.svg' %}" class="svg-icono default-icon" alt="Consultas">
+                                    <img src="{% static 'imagenes/consultas_blanco.svg' %}" class="svg-icono hover-icon" alt="Consultas">
                                 </span>
                                 <span class="item-texto">Consultas</span>
                             </a>
@@ -328,13 +339,37 @@
 </nav>
 
 <script>
-    if (localStorage.getItem('miConsorcioSidebarExpandedV2') !== 'false') {
-        document.getElementById('appLayout').classList.add('sidebar-expanded');
-        document.getElementById('sidebar').classList.add('open');
-    } else {
-        document.getElementById('appLayout').classList.remove('sidebar-expanded');
-        document.getElementById('sidebar').classList.remove('open');
+    // Clase que lleva el botón de notificaciones solo cuando la sidebar está cerrada.
+    const CLASE_NOTIFICACIONES_CERRADA = 'notificaciones-sidebar-cerrada';
+ 
+    function marcarNotificaciones(expanded) {
+        const boton = document.querySelector('#sidebar [data-notificaciones-toggle]');
+        if (boton) {
+            boton.classList.toggle(CLASE_NOTIFICACIONES_CERRADA, !expanded);
+        }
     }
+ 
+    function cerrarNotificaciones() {
+        const boton = document.querySelector('#sidebar [data-notificaciones-toggle]');
+        const panel = document.getElementById('panel-notificaciones');
+        if (!boton || !panel || panel.hidden) {
+            return;
+        }
+        // Se cierra con el propio botón, así el JS del componente queda en el mismo estado.
+        boton.click();
+        if (!panel.hidden) {
+            panel.hidden = true;
+            boton.setAttribute('aria-expanded', 'false');
+        }
+    }
+ 
+    (function () {
+        // Se aplica antes de que cargue la página, para que no parpadee.
+        const expanded = localStorage.getItem('miConsorcioSidebarExpandedV2') !== 'false';
+        document.getElementById('appLayout').classList.toggle('sidebar-expanded', expanded);
+        document.getElementById('sidebar').classList.toggle('open', expanded);
+        marcarNotificaciones(expanded);
+    })();
     
 $(document).ready(function() {
     const layout = document.getElementById('appLayout');
@@ -346,6 +381,9 @@ $(document).ready(function() {
         layout.classList.toggle('sidebar-expanded', expanded);
         sidebar.classList.toggle('open', expanded);
         toggleButton.setAttribute('aria-expanded', String(expanded));
+        marcarNotificaciones(expanded);
+        // El botón cambia de lugar al abrir o cerrar la sidebar: el panel quedaría flotando.
+        cerrarNotificaciones();
         localStorage.setItem(storageKey, String(expanded));
     }
 

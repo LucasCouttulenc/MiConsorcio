@@ -20,8 +20,9 @@
     </div>
     {% if saldo_cierre is not None %}
     <div class="caja-card" style="border-left: 4px solid #64748b;">
-        <span>Saldo Cierre Anterior ({{ fecha_cierre|date:"d/m/Y" }})</span>
+        <span>Saldo Cierre Anterior</span>
         <strong>$ {{ saldo_cierre|floatformat:"2g" }}</strong>
+        <span>{{ fecha_cierre|date:"d/m/Y" }}</span>
     </div>
     {% endif %}
     <div class="caja-card">
