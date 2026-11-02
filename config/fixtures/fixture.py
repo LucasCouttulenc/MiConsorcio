@@ -5,6 +5,8 @@ CLAVE_PK = 'pk'
 CLAVE_CAMPOS = 'fields'
 
 class Fixture:
+    dependencias_extra = ()
+
     def __init__(self, modelo):
         self.modelo = modelo
         self.registros = []

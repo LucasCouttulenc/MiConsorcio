@@ -1,33 +1,37 @@
+from decouple import config
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 
 from ..fixture import Fixture
-from usuarios.models import Administrador
-from consorcios.models import Consorcio
-from django.contrib.auth.models import Group
 from config.comun import GRUPO_ADMINISTRADORES
-from django.contrib.auth import get_user_model
-import random
+from consorcios.models import Consorcio
+from usuarios.models import Administrador
+
 User = get_user_model()
+
+# Qué consorcios (por posición) administra cada usuario de prueba. Se pisan en dos
+# para tener consorcios con dos administradores, y entre los dos cubren todos.
+CONSORCIOS_POR_ADMINISTRADOR = {
+    'ADMINISTRADOR': slice(0, 6),  # Paula: consorcios 1 a 6
+    'AMBOS': slice(4, 10),         # Laura: consorcios 5 a 10
+}
+
 
 class FixtureDeAdministrador(Fixture):
     def __init__(self):
         super().__init__(Administrador)
 
     def campos(self):
-        grupo_administradores = self.administrador.obtener_id_segun_campo(Group, 'name', GRUPO_ADMINISTRADORES)
-        # Un usuario puede pertenecer a más de un grupo (por ejemplo,
-        # administrador y propietario). Comparar la lista completa de grupos
-        # dejaba afuera a esos usuarios.
-        usuarios = [
-            registro['pk']
-            for registro in self.administrador._diccionario_fixtures.get(User, [])
-            if grupo_administradores in registro['fields'].get('groups', [])
-        ]
-        consorcios = self.administrador.obtener_ids(Consorcio)
+        adm = self.administrador
+        grupo = adm.obtener_id(Group, name=GRUPO_ADMINISTRADORES)
+        consorcios = adm.obtener_ids(Consorcio)
+        asignados = {
+            adm.obtener_id(User, username=config(clave)): consorcios[posiciones]
+            for clave, posiciones in CONSORCIOS_POR_ADMINISTRADOR.items()
+        }
 
+        # Cualquier otro usuario del grupo queda como administrador sin consorcios.
         return [
-            {
-                'usuario': usuario,
-                'consorcios': consorcios[:random.randint(1, 5)]  # Asignar un número aleatorio de consorcios al administrador
-            } for usuario in usuarios
+            {'usuario': usuario, 'consorcios': asignados.get(usuario, [])}
+            for usuario in adm.obtener_ids(User, groups__contiene=grupo)
         ]
-

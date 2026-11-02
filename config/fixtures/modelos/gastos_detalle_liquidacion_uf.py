@@ -1,55 +1,34 @@
-from gastos.models import DetalleLiquidacionUF, Liquidacion
-from consorcios.models import UnidadFuncional
-
 from ..fixture import Fixture
+from .escenario_gastos import DEPENDENCIAS_ESCENARIO, a_json, id_liquidacion, obtener_escenario
+from gastos.models import ConvenioPago, DetalleLiquidacionUF
+
+MONTOS = ('alicuota', 'monto_ordinario', 'monto_extraordinario', 'monto_fondo_reserva',
+          'monto_convenio', 'monto_total')
 
 
 class FixtureDeDetalleLiquidacionUf(Fixture):
-    """Deja dos unidades con deuda y distintos niveles de atraso en cada consorcio."""
+    """Expensa de cada UF en cada liquidación: suma de lo que le tocó de cada gasto, fondo y cuota de convenio."""
+
+    dependencias_extra = DEPENDENCIAS_ESCENARIO
 
     def __init__(self):
         super().__init__(DetalleLiquidacionUF)
 
     def campos(self):
-        liquidaciones = self.administrador._diccionario_fixtures.get(Liquidacion, [])
-        unidades = self.administrador._diccionario_fixtures.get(UnidadFuncional, [])
-        unidades_por_consorcio = {}
-        for registro in unidades:
-            unidades_por_consorcio.setdefault(registro['fields']['consorcio_id'], []).append(registro)
-
-        periodos_por_consorcio = {}
-        for registro in liquidaciones:
-            campos = registro['fields']
-            periodos_por_consorcio.setdefault(campos['consorcio_id'], {})[campos['periodo']] = registro['pk']
-
+        adm = self.administrador
+        escenario = obtener_escenario(adm)
         resultado = []
-        for consorcio_id, periodos in periodos_por_consorcio.items():
-            ufs = sorted(unidades_por_consorcio.get(consorcio_id, []), key=lambda uf: uf['fields']['piso'])
-            if len(ufs) < 2:
-                continue
 
-            periodo_mas_antiguo, periodo_reciente = sorted(periodos)
-            for periodo, seleccion in (
-                (periodo_mas_antiguo, ufs[:1]),
-                (periodo_reciente, ufs[:2]),
-            ):
-                total_liquidacion = 0
-                for indice, uf in enumerate(seleccion):
-                    monto = '86000.00' if indice == 0 else '72000.00'
-                    total_liquidacion += int(float(monto))
-                    resultado.append({
-                        'liquidacion_id': periodos[periodo],
-                        'unidad_funcional_id': uf['pk'],
-                        'alicuota': uf['fields']['alicuota'],
-                        'monto_ordinario': monto,
-                        'monto_extraordinario': '0.00',
-                        'monto_fondo_reserva': '0.00',
-                        'monto_convenio': '0.00',
-                        'monto_total': monto,
-                    })
-                liquidacion = next(
-                    reg for reg in liquidaciones if reg['pk'] == periodos[periodo]
-                )
-                liquidacion['fields']['total_ordinario'] = f'{total_liquidacion:.2f}'
+        for detalle in escenario.detalles:
+            convenio = None
+            if detalle['convenio']:
+                convenio = adm.obtener_id(ConvenioPago, unidad_funcional=detalle['convenio'])
+
+            resultado.append({
+                'liquidacion': id_liquidacion(adm, detalle['consorcio'], detalle['periodo']),
+                'unidad_funcional': detalle['unidad_funcional'],
+                **{campo: a_json(detalle[campo]) for campo in MONTOS},
+                'convenio': convenio,
+            })
 
         return resultado

@@ -6,16 +6,17 @@ from pathlib import Path
 CLAVE_MODELO = 'model'
 CLAVE_PK = 'pk'
 CLAVE_CAMPOS = 'fields'
+SUFIJO_CONTIENE = '__contiene'
 
 class AdministradorDeFixtures:
     _instacia = None
 
     def __new__(cls, *args, carpeta=None, **kwargs):
         if cls._instacia is None:
-            cls._instacia = super().__new__(cls, *args, **kwargs)
-            cls._instacia._inicializar()
             if carpeta is None:
                 raise ValueError("La carpeta de modelos no puede ser None")
+            cls._instacia = super().__new__(cls, *args, **kwargs)
+            cls._instacia._inicializar()
             cls._instacia.carpeta = carpeta
         return cls._instacia
 
@@ -26,36 +27,77 @@ class AdministradorDeFixtures:
     def agregar(self, fixture):
         self._fixtures[fixture.modelo] = fixture
 
+    #################################################################
+    #                    API DE CONSULTA (pública)                  #
+    #################################################################
+    # Los fixtures solo deberían acceder a otros fixtures con estos
+    # métodos. Los filtros usan los nombres de campo tal cual se cargan
+    # en el fixture (ej: 'consorcio', no 'consorcio_id'). 'pk' también
+    # se puede usar como filtro.
+
+    def obtener_ids(self, modelo, **filtros):
+        """Ids de los registros que cumplen todos los filtros (todos si no hay filtros)."""
+        return [registro[CLAVE_PK] for registro in self._filtrar(modelo, filtros)]
+
+    def obtener_id(self, modelo, **filtros):
+        """Id del único registro que cumple los filtros. Falla si hay cero o más de uno."""
+        ids = self.obtener_ids(modelo, **filtros)
+        if not ids:
+            raise Exception(f"No se encontró un registro de {self._nombre(modelo)} con {filtros}")
+        if len(ids) > 1:
+            raise Exception(f"Hay {len(ids)} registros de {self._nombre(modelo)} con {filtros}; se esperaba uno")
+        return ids[0]
+
+    def obtener_valor(self, modelo, pk, campo):
+        """Valor de un campo de un registro puntual."""
+        for registro in self._registros(modelo):
+            if registro[CLAVE_PK] == pk:
+                return self._valor_de(registro, campo)
+        raise Exception(f"No se encontró un registro de {self._nombre(modelo)} con pk={pk}")
+
+    # Compatibilidad con los fixtures existentes
     def obtener_id_segun_campo(self, modelo, campo, valor):
-        nombre_modelo = modelo._meta.label_lower
-        fixture = self._diccionario_fixtures.get(modelo)
-
-        if not fixture:
-            raise Exception(f"No se encontro un fixture para el modelo {nombre_modelo}")
-
-        for registro in fixture:
-            if registro[CLAVE_CAMPOS].get(campo) == valor:
-                return registro[CLAVE_PK]
-
-        raise Exception(f"No se encontro un fixture para el modelo {nombre_modelo} con {campo}={valor}")
-
-    def obtener_ids(self, modelo):
-        nombre_modelo = modelo._meta.label_lower
-        fixture = self._diccionario_fixtures.get(modelo)
-
-        if not fixture:
-            raise Exception(f"No se encontro fixture para el modelo {nombre_modelo}")
-
-        return [registro[CLAVE_PK] for registro in fixture]
+        return self.obtener_id(modelo, **{campo: valor})
 
     def obtener_ids_segun_campo(self, modelo, campo, valor):
-        nombre_modelo = modelo._meta.label_lower
-        fixture = self._diccionario_fixtures.get(modelo)
+        return self.obtener_ids(modelo, **{campo: valor})
 
-        if not fixture:
-            raise Exception(f"No se encontro fixture para el modelo {nombre_modelo}")
+    #################################################################
+    #                        Helpers internos                       #
+    #################################################################
 
-        return [registro[CLAVE_PK] for registro in fixture if registro[CLAVE_CAMPOS].get(campo) == valor]
+    def _nombre(self, modelo):
+        return modelo._meta.label_lower
+
+    def _registros(self, modelo):
+        registros = self._diccionario_fixtures.get(modelo)
+        if registros is None:
+            raise Exception(
+                f"No hay fixture generado para {self._nombre(modelo)}. "
+                f"Verificá que exista el archivo y que el modelo que lo consulta dependa de él (FK/M2M)."
+            )
+        return registros
+
+    def _valor_de(self, registro, campo):
+        if campo == CLAVE_PK:
+            return registro[CLAVE_PK]
+        return registro[CLAVE_CAMPOS].get(campo)
+
+    def _cumple(self, registro, campo, valor):
+        if campo.endswith(SUFIJO_CONTIENE):
+            lista = self._valor_de(registro, campo[:-len(SUFIJO_CONTIENE)]) or []
+            return valor in lista
+        return self._valor_de(registro, campo) == valor
+
+    def _filtrar(self, modelo, filtros):
+        return [
+            registro for registro in self._registros(modelo)
+            if all(self._cumple(registro, campo, valor) for campo, valor in filtros.items())
+        ]
+
+    #################################################################
+    #                      Generación del archivo                   #
+    #################################################################
 
     def exportar_a_archivo(self, nombre_archivo):
         # Importar todos los archivos de fixtures
@@ -94,12 +136,11 @@ class AdministradorDeFixtures:
             f.write(json.dumps(lista_fixtures, indent=4))
 
     def _ordenar_modelos_topologicamente(self):
-        modelos = self._fixtures.keys()
         grafo = nx.DiGraph()
 
         # Crear grafo con modelos como nodos y dependencias como aristas
-        for modelo in modelos:
-            dependencias = self._obtener_dependecias(modelo)
+        for modelo, fixture in self._fixtures.items():
+            dependencias = self._obtener_dependecias(modelo) + list(fixture.dependencias_extra)
             if not dependencias:
                 grafo.add_node(modelo)  
             for dep in dependencias:
