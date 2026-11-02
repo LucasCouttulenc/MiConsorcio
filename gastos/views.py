@@ -18,6 +18,7 @@ from usuarios.models import Propietario
 from django.core.exceptions import ValidationError
 from .forms import FormularioPago, FormularioServicioRecurrente, validar_comprobante, FormularioLibroDiario
 from consorcios.models import Consorcio, GrupoProrrateo, TipoReparto, UnidadFuncional
+from contactos.models import ContactoAdministracion
 from .reparto import con_nombre
 from .models import aplicar_saldo_a_favor, cobrar_cuotas_convenio, imputar_pago, saldo_a_favor, Gasto, Liquidacion, TipoGasto, Pago, DetalleGastoUF, DetalleLiquidacionUF, NotificacionLiquidacion, ServicioRecurrente, MovimientoCaja, ClaseGasto
 from .pdf import generar_pdf_liquidacion, generar_recibo_pago_pdf
@@ -951,7 +952,7 @@ def registrar_pago(request, detalle_id):
             pago.estado = 'pendiente'
             pago.save()
             
-            messages.success(request, 'Comprobante enviado exitosamente. Queda pendiente de validación.')
+            messages.success(request, 'Pago informado. Queda pendiente de validación.')
             
             # Verificamos si es Propietario para llevarlo a su panel
             if Propietario.objects.filter(usuario=request.user).exists():
@@ -961,9 +962,16 @@ def registrar_pago(request, detalle_id):
         monto_sugerido = detalle.deuda_total_actualizada + detalle.interes()
         form = FormularioPago(initial={'monto_pagado': monto_sugerido, 'fecha_pago': date.today()})
         
+    # Para pagar en efectivo: dónde y cuándo atiende la administración
+    consorcio = detalle.liquidacion.consorcio
+    contacto = ContactoAdministracion.objects.filter(consorcio=consorcio).first()
+    direccion = ', '.join(filter(None, (contacto.direccion, contacto.localidad))) if contacto else ''
+    horario = (contacto.horario if contacto else '') or consorcio.horario_atencion
     return render(request, 'registrar_pago.html', {
         'form': form,
-        'detalle': detalle
+        'detalle': detalle,
+        'direccion_administracion': direccion,
+        'horario_administracion': horario,
     })
 
 @login_required
@@ -1045,7 +1053,8 @@ def procesar_pago(request, pago_id):
             if diferencia != 0:
                 monto_ord += diferencia
 
-            # 3. Creamos los movimientos en la Caja
+            # 3. Creamos los movimientos en la Caja (transferencia y depósito entran al banco)
+            medio_caja = 'efectivo' if pago.medio_pago == 'efectivo' else 'transferencia'
             if monto_ord > 0:
                 MovimientoCaja.objects.create(
                     consorcio=consorcio,
@@ -1053,7 +1062,7 @@ def procesar_pago(request, pago_id):
                     concepto=f"{concepto_base} (Expensas)",
                     monto=monto_ord,
                     tipo='ordinario',
-                    medio_pago='transferencia'
+                    medio_pago=medio_caja
                 )
             if monto_ext > 0:
                 MovimientoCaja.objects.create(
@@ -1062,7 +1071,7 @@ def procesar_pago(request, pago_id):
                     concepto=f"{concepto_base} (Extraordinario)",
                     monto=monto_ext,
                     tipo='extraordinario',
-                    medio_pago='transferencia'
+                    medio_pago=medio_caja
                 )
 
     if accion == 'validar':

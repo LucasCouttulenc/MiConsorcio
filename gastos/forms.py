@@ -35,8 +35,9 @@ class FormularioGenerarLiquidacion(forms.Form):
 class FormularioPago(forms.ModelForm):
     class Meta:
         model = Pago
-        fields = ['fecha_pago', 'monto_pagado', 'comprobante']
+        fields = ['medio_pago', 'fecha_pago', 'monto_pagado', 'comprobante']
         widgets = {
+            'medio_pago': forms.RadioSelect,
             'fecha_pago': forms.DateInput(attrs={'type': 'date'}),
         }
 
@@ -53,7 +54,18 @@ class FormularioPago(forms.ModelForm):
         return fecha
 
     def clean_comprobante(self):
-        return validar_comprobante(self.cleaned_data['comprobante'])
+        archivo = self.cleaned_data.get('comprobante')
+        return validar_comprobante(archivo) if archivo else archivo
+
+    def clean(self):
+        datos = super().clean()
+        medio = datos.get('medio_pago')
+        if medio == 'efectivo':
+            datos['comprobante'] = None
+            self.errors.pop('comprobante', None)
+        elif medio and not datos.get('comprobante') and 'comprobante' not in self.errors:
+            self.add_error('comprobante', 'Adjuntá el comprobante de la transferencia.' if medio == 'transferencia' else 'Adjuntá la boleta del depósito.')
+        return datos
 
 class FormularioServicioRecurrente(forms.ModelForm):
     class Meta:

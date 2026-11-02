@@ -360,10 +360,17 @@ class Pago(models.Model):
         ('validado', 'Validado'),
         ('rechazado', 'Rechazado'),
     )
+    MEDIOS = (
+        ('transferencia', 'Transferencia'),
+        ('deposito', 'Depósito'),
+        ('efectivo', 'Efectivo'),
+    )
     detalle_liquidacion = models.ForeignKey(DetalleLiquidacionUF, on_delete=models.CASCADE, related_name='pagos')
     fecha_pago = models.DateField(verbose_name="Fecha de pago")
     monto_pagado = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Monto pagado")
-    comprobante = models.FileField(upload_to='comprobantes_pago/', verbose_name="Comprobante de transferencia")
+    medio_pago = models.CharField(max_length=15, choices=MEDIOS, default='transferencia', verbose_name="Medio de pago")
+    # En efectivo no hay comprobante: se paga en mano a la administración
+    comprobante = models.FileField(upload_to='comprobantes_pago/', blank=True, verbose_name="Comprobante")
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
     fecha_registro = models.DateTimeField(auto_now_add=True)
     notas_admin = models.TextField(blank=True, default='', verbose_name="Notas del Administrador")

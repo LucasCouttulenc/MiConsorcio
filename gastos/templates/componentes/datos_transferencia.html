@@ -1,6 +1,6 @@
-{% comment %}Cuenta del consorcio a la que el propietario transfiere. Recibe `consorcio` y opcionalmente `unidad` y `variante` ("claro").{% endcomment %}
+{% comment %}Cuenta del consorcio a la que el propietario transfiere. Recibe `consorcio` y opcionalmente `unidad`, `titulo` y `variante` ("claro").{% endcomment %}
 <div class="datos-transferencia{% if variante %} datos-transferencia-{{ variante }}{% endif %}">
-    <p class="datos-transferencia-titulo">Datos de transferencia</p>
+    <p class="datos-transferencia-titulo">{{ titulo|default:"Datos de transferencia" }}</p>
     {% if consorcio.tiene_datos_transferencia %}
     <dl>
         {% if consorcio.banco %}<div><dt>Banco</dt><dd>{{ consorcio.banco }}</dd></div>{% endif %}

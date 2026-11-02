@@ -90,6 +90,16 @@
     .form-group input[type="file"]:hover {
         background: #e9ecef;
     }
+    .medio-pago { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; padding: 0; border: 0; }
+    .medio-pago legend { margin-bottom: 8px; font-weight: 600; color: #333; font-size: 0.9rem; }
+    .medio-pago label { display: flex; justify-content: center; align-items: center; padding: 10px 6px; border: 1px solid #ced4da; border-radius: 8px; color: #1b365d; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+    .medio-pago input { position: absolute; opacity: 0; pointer-events: none; }
+    .medio-pago label:has(input:checked) { border-color: #1b365d; background: #1b365d; color: #fff; }
+    .medio-pago label:has(input:focus-visible) { outline: 3px solid rgba(27, 54, 93, 0.3); }
+    .pago-efectivo { margin-bottom: 24px; padding: 12px 14px; border: 1px solid #c9d8ea; border-radius: 10px; background: #f1f6fc; color: #445a7a; font-size: 0.85rem; }
+    .pago-efectivo strong { color: #142947; }
+    .pago-efectivo p { margin: 0; }
+    .pago-efectivo p + p { margin-top: 4px; }
     .form-error {
         margin: 6px 0 0 0;
         color: #c62828;
@@ -144,34 +154,67 @@
             <p class="pago-deuda">Total a pagar: $ {{ detalle.deuda_total_actualizada|floatformat:"2g" }}</p>
         </div>
 
-        {% include "componentes/datos_transferencia.html" with consorcio=detalle.liquidacion.consorcio unidad=detalle.unidad_funcional variante="claro" %}
-
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
+
+            <div class="form-group">
+                <fieldset class="medio-pago">
+                    <legend>Forma de pago</legend>
+                    {% for opcion in form.medio_pago %}<label>{{ opcion.tag }}{{ opcion.choice_label }}</label>{% endfor %}
+                </fieldset>
+                {% for error in form.medio_pago.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
+            </div>
+
+            <div data-medio="transferencia">
+                {% include "componentes/datos_transferencia.html" with consorcio=detalle.liquidacion.consorcio unidad=detalle.unidad_funcional variante="claro" %}
+            </div>
+            <div data-medio="deposito">
+                {% include "componentes/datos_transferencia.html" with consorcio=detalle.liquidacion.consorcio unidad=detalle.unidad_funcional variante="claro" titulo="Datos de depósito" %}
+            </div>
+            {% if direccion_administracion or horario_administracion %}
+            <div class="pago-efectivo" data-medio="efectivo">
+                {% if direccion_administracion %}<p>Dirección de la administración: <strong>{{ direccion_administracion }}</strong></p>{% endif %}
+                {% if horario_administracion %}<p>Horario de atención: <strong>{{ horario_administracion }}</strong></p>{% endif %}
+            </div>
+            {% endif %}
             
             <div class="form-group">
-                <label for="{{ form.fecha_pago.id_for_label }}">Fecha de la transferencia</label>
+                <label for="{{ form.fecha_pago.id_for_label }}">Fecha del pago</label>
                 {{ form.fecha_pago }}
                 {% for error in form.fecha_pago.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </div>
 
             <div class="form-group">
-                <label for="{{ form.monto_pagado.id_for_label }}">Monto transferido ($)</label>
+                <label for="{{ form.monto_pagado.id_for_label }}">Monto pagado ($)</label>
                 {{ form.monto_pagado }}
                 {% for error in form.monto_pagado.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </div>
 
-            <div class="form-group">
-                <label for="{{ form.comprobante.id_for_label }}">Comprobante (PDF, JPG o PNG, hasta 5 MB)</label>
+            <div class="form-group" data-medio="transferencia deposito">
+                <label for="{{ form.comprobante.id_for_label }}"><span data-medio="transferencia">Comprobante de la transferencia</span><span data-medio="deposito">Boleta del depósito</span> · PDF, JPG o PNG, hasta 5 MB</label>
                 {{ form.comprobante }}
                 {% for error in form.comprobante.errors %}<p class="form-error">{{ error }}</p>{% endfor %}
             </div>
 
             <div class="pago-acciones">
                 <a href="javascript:history.back()" class="boton-cancelar">← Volver</a>
-                <button type="submit" class="boton-enviar">Enviar comprobante</button>
+                <button type="submit" class="boton-enviar">Informar pago</button>
             </div>
         </form>
     </div>
 </div>
+<script>
+    // Muestra solo lo que corresponde al medio elegido (cuenta del consorcio o pago en la administración)
+    const mediosPago = document.querySelectorAll('input[name="medio_pago"]');
+    function mostrarMedio() {
+        const elegido = document.querySelector('input[name="medio_pago"]:checked')?.value;
+        document.querySelectorAll('[data-medio]').forEach((bloque) => {
+            bloque.hidden = !bloque.dataset.medio.split(' ').includes(elegido);
+        });
+        // En efectivo no se adjunta nada
+        document.querySelector('input[name="comprobante"]').disabled = elegido === 'efectivo';
+    }
+    mediosPago.forEach((opcion) => opcion.addEventListener('change', mostrarMedio));
+    mostrarMedio();
+</script>
 {% endblock %}

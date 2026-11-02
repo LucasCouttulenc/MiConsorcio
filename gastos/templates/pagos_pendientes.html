@@ -22,6 +22,7 @@
                 <th>Fecha</th>
                 <th>Consorcio / UF</th>
                 <th class="col-num">Monto</th>
+                <th>Medio</th>
                 <th>Comprobante</th>
                 <th class="col-acciones">Acción</th>
             </tr>
@@ -38,6 +39,7 @@
                         </span>
                     </td>
                     <td class="col-num pp-monto">$ {{ pago.monto_pagado|floatformat:"2g" }}</td>
+                    <td><span class="pp-medio pp-medio-{{ pago.medio_pago }}">{{ pago.get_medio_pago_display }}</span></td>
                     <td>
                         {% if pago.comprobante %}
                             <a href="{{ pago.comprobante.url }}" target="_blank" rel="noopener" class="pp-link-comprobante" aria-label="Ver comprobante en una pestaña nueva">
@@ -66,7 +68,7 @@
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="5" class="pp-vacio">No hay pagos pendientes.</td>
+                    <td colspan="6" class="pp-vacio">No hay pagos pendientes.</td>
                 </tr>
             {% endfor %}
         </tbody>

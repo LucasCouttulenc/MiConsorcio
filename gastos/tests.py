@@ -234,8 +234,10 @@ def archivo(nombre='comprobante.pdf', tipo='application/pdf', contenido=b'%PDF-1
 
 class FormularioPagoTests(TestCase):
     def formulario(self, **cambios):
-        datos = {'fecha_pago': date.today().isoformat(), 'monto_pagado': '1000'}
+        datos = {'medio_pago': 'transferencia', 'fecha_pago': date.today().isoformat(), 'monto_pagado': '1000'}
         archivos = {'comprobante': cambios.pop('comprobante', archivo())}
+        if archivos['comprobante'] is None:
+            archivos = {}
         datos.update(cambios)
         return FormularioPago(datos, archivos)
 
@@ -265,6 +267,22 @@ class FormularioPagoTests(TestCase):
     def test_rechaza_archivos_grandes(self):
         grande = archivo(contenido=b'0' * (5 * 1024 * 1024 + 1))
         self.assertIn('comprobante', self.formulario(comprobante=grande).errors)
+
+    def test_transferencia_y_deposito_piden_comprobante(self):
+        for medio in ('transferencia', 'deposito'):
+            with self.subTest(medio=medio):
+                self.assertIn('comprobante', self.formulario(medio_pago=medio, comprobante=None).errors)
+
+    def test_efectivo_no_pide_comprobante(self):
+        self.assertTrue(self.formulario(medio_pago='efectivo', comprobante=None).is_valid())
+
+    def test_efectivo_descarta_el_archivo(self):
+        formulario = self.formulario(medio_pago='efectivo')
+        self.assertTrue(formulario.is_valid())
+        self.assertIsNone(formulario.save(commit=False).comprobante.name or None)
+
+    def test_medio_invalido(self):
+        self.assertIn('medio_pago', self.formulario(medio_pago='cheque').errors)
 
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp())
@@ -308,6 +326,17 @@ class ProcesarPagoTests(TestCase):
     def test_accion_invalida_no_cambia_el_estado(self):
         self.assertEqual(self.procesar('cualquiera'), 'pendiente')
 
+    def test_caja_registra_el_medio_del_pago(self):
+        from .models import MovimientoCaja
+        for medio, en_caja in (('efectivo', 'efectivo'), ('deposito', 'transferencia')):
+            with self.subTest(medio=medio):
+                MovimientoCaja.objects.all().delete()
+                self.pago = Pago.objects.create(
+                    detalle_liquidacion=self.pago.detalle_liquidacion, fecha_pago=date.today(),
+                    monto_pagado=Decimal('10'), medio_pago=medio)
+                self.assertEqual(self.procesar('validar'), 'validado')
+                self.assertEqual(set(MovimientoCaja.objects.values_list('medio_pago', flat=True)), {en_caja})
+
     def test_subir_comprobante_de_gasto_rechaza_html(self):
         gasto = Gasto.objects.create(
             consorcio=self.consorcio, concepto='Luz', monto=Decimal('10'), periodo='2026-04',
@@ -348,6 +377,14 @@ class DatosTransferenciaPropietarioTests(TestCase):
         respuesta = self.client.get(reverse('registrar_pago', args=[self.detalle.pk]))
         self.assertContains(respuesta, 'TORRE.UNO.EXP')
         self.assertContains(respuesta, 'Datos de transferencia')
+
+    def test_efectivo_muestra_direccion_y_horario_de_la_administracion(self):
+        from contactos.models import ContactoAdministracion
+        ContactoAdministracion.objects.create(
+            consorcio=self.consorcio, direccion='Av. Corrientes 1234, 3° B', localidad='CABA', horario='Lun a vie de 9 a 13 h')
+        respuesta = self.client.get(reverse('registrar_pago', args=[self.detalle.pk]))
+        self.assertContains(respuesta, 'Av. Corrientes 1234, 3° B, CABA')
+        self.assertContains(respuesta, 'Lun a vie de 9 a 13 h')
 
     def test_sin_cuenta_cargada_avisa_y_ofrece_consultar(self):
         respuesta = self.client.get(reverse('registrar_pago', args=[self.detalle.pk]))

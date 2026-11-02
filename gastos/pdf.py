@@ -402,6 +402,7 @@ def generar_recibo_pago_pdf(pago):
         ("Unidad funcional", _txt(unidad)),
         ("Propietario", _txt((usuario.get_full_name() or usuario.username) if usuario else 'Sin propietario asignado')),
         ("Fecha de pago", _fecha(pago.fecha_pago)),
+        ("Medio de pago", pago.get_medio_pago_display()),
         ("Período informado", _periodo(detalle.liquidacion.periodo)),
     ]
     tabla_datos = Table(
