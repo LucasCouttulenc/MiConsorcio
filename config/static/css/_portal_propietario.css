@@ -264,3 +264,23 @@
 
 .inicio-pedir-convenio { margin-top: 12px; color: #c5d5ec; font-size: .86rem; }
 .inicio-pedir-convenio a { color: #c4b5fd; font-weight: 800; text-decoration: underline; }
+
+/***************** DATOS PARA TRANSFERIR *****************/
+.datos-transferencia { width: 100%; padding: 12px 14px; border: 1px solid rgba(159, 201, 255, .3); border-radius: 10px; background: rgba(255, 255, 255, .06); text-align: left; }
+.datos-transferencia-titulo { margin: 0 0 8px; color: #9fc9ff !important; font-size: .72rem !important; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.datos-transferencia dl { display: grid; gap: 5px; margin: 0; }
+.datos-transferencia dl > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.datos-transferencia dt { color: #b7cbe3; font-size: .8rem; }
+.datos-transferencia dd { display: flex; align-items: center; gap: 8px; margin: 0; color: #fff; font-size: .85rem; font-weight: 700; }
+.datos-transferencia code { font: 700 .85rem ui-monospace, Consolas, monospace; color: inherit; background: none; }
+.datos-transferencia-copiar { padding: 2px 8px; border: 1px solid #6382aa; border-radius: 6px; background: #24466f; color: #fff; font-size: .72rem; font-weight: 800; cursor: pointer; }
+.datos-transferencia-copiar:hover { background: #315b8c; }
+.datos-transferencia-ayuda { margin: 9px 0 0; color: #c5d5ec; font-size: .8rem !important; }
+.datos-transferencia-ayuda a { color: #9fc9ff; text-decoration: underline; }
+.datos-transferencia-claro { margin-bottom: 24px; border-color: #c9d8ea; background: #f1f6fc; }
+.datos-transferencia-claro .datos-transferencia-titulo { color: #1b365d !important; }
+.datos-transferencia-claro dt { color: #556a8a; }
+.datos-transferencia-claro dd { color: #142947; }
+.datos-transferencia-claro .datos-transferencia-ayuda { color: #445a7a; }
+.datos-transferencia-claro .datos-transferencia-ayuda a { color: #1d63c9; }
+.datos-transferencia-claro .datos-transferencia-copiar { border-color: #1b365d; background: #1b365d; }

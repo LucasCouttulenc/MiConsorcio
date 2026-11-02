@@ -144,6 +144,8 @@
             <p class="pago-deuda">Total a pagar: $ {{ detalle.deuda_total_actualizada|floatformat:"2g" }}</p>
         </div>
 
+        {% include "componentes/datos_transferencia.html" with consorcio=detalle.liquidacion.consorcio unidad=detalle.unidad_funcional variante="claro" %}
+
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             

@@ -156,3 +156,35 @@ class ListarUnidadesFuncionalesTests(TestCase):
         self.client.force_login(usuario)
         forzar_consorcio_en_sesion(self.client, self.otro.pk)
         self.assertEqual({uf.consorcio for uf in self.unidades_listadas()}, {self.consorcio})
+
+
+class DatosTransferenciaTests(TestCase):
+    def setUp(self):
+        self.consorcio = crear_consorcio()
+
+    def datos_formulario(self, **cambios):
+        from .forms import FormularioConsorcio
+        datos = {campo: getattr(self.consorcio, campo) for campo in FormularioConsorcio.Meta.fields}
+        datos.update(fecha_creacion='2020-01-01', **cambios)
+        return FormularioConsorcio(data=datos, instance=self.consorcio)
+
+    def test_guarda_banco_cbu_y_alias(self):
+        formulario = self.datos_formulario(banco='Banco Galicia', cbu='0070012320000004567893', alias_cbu='torre.Uno.exp')
+        self.assertTrue(formulario.is_valid(), formulario.errors)
+        formulario.save()
+        self.consorcio.refresh_from_db()
+        self.assertTrue(self.consorcio.tiene_datos_transferencia)
+        self.assertEqual(self.consorcio.alias_cbu, 'TORRE.UNO.EXP')
+
+    def test_cbu_tiene_que_tener_22_digitos(self):
+        self.assertIn('cbu', self.datos_formulario(cbu='12345').errors)
+        self.assertIn('cbu', self.datos_formulario(cbu='00700123200000045678AB').errors)
+
+    def test_alias_con_caracteres_invalidos(self):
+        self.assertIn('alias_cbu', self.datos_formulario(alias_cbu='mi alias').errors)
+        self.assertIn('alias_cbu', self.datos_formulario(alias_cbu='abc').errors)
+
+    def test_son_opcionales_y_el_titular_por_defecto_es_el_consorcio(self):
+        self.assertTrue(self.datos_formulario().is_valid())
+        self.assertFalse(self.consorcio.tiene_datos_transferencia)
+        self.assertEqual(self.consorcio.titular_transferencia, 'Torre Uno')

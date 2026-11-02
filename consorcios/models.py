@@ -1,4 +1,4 @@
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
@@ -37,6 +37,29 @@ class Consorcio(models.Model):
         verbose_name="Fondo de reserva (% de las ordinarias)",
         help_text="Se suma a cada liquidación como un concepto aparte. 0 = sin fondo de reserva.",
     )
+    # Cuenta donde los propietarios transfieren las expensas
+    banco = models.CharField(max_length=60, blank=True, default='', verbose_name="Banco")
+    titular_cuenta = models.CharField(
+        max_length=100, blank=True, default='', verbose_name="Titular de la cuenta",
+        help_text="Si lo dejás vacío se muestra el nombre del consorcio.",
+    )
+    cbu = models.CharField(
+        max_length=22, blank=True, default='', verbose_name="CBU / CVU",
+        validators=[RegexValidator(r'^\d{22}$', 'El CBU tiene que tener 22 dígitos.')],
+    )
+    alias_cbu = models.CharField(
+        max_length=20, blank=True, default='', verbose_name="Alias",
+        validators=[RegexValidator(r'^[A-Za-z0-9.\-]{6,20}$', 'El alias tiene entre 6 y 20 caracteres: letras, números, puntos o guiones.')],
+    )
+
+
+    @property
+    def tiene_datos_transferencia(self):
+        return bool(self.cbu or self.alias_cbu)
+
+    @property
+    def titular_transferencia(self):
+        return self.titular_cuenta or self.nombre
 
     def __str__(self):
         return f"{self.nombre} - {self.calle} {self.altura}, CP {self.codigo_postal}"

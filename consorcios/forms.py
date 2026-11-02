@@ -25,10 +25,17 @@ class FormularioConsorcio(forms.ModelForm):
             "tasa_interes_mensual",
             "fondo_reserva_nombre",
             "fondo_reserva_porcentaje",
+            "banco",
+            "titular_cuenta",
+            "cbu",
+            "alias_cbu",
         ]
         widgets = {
             "fecha_creacion": DatePickerInput(),
         }
+
+    def clean_alias_cbu(self):
+        return self.cleaned_data['alias_cbu'].upper()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -62,6 +69,18 @@ class FormularioConsorcio(forms.ModelForm):
                 Column('tasa_interes_mensual'),
                 Column('fondo_reserva_nombre'),
                 Column('fondo_reserva_porcentaje'),
+                css_class = 'row'
+            ),
+            HTML('<h3 class="form-seccion-titulo">Datos para transferencias</h3>'
+                 '<p class="form-seccion-ayuda">Los propietarios los ven en Mis expensas y al informar un pago.</p>'),
+            Row(
+                Column('banco'),
+                Column('titular_cuenta'),
+                css_class = 'row'
+            ),
+            Row(
+                Column('cbu'),
+                Column('alias_cbu'),
                 css_class = 'row'
             ),
             Div(Submit('submit', 'Guardar cambios', css_class='boton-primario'), css_class='flex wrap center')

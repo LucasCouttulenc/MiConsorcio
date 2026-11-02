@@ -21,5 +21,8 @@ class FixtureDeConsorcio(Fixture):
                 'calle': faker.street_name(),
                 'altura': faker.building_number(),
                 'codigo_postal': faker.numerify(text='#####'),
+                'banco': faker.random_element(['Banco Nación', 'Banco Galicia', 'Banco Santander', 'Banco Ciudad']),
+                'cbu': faker.numerify(text='0' + '#' * 21),
+                'alias_cbu': faker.bothify(text='EXPENSAS.????.##').upper(),
             } for _ in range(10)
         ]

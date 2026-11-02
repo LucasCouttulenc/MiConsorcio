@@ -318,6 +318,50 @@ class ProcesarPagoTests(TestCase):
         self.assertFalse(gasto.comprobante)
 
 
+class DatosTransferenciaPropietarioTests(TestCase):
+    def setUp(self):
+        self.consorcio, _ = crear_consorcio()
+        usuario = User.objects.create_user('prop', password='clave')
+        self.uf = UnidadFuncional.objects.create(
+            propietario=Propietario.objects.create(usuario=usuario), consorcio=self.consorcio,
+            piso=4, departamento='B', alicuota=Decimal('50'))
+        liquidacion = Liquidacion.objects.create(consorcio=self.consorcio, periodo='2026-04', cerrada=True)
+        self.detalle = DetalleLiquidacionUF.objects.create(
+            liquidacion=liquidacion, unidad_funcional=self.uf, monto_total=Decimal('1000'))
+        self.client.force_login(usuario)
+
+    def cargar_cuenta(self):
+        self.consorcio.banco = 'Banco Galicia'
+        self.consorcio.cbu = '0070012320000004567893'
+        self.consorcio.alias_cbu = 'TORRE.UNO.EXP'
+        self.consorcio.save()
+
+    def test_mis_expensas_muestra_cbu_y_alias_si_debe(self):
+        self.cargar_cuenta()
+        respuesta = self.client.get(reverse('mis_expensas'), {'periodo': '2026-04'})
+        self.assertContains(respuesta, '0070012320000004567893')
+        self.assertContains(respuesta, 'TORRE.UNO.EXP')
+        self.assertContains(respuesta, '30-71234567-8')
+
+    def test_informar_pago_muestra_la_cuenta_y_la_referencia(self):
+        self.cargar_cuenta()
+        respuesta = self.client.get(reverse('registrar_pago', args=[self.detalle.pk]))
+        self.assertContains(respuesta, 'TORRE.UNO.EXP')
+        self.assertContains(respuesta, 'Datos de transferencia')
+
+    def test_sin_cuenta_cargada_avisa_y_ofrece_consultar(self):
+        respuesta = self.client.get(reverse('registrar_pago', args=[self.detalle.pk]))
+        self.assertContains(respuesta, 'todavía no cargó los datos de la cuenta')
+        self.assertContains(respuesta, reverse('nueva_consulta'))
+
+    def test_pagado_no_muestra_la_cuenta(self):
+        self.cargar_cuenta()
+        Pago.objects.create(detalle_liquidacion=self.detalle, fecha_pago=date.today(),
+                            monto_pagado=Decimal('1000'), estado='validado')
+        respuesta = self.client.get(reverse('mis_expensas'), {'periodo': '2026-04'})
+        self.assertNotContains(respuesta, 'TORRE.UNO.EXP')
+
+
 class InicioPropietarioTests(TestCase):
     def setUp(self):
         self.consorcio, _ = crear_consorcio()

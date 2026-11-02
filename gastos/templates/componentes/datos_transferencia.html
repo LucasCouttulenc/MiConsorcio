@@ -1,0 +1,26 @@
+{% comment %}Cuenta del consorcio a la que el propietario transfiere. Recibe `consorcio` y opcionalmente `unidad` y `variante` ("claro").{% endcomment %}
+<div class="datos-transferencia{% if variante %} datos-transferencia-{{ variante }}{% endif %}">
+    <p class="datos-transferencia-titulo">Datos de transferencia</p>
+    {% if consorcio.tiene_datos_transferencia %}
+    <dl>
+        {% if consorcio.banco %}<div><dt>Banco</dt><dd>{{ consorcio.banco }}</dd></div>{% endif %}
+        <div><dt>Titular</dt><dd>{{ consorcio.titular_transferencia }}</dd></div>
+        <div><dt>CUIT</dt><dd>{{ consorcio.cuit|slice:":2" }}-{{ consorcio.cuit|slice:"2:10" }}-{{ consorcio.cuit|slice:"10:" }}</dd></div>
+        {% if consorcio.cbu %}<div><dt>CBU</dt><dd><code>{{ consorcio.cbu }}</code><button type="button" class="datos-transferencia-copiar" data-copiar="{{ consorcio.cbu }}">Copiar</button></dd></div>{% endif %}
+        {% if consorcio.alias_cbu %}<div><dt>Alias</dt><dd><code>{{ consorcio.alias_cbu }}</code><button type="button" class="datos-transferencia-copiar" data-copiar="{{ consorcio.alias_cbu }}">Copiar</button></dd></div>{% endif %}
+    </dl>
+    {% else %}
+    <p class="datos-transferencia-ayuda">La administración todavía no cargó los datos de la cuenta. Pedíselos desde <a href="{% url 'nueva_consulta' %}?{% if unidad %}unidad={{ unidad.pk }}&{% endif %}asunto=Datos para transferir las expensas">Consultas</a>.</p>
+    {% endif %}
+</div>
+<script>
+document.querySelectorAll('.datos-transferencia-copiar:not([data-listo])').forEach((boton) => {
+    boton.dataset.listo = '1';
+    boton.addEventListener('click', () => {
+        navigator.clipboard.writeText(boton.dataset.copiar).then(() => {
+            boton.textContent = 'Copiado';
+            setTimeout(() => { boton.textContent = 'Copiar'; }, 1500);
+        });
+    });
+});
+</script>

@@ -192,6 +192,7 @@
     text-transform: uppercase;
 }
 .form-secciones .form-seccion-titulo:first-of-type { margin-top: 0; }
+.form-secciones .form-seccion-ayuda { margin: -.5rem 0 .9rem; color: var(--colorTextoSecundario); font-size: .85rem; }
 .form-secciones .row, .form-secciones .form-row { margin-bottom: 0; }
 .form-secciones [class*="col-"], .form-secciones .col-md { min-width: 180px; }
 .form-secciones .form-group { border: 0; padding: 0; background: transparent; margin-bottom: .9rem; }
